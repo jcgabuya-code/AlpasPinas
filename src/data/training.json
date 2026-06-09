@@ -1,0 +1,52 @@
+[
+  {
+    "id": "may-2026-weekend",
+    "title": "May 30-31 Training Weekend",
+    "description": "Two-day lake training. Saturday at Marina Putrajaya, Sunday at Subang PARC. Open to all paddlers — sign up for one day or both.",
+    "thumbnail": "/marina-putrajaya.jpg",
+    "thumbnailCredit": "Photo by Elliot Andrews on Unsplash",
+    "days": [
+      {
+        "key": "sat",
+        "label": "Saturday",
+        "date": "2026-05-30",
+        "time": "07:30",
+        "location": "Marina Putrajaya",
+        "capacity": 22
+      },
+      {
+        "key": "sun",
+        "label": "Sunday",
+        "date": "2026-05-31",
+        "time": "07:30",
+        "location": "Subang PARC",
+        "capacity": 22
+      }
+    ]
+  },
+  {
+    "id": "jun-2026-weekend",
+    "title": "June 27-28 Training Weekend",
+    "description": "Race-prep weekend. Both sessions at Marina Putrajaya. Focus on starts, exchanges, and 500m time trials.",
+    "thumbnail": "/marina-putrajaya.jpg",
+    "thumbnailCredit": "Photo by Elliot Andrews on Unsplash",
+    "days": [
+      {
+        "key": "sat",
+        "label": "Saturday",
+        "date": "2026-06-27",
+        "time": "07:30",
+        "location": "Marina Putrajaya",
+        "capacity": 22
+      },
+      {
+        "key": "sun",
+        "label": "Sunday",
+        "date": "2026-06-28",
+        "time": "07:30",
+        "location": "Marina Putrajaya",
+        "capacity": 22
+      }
+    ]
+  }
+]

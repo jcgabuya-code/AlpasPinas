@@ -1,0 +1,74 @@
+[
+  {
+    "id": "team-group",
+    "category": "Off-water",
+    "src": "/team.jpg",
+    "alt": "AlpasPinas team group photo",
+    "caption": "The crew — one stroke, one team",
+    "credit": null
+  },
+  {
+    "id": "race-poster",
+    "category": "Races",
+    "src": "/race-poster.jpg",
+    "alt": "AlpasPinas racing at Boracay",
+    "caption": "Boracay race day",
+    "credit": null
+  },
+  {
+    "id": "training-paddles",
+    "category": "Training",
+    "src": "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Paddlers training on the water",
+    "caption": "Morning drills on the lake",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "training-lanes",
+    "category": "Training",
+    "src": "https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Dragon boat training lanes",
+    "caption": "Lane work and timing sets",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "training-coach",
+    "category": "Training",
+    "src": "https://images.unsplash.com/photo-1502904550040-7534597429ae?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Coach briefing the crew",
+    "caption": "Pre-session briefing",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "race-start",
+    "category": "Races",
+    "src": "https://images.unsplash.com/photo-1623874228601-f4193c7b1818?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Dragon boats at the start line",
+    "caption": "Eyes down at the start line",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "race-sprint",
+    "category": "Races",
+    "src": "https://images.unsplash.com/photo-1591291621164-2c6367723315?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Crew sprinting to the finish",
+    "caption": "Full power to the line",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "offwater-celebrate",
+    "category": "Off-water",
+    "src": "https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Team celebrating together",
+    "caption": "Post-race celebrations",
+    "credit": "Unsplash"
+  },
+  {
+    "id": "offwater-sunset",
+    "category": "Off-water",
+    "src": "https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=1000&q=80&auto=format&fit=crop",
+    "alt": "Sunset by the water after training",
+    "caption": "Golden hour wind-down",
+    "credit": "Unsplash"
+  }
+]

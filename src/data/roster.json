@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Mateo Reyes",
+    "role": "Team Captain",
+    "side": "Right",
+    "joined": 2021,
+    "photo": null
+  },
+  {
+    "name": "Liza Mendoza",
+    "role": "Head Coach",
+    "side": "—",
+    "joined": 2020,
+    "photo": null
+  },
+  {
+    "name": "Joaquin Tan",
+    "role": "Stroke",
+    "side": "Left",
+    "joined": 2022,
+    "photo": null
+  },
+  {
+    "name": "Camille Bautista",
+    "role": "Drummer",
+    "side": "—",
+    "joined": 2023,
+    "photo": null
+  },
+  {
+    "name": "Diego Cruz",
+    "role": "Steersperson",
+    "side": "—",
+    "joined": 2021,
+    "photo": null
+  },
+  {
+    "name": "Andrea Lim",
+    "role": "Senior Paddler",
+    "side": "Right",
+    "joined": 2022,
+    "photo": null
+  },
+  {
+    "name": "Rafa Domingo",
+    "role": "Paddler",
+    "side": "Left",
+    "joined": 2024,
+    "photo": null
+  },
+  {
+    "name": "Tala Villanueva",
+    "role": "Paddler",
+    "side": "Right",
+    "joined": 2024,
+    "photo": null
+  }
+]

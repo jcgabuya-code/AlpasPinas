@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx playwright *)",
+      "Bash(node /tmp/screenshot_alpaspinas.mjs)",
+      "Bash(node screenshot_alpaspinas.mjs)",
+      "Bash(npm install *)",
+      "Bash(npm uninstall *)",
+      "Bash(find /Users/jc-mac/Workspace/AlpasPinas -name \"CLAUDE.md\" 2>/dev/null; find /Users/jc-mac/.claude -name \"CLAUDE.md\" 2>/dev/null)",
+      "Read(//Users/jc-mac/.claude/**)",
+      "Bash(npm run *)",
+      "WebSearch",
+      "Bash(curl -sL \"https://images.unsplash.com/photo-1747324501494-7160e33668a7?fm=jpg&q=80&w=1400&fit=crop\" -o /Users/jc-mac/Workspace/AlpasPinas/public/training-action.jpg)",
+      "Bash(which chromium *)",
+      "Read(//Applications/**)",
+      "WebFetch(domain:unused-css.com)",
+      "Bash(node -e ' *)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(curl -s 'https://script.google.com/macros/s/AKfycbyt8a69V3KClcarpGLQqRXQq9SJKQmEtgrzwJGg0U_2nWcIWxrI1FXzqAokFqXH3CCr/exec')",
+      "Bash(curl -s -X POST https://script.google.com/macros/s/AKfycbyt8a69V3KClcarpGLQqRXQq9SJKQmEtgrzwJGg0U_2nWcIWxrI1FXzqAokFqXH3CCr/exec -H 'Content-Type: text/plain;charset=utf-8' -d '{\"action\":\"approve\",\"eventId\":\"jun-2026-weekend\",\"name\":\"JC Gabuya\"}' -i)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Initial commit: AlpasPinas dragon boat team SPA *)"
+    ]
+  }
+}
