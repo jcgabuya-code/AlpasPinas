@@ -139,7 +139,7 @@ export const hasNameBooked = (
  * Returns the created booking.
  */
 export const addBooking = async (
-  b: Omit<Booking, 'createdAt'>,
+  b: Omit<Booking, 'createdAt' | 'status'>,
 ): Promise<Booking> => {
   if (!isRemote) {
     const booking: Booking = { ...b, status: 'waiting', createdAt: new Date().toISOString() };
@@ -155,7 +155,7 @@ export const addBooking = async (
   if (!result || !result.ok) {
     throw new Error(result?.error || 'Could not save your sign-up. Please try again.');
   }
-  const saved = result.booking ?? { ...b, createdAt: new Date().toISOString() };
+  const saved = result.booking ?? { ...b, status: 'waiting' as BookingStatus, createdAt: new Date().toISOString() };
   // Refresh from the sheet so everyone's latest counts are reflected.
   await fetchBookings();
   return saved;

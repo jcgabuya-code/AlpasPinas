@@ -4,7 +4,6 @@ import { type ColorPalette } from '../../styles/colors';
 import { type ShowToast } from '../Admin';
 import { fetchBookings, type Booking } from '../../utils/bookings';
 import { getTrainingEvents } from '../../utils/adminTrainingEvents';
-import { type TrainingEvent } from '../../components/TrainingCard';
 
 /* ------------------------------------------------------------------ */
 
@@ -17,12 +16,6 @@ type Boat = {
 };
 
 const ROWS = 10;
-
-const ALL_SEATS: SeatId[] = [
-  'DRUMMER',
-  ...Array.from({ length: ROWS }, (_, i) => [`${i + 1}L`, `${i + 1}R`]).flat(),
-  'STEERS',
-];
 
 const STORAGE_KEY = 'alpas-boat-plans-v1';
 

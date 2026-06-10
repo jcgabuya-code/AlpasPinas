@@ -63,7 +63,6 @@ export const AdminDashboard: React.FC<Props> = ({ c }) => {
             style={{
               padding: '1.25rem',
               borderRadius: '0.85rem',
-              backgroundColor: c.surface,
               border: `1px solid ${s.accent ? s.accent + '55' : c.border}`,
               backgroundColor: s.accent ? s.accent + '0c' : c.surface,
             }}
