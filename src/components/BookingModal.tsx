@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { colors, emeraldGradient, type ColorPalette } from '../styles/colors';
 import type { TrainingEvent } from './TrainingCard';
 import {
@@ -28,9 +29,10 @@ const YES_NO: YesNo[] = ['Yes', 'No'];
 export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose }) => {
   const { theme } = useTheme();
   const c = colors[theme];
+  const { user } = useAuth();
 
-  // Form state
-  const [name, setName] = useState('');
+  // Form state — name defaults to the logged-in user and is locked to them.
+  const [name, setName] = useState(user?.name ?? '');
   const [gender, setGender] = useState<Gender>('Male');
   const [side, setSide] = useState<SideRole>('Left');
   const [weight, setWeight] = useState<string>('');
@@ -46,7 +48,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   // Reset whenever the modal opens for a new event, and pull live counts.
   useEffect(() => {
     if (open && event) {
-      setName('');
+      setName(user?.name ?? '');
       setGender('Male');
       setSide('Left');
       setWeight('');
@@ -58,7 +60,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
       setSubmitting(false);
       fetchBookings().then(() => setRefreshTick((t) => t + 1));
     }
-  }, [open, event]);
+  }, [open, event, user]);
 
   // ESC + body scroll lock
   useEffect(() => {
@@ -298,8 +300,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Brendz Reyes"
-                style={inputStyle(c)}
+                readOnly={!!user}
+                style={{
+                  ...inputStyle(c),
+                  ...(user ? { opacity: 0.7, cursor: 'not-allowed' } : null),
+                }}
               />
+              {user && (
+                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                  Signing up as your account name.
+                </div>
+              )}
             </Field>
 
             <Field label="Gender" c={c}>
