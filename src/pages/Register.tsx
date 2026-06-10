@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { registerWithToken } from '../utils/users';
+import { registerWithToken, type UserGender, type UserSide } from '../utils/users';
+
+const GENDERS: UserGender[] = ['Male', 'Female'];
+const SIDES: UserSide[] = ['Left', 'Right', 'Coxswain', 'Coach'];
 
 const COUNTRY_CODES = [
   { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
@@ -28,6 +31,9 @@ export const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [birthday, setBirthday] = useState('');
+  const [gender, setGender] = useState<UserGender | ''>('');
+  const [side, setSide] = useState<UserSide | ''>('');
+  const [weight, setWeight] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -85,11 +91,31 @@ export const Register: React.FC = () => {
       return;
     }
 
+    if (isTokenMode) {
+      if (!gender) {
+        setError('Please select your gender.');
+        return;
+      }
+      if (!side) {
+        setError('Please select your paddling side / role.');
+        return;
+      }
+      const weightNum = Number(weight);
+      if (!weight.trim() || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200) {
+        setError('Please enter a weight in kg between 30 and 200.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       if (isTokenMode && token) {
         // Token-based registration (approved application)
-        await registerWithToken(token, password, birthday.trim() || undefined);
+        await registerWithToken(token, password, birthday.trim() || undefined, {
+          gender: gender as UserGender,
+          side: side as UserSide,
+          weight: Number(weight),
+        });
       } else {
         // Direct registration (legacy)
         if (!mobile.trim() || !name.trim()) {
@@ -269,6 +295,64 @@ export const Register: React.FC = () => {
               style={inputStyle}
             />
           </div>
+
+          {/* Paddler profile — captured during token registration */}
+          {isTokenMode && (
+            <>
+              <div>
+                <label style={labelStyle}>Gender</label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as UserGender)}
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select…
+                  </option>
+                  {GENDERS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Paddling Side / Role</label>
+                <select
+                  value={side}
+                  onChange={(e) => setSide(e.target.value as UserSide)}
+                  style={inputStyle}
+                >
+                  <option value="" disabled>
+                    Select…
+                  </option>
+                  {SIDES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Weight (kg)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="72"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  min={30}
+                  max={200}
+                  style={inputStyle}
+                />
+                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                  Used to balance the boat — kept private.
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Password */}
           <div>

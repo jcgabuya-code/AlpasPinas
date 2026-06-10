@@ -20,7 +20,7 @@ var ROSTER_SHEET = 'Roster';
 var ROSTER_HEADERS = ['Name', 'Role', 'Side', 'Joined', 'Photo', 'Status'];
 
 var USERS_SHEET = 'Users';
-var USERS_HEADERS = ['Mobile', 'Name', 'Email', 'Birthday', 'Password', 'Status', 'CreatedAt'];
+var USERS_HEADERS = ['Mobile', 'Name', 'Email', 'Birthday', 'Password', 'Status', 'CreatedAt', 'Gender', 'Side', 'Weight'];
 
 var APPS_SHEET = 'Applications';
 var APPS_HEADERS = ['Mobile', 'Name', 'Email', 'Status', 'CreatedAt', 'RejectionReason'];
@@ -41,6 +41,14 @@ function getSheet_(sheetName, headers) {
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
+  } else {
+    // Backfill any header labels that are missing or out of sync (e.g. newly
+    // added columns on a sheet that already has data).
+    var current = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+    var changed = headers.some(function (h, i) { return current[i] !== h; });
+    if (changed) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    }
   }
   return sheet;
 }
@@ -147,7 +155,7 @@ function doGet(e) {
  *   { action: 'approveApplication', mobile }
  *   { action: 'rejectApplication', mobile, reason }
  *   { action: 'getApplications' }
- *   { action: 'registerWithToken', token, password, birthday? }
+ *   { action: 'registerWithToken', token, password, birthday?, gender?, side?, weight? }
  *   { action: 'login', mobile, password }
  */
 function doPost(e) {
@@ -428,6 +436,9 @@ function handleRegisterWithToken_(body) {
   var token = String(body.token || '').trim();
   var password = String(body.password || '').trim();
   var birthday = String(body.birthday || '').trim();
+  var gender = String(body.gender || '').trim();
+  var side = String(body.side || '').trim();
+  var weight = body.weight != null && body.weight !== '' ? Number(body.weight) : '';
 
   if (!token || !password) {
     return json_({ ok: false, error: 'Token and password are required.' });
@@ -492,7 +503,10 @@ function handleRegisterWithToken_(body) {
     birthday || '',
     password,
     'active',
-    now.toISOString()
+    now.toISOString(),
+    gender,
+    side,
+    weight
   ]);
 
   // Mark token as used
@@ -505,6 +519,9 @@ function handleRegisterWithToken_(body) {
       name: name,
       email: email,
       birthday: birthday || null,
+      gender: gender || null,
+      side: side || null,
+      weight: weight === '' ? null : weight,
       createdAt: now.toISOString()
     }
   });
@@ -537,7 +554,10 @@ function handleLogin_(body) {
               name: String(vals[i][1] || ''),
               email: String(vals[i][2] || '') || null,
               birthday: String(vals[i][3] || '') || null,
-              createdAt: vals[i][6] ? new Date(vals[i][6]).toISOString() : new Date().toISOString()
+              createdAt: vals[i][6] ? new Date(vals[i][6]).toISOString() : new Date().toISOString(),
+              gender: String(vals[i][7] || '') || null,
+              side: String(vals[i][8] || '') || null,
+              weight: vals[i][9] === '' || vals[i][9] == null ? null : Number(vals[i][9])
             }
           });
         } else {

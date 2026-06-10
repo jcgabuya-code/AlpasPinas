@@ -18,11 +18,17 @@ const isRemote = ENDPOINT.length > 0;
 const SESSION_KEY = 'alpas-user-session';
 const CHANGE_EVENT = 'alpas-user-changed';
 
+export type UserGender = 'Male' | 'Female';
+export type UserSide = 'Left' | 'Right' | 'Coxswain' | 'Coach';
+
 export type User = {
   mobile: string;
   name: string;
   email?: string | null;
   birthday?: string | null;
+  gender?: UserGender | null;
+  side?: UserSide | null;
+  weight?: number | null;
   createdAt: string;
 };
 
@@ -271,7 +277,8 @@ export const submitApplication = async (
 export const registerWithToken = async (
   token: string,
   password: string,
-  birthday?: string,
+  birthday: string | undefined,
+  profile: { gender: UserGender; side: UserSide; weight: number },
 ): Promise<User> => {
   if (!isRemote) {
     throw new Error('Token registration requires VITE_USERS_ENDPOINT to be set.');
@@ -282,6 +289,9 @@ export const registerWithToken = async (
     token,
     password,
     birthday,
+    gender: profile.gender,
+    side: profile.side,
+    weight: profile.weight,
   })) as {
     ok?: boolean;
     user?: User;
