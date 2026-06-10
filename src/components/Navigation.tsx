@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { colors, emeraldGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -39,10 +40,12 @@ const NAV_ITEMS: NavItem[] = [
 
 export const Navigation: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const c = colors[theme];
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -146,66 +149,162 @@ export const Navigation: React.FC = () => {
               })}
             </ul>
 
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              style={{
-                background: 'transparent',
-                color: c.text,
-                border: `1px solid ${c.border}`,
-                width: '2.25rem',
-                height: '2.25rem',
-                borderRadius: '999px',
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {theme === 'dark' ? '☀' : '☾'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                style={{
+                  background: 'transparent',
+                  color: c.text,
+                  border: `1px solid ${c.border}`,
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {theme === 'dark' ? '☀' : '☾'}
+              </button>
 
-            <Link
-              to="/admin"
-              aria-label="Admin panel"
-              title="Admin"
-              onMouseEnter={() => setHovered('__admin__')}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '2.25rem',
-                height: '2.25rem',
-                borderRadius: '999px',
-                border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
-                color: hovered === '__admin__' ? c.primary : c.textSecondary,
-                textDecoration: 'none',
-                transition: 'color 0.15s ease, border-color 0.15s ease',
-                flexShrink: 0,
-              }}
-            >
-              <ShieldIcon size={15} />
-            </Link>
+              <Link
+                to="/admin"
+                aria-label="Admin panel"
+                title="Admin"
+                onMouseEnter={() => setHovered('__admin__')}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  borderRadius: '999px',
+                  border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
+                  color: hovered === '__admin__' ? c.primary : c.textSecondary,
+                  textDecoration: 'none',
+                  transition: 'color 0.15s ease, border-color 0.15s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <ShieldIcon size={15} />
+              </Link>
 
-            <Link
-              to={{ pathname: '/', hash: '#contact' }}
-              style={{
-                background: emeraldGradient(theme),
-                color: '#fff',
-                border: 'none',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '999px',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                textDecoration: 'none',
-                letterSpacing: '0.02em',
-                boxShadow: `0 4px 14px ${c.primary}33`,
-              }}
-            >
-              Join the Team
-            </Link>
+              {user ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    onMouseEnter={() => setHovered('__user__')}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{
+                      background: 'transparent',
+                      color: c.text,
+                      border: `1px solid ${hovered === '__user__' ? c.primary + '88' : c.border}`,
+                      borderRadius: '999px',
+                      padding: '0.5rem 0.9rem',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                      transition: 'border-color 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    👤 {user.name.split(' ')[0]}
+                  </button>
+
+                  {userMenuOpen && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        marginTop: '0.5rem',
+                        backgroundColor: c.surface,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '0.55rem',
+                        minWidth: '200px',
+                        boxShadow: `0 8px 24px ${c.primary}22`,
+                        zIndex: 1000,
+                      }}
+                    >
+                      <div style={{ padding: '0.75rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: c.textSecondary, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                          Logged in
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: c.text, marginBottom: '0.75rem', fontWeight: 500 }}>
+                          {user.name}
+                        </div>
+                        {user.mobile && (
+                          <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginBottom: '0.75rem' }}>
+                            {user.mobile}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            background: 'transparent',
+                            color: c.primary,
+                            border: `1px solid ${c.primary}33`,
+                            borderRadius: '0.4rem',
+                            padding: '0.5rem',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            transition: 'border-color 0.15s ease',
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Link
+                    to="/login"
+                    style={{
+                      color: c.text,
+                      textDecoration: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      padding: '0.5rem 0.9rem',
+                      transition: 'color 0.15s ease',
+                    }}
+                    onMouseEnter={() => setHovered('__login__')}
+                    onMouseLeave={() => setHovered(null)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/join-team"
+                    style={{
+                      background: emeraldGradient(theme),
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '999px',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      textDecoration: 'none',
+                      letterSpacing: '0.02em',
+                      boxShadow: `0 4px 14px ${c.primary}33`,
+                    }}
+                  >
+                    Join the Team
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -315,27 +414,82 @@ export const Navigation: React.FC = () => {
             Admin
           </Link>
 
-          <div style={{ paddingTop: '0.85rem' }}>
-            <Link
-              to={{ pathname: '/', hash: '#contact' }}
-              onClick={closeMenu}
-              style={{
-                display: 'block',
-                textAlign: 'center',
-                background: emeraldGradient(theme),
-                color: '#fff',
-                padding: '0.85rem 1.25rem',
-                borderRadius: '999px',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                textDecoration: 'none',
-                letterSpacing: '0.02em',
-                boxShadow: `0 4px 14px ${c.primary}33`,
-              }}
-            >
-              Join the Team
-            </Link>
-          </div>
+          {user ? (
+            <div style={{ paddingTop: '0.85rem', borderTop: `1px solid ${c.border}` }}>
+              <div style={{ fontSize: '0.85rem', color: c.textSecondary, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Logged in
+              </div>
+              <div style={{ fontSize: '1rem', color: c.text, marginBottom: '0.75rem', fontWeight: 600 }}>
+                {user.name}
+              </div>
+              {user.mobile && (
+                <div style={{ fontSize: '0.8rem', color: c.textSecondary, marginBottom: '0.75rem' }}>
+                  {user.mobile}
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  logout();
+                  closeMenu();
+                }}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  color: c.primary,
+                  border: `1px solid ${c.primary}33`,
+                  borderRadius: '0.55rem',
+                  padding: '0.65rem',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '0.85rem', borderTop: `1px solid ${c.border}` }}>
+              <Link
+                to="/login"
+                onClick={closeMenu}
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  color: c.text,
+                  border: `1px solid ${c.border}`,
+                  padding: '0.65rem 1.25rem',
+                  borderRadius: '0.55rem',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                Login
+              </Link>
+              <Link
+                to="/join-team"
+                onClick={closeMenu}
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  background: emeraldGradient(theme),
+                  color: '#fff',
+                  padding: '0.65rem 1.25rem',
+                  borderRadius: '0.55rem',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                  boxShadow: `0 4px 14px ${c.primary}33`,
+                }}
+              >
+                Join the Team
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </nav>

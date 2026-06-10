@@ -22,7 +22,18 @@
       "Bash(curl -s -X POST https://script.google.com/macros/s/AKfycbyt8a69V3KClcarpGLQqRXQq9SJKQmEtgrzwJGg0U_2nWcIWxrI1FXzqAokFqXH3CCr/exec -H 'Content-Type: text/plain;charset=utf-8' -d '{\"action\":\"approve\",\"eventId\":\"jun-2026-weekend\",\"name\":\"JC Gabuya\"}' -i)",
       "Bash(git config *)",
       "Bash(git add *)",
-      "Bash(git commit -m 'Initial commit: AlpasPinas dragon boat team SPA *)"
+      "Bash(git commit -m 'Initial commit: AlpasPinas dragon boat team SPA *)",
+      "Bash(gh repo *)",
+      "Bash(brew list *)",
+      "Bash(brew install *)",
+      "Bash(gh auth *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(curl -s http://localhost:5173/join-team)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s -X POST https://script.google.com/macros/s/AKfycbyNZUN8rmF23CDk3eXKZmRJup20l-CXQU7EKuyOrEfDrL-bN4mXQ-ZMjziSKQhRPLhT/exec -H 'Content-Type: text/plain;charset=utf-8' -d '{\"action\":\"getApplications\"}')"
     ]
   }
 }

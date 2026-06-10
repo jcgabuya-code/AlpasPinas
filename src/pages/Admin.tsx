@@ -20,18 +20,20 @@ import { AdminSignups } from './admin/AdminSignups';
 import { AdminBoats } from './admin/AdminBoats';
 import { AdminEvents } from './admin/AdminEvents';
 import { AdminRoster } from './admin/AdminRoster';
+import { AdminApplications } from './admin/AdminApplications';
 
 /* ------------------------------------------------------------------ */
 
 const ADMIN_PIN = (import.meta.env.VITE_ADMIN_PIN ?? 'alpas2025').trim();
 const AUTH_KEY = 'alpas-admin-auth';
 
-export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster';
+export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster' | 'applications';
 export type ToastType = 'success' | 'error' | 'info';
 export type ShowToast = (msg: string, type?: ToastType) => void;
 
 const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard',        icon: LayoutDashboard },
+  { id: 'applications', label: 'Applications',  icon: ClipboardList  },
   { id: 'signups',   label: 'Sign-ups',          icon: ClipboardList  },
   { id: 'boats',     label: 'Boat Assignments',  icon: Anchor         },
   { id: 'events',    label: 'Events',            icon: CalendarDays   },
@@ -474,6 +476,7 @@ const SectionContent: React.FC<{
 }> = ({ active, showToast, c, theme }) => {
   switch (active) {
     case 'dashboard': return <AdminDashboard showToast={showToast} c={c} theme={theme} />;
+    case 'applications': return <AdminApplications showToast={showToast} c={c} />;
     case 'signups':   return <AdminSignups   showToast={showToast} c={c} theme={theme} />;
     case 'boats':     return <AdminBoats     showToast={showToast} c={c} theme={theme} />;
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;
