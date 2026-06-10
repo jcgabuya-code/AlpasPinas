@@ -126,11 +126,14 @@ export const registerUser = async (
 };
 
 export const loginUser = async (mobile: string, password: string): Promise<User> => {
+  // Strip + prefix from mobile number to match stored format
+  const cleanMobile = mobile.replace(/^\+/, '');
+
   if (!isRemote) {
     const stored = localStorage.getItem('alpas-local-users');
     const users = stored ? JSON.parse(stored) : [];
     const user = users.find(
-      (u: User) => u.mobile === mobile.trim(),
+      (u: User) => u.mobile === cleanMobile.trim(),
     );
 
     if (!user) {
@@ -149,7 +152,7 @@ export const loginUser = async (mobile: string, password: string): Promise<User>
 
   const result = (await postToSheet({
     action: 'login',
-    mobile,
+    mobile: cleanMobile,
     password,
   })) as {
     ok?: boolean;
