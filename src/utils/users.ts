@@ -11,6 +11,8 @@
  * localStorage for user storage) so dev still works without a sheet.
  */
 
+import { supabase } from './supabase';
+
 // Use VITE_ROSTER_ENDPOINT (same Apps Script handles both roster and user operations)
 const ENDPOINT = (import.meta.env.VITE_ROSTER_ENDPOINT ?? '').trim();
 const isRemote = ENDPOINT.length > 0;
@@ -29,6 +31,7 @@ export type User = {
   gender?: UserGender | null;
   side?: UserSide | null;
   weight?: number | null;
+  isAdmin: boolean;
   createdAt: string;
 };
 
@@ -39,6 +42,147 @@ export type Application = {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   rejectionReason?: string;
+};
+
+/* ===================================================================== */
+/* Supabase auth (Phase 3a)                                              */
+/* ===================================================================== */
+
+// Shape of a row in the `profiles` table.
+type ProfileRow = {
+  id: string;
+  mobile: string;
+  name: string;
+  email: string | null;
+  birthday: string | null;
+  gender: UserGender | null;
+  side: UserSide | null;
+  weight: number | null;
+  is_admin: boolean;
+  created_at: string;
+};
+
+const mapProfile = (row: ProfileRow): User => ({
+  mobile: row.mobile,
+  name: row.name,
+  email: row.email,
+  birthday: row.birthday,
+  gender: row.gender,
+  side: row.side,
+  weight: row.weight,
+  isAdmin: row.is_admin,
+  createdAt: row.created_at,
+});
+
+/**
+ * The profile of the currently signed-in user, or null if signed out.
+ * Reads the Supabase session, then the matching `profiles` row.
+ */
+export const getCurrentProfile = async (): Promise<User | null> => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData.session;
+  if (!session) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapProfile(data as ProfileRow);
+};
+
+/** Sign in with email + password (Supabase Auth). Throws on failure. */
+export const loginWithEmail = async (email: string, password: string): Promise<void> => {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
+  });
+  if (error) {
+    // Normalise Supabase's message to match the app's existing copy.
+    throw new Error(
+      /invalid login credentials/i.test(error.message)
+        ? 'Invalid email or password.'
+        : error.message,
+    );
+  }
+};
+
+/**
+ * Register an approved applicant: pre-check approval, create the auth user,
+ * then create their profile row. The email must already have an APPROVED
+ * application (enforced both here and by RLS). Email confirmation is off, so
+ * sign-up returns a live session immediately.
+ */
+export const registerWithEmail = async (
+  email: string,
+  password: string,
+  profile: {
+    mobile: string;
+    name: string;
+    birthday?: string;
+    gender: UserGender;
+    side: UserSide;
+    weight: number;
+  },
+): Promise<User> => {
+  const cleanEmail = email.trim();
+
+  // 1. Pre-check approval so we don't strand an auth user with no profile.
+  const { data: approved, error: rpcError } = await supabase.rpc('is_email_approved', {
+    check_email: cleanEmail,
+  });
+  if (rpcError) throw new Error(rpcError.message);
+  if (!approved) {
+    throw new Error('This email has not been approved yet. Please submit an application first.');
+  }
+
+  // 2. Create the auth user (confirmation off → immediate session).
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email: cleanEmail,
+    password,
+  });
+  if (signUpError) {
+    throw new Error(
+      /already registered/i.test(signUpError.message)
+        ? 'An account with this email already exists. Try signing in.'
+        : signUpError.message,
+    );
+  }
+  const userId = signUpData.user?.id;
+  if (!userId) throw new Error('Sign-up failed — no user returned.');
+
+  // 3. Create the profile row (RLS re-checks approval as defense-in-depth).
+  const { data: row, error: profileError } = await supabase
+    .from('profiles')
+    .insert({
+      id: userId,
+      mobile: profile.mobile.trim(),
+      name: profile.name.trim(),
+      email: cleanEmail,
+      birthday: profile.birthday?.trim() || null,
+      gender: profile.gender,
+      side: profile.side,
+      weight: profile.weight,
+    })
+    .select()
+    .maybeSingle();
+  if (profileError) throw new Error(profileError.message);
+  if (!row) throw new Error('Profile creation failed.');
+
+  return mapProfile(row as ProfileRow);
+};
+
+/** Sign out of Supabase. The auth listener clears the user. */
+export const logout = async (): Promise<void> => {
+  await supabase.auth.signOut();
+};
+
+/** Subscribe to Supabase auth changes; fires on sign-in / sign-out / refresh. */
+export const onAuthChange = (handler: () => void) => {
+  const { data } = supabase.auth.onAuthStateChange(() => handler());
+  return () => data.subscription.unsubscribe();
 };
 
 /* ----------------------------- cache -------------------------------- */
@@ -91,6 +235,7 @@ export const registerUser = async (
       name: name.trim(),
       email: email?.trim() || undefined,
       birthday: birthday?.trim() || undefined,
+      isAdmin: false,
       createdAt: new Date().toISOString(),
     };
     // Check for duplicate in local storage
@@ -185,93 +330,75 @@ export const logoutUser = (): void => {
 
 /* -------------------- admin applications management ------------------- */
 
+type ApplicationRow = {
+  id: string;
+  mobile: string;
+  name: string;
+  email: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason: string | null;
+  created_at: string;
+};
+
+const mapApplication = (row: ApplicationRow): Application => ({
+  mobile: row.mobile,
+  name: row.name,
+  email: row.email,
+  status: row.status,
+  createdAt: row.created_at,
+  rejectionReason: row.rejection_reason ?? undefined,
+});
+
+/** Admin-only: list all applications (RLS returns nothing for non-admins). */
 export const getApplications = async (): Promise<Application[]> => {
-  if (!isRemote) {
-    throw new Error('Applications require VITE_USERS_ENDPOINT to be set.');
-  }
+  const { data, error } = await supabase
+    .from('applications')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  const result = (await postToSheet({
-    action: 'getApplications',
-  })) as {
-    ok?: boolean;
-    applications?: Application[];
-    error?: string;
-  };
-
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not fetch applications.');
-  }
-
-  return result.applications ?? [];
+  if (error) throw new Error(error.message);
+  return (data as ApplicationRow[]).map(mapApplication);
 };
 
+/** Admin-only: approve the pending application for this mobile. */
 export const approveApplication = async (mobile: string): Promise<void> => {
-  if (!isRemote) {
-    throw new Error('Applications require VITE_USERS_ENDPOINT to be set.');
-  }
+  const { error } = await supabase
+    .from('applications')
+    .update({ status: 'approved' })
+    .eq('mobile', mobile)
+    .eq('status', 'pending');
 
-  const result = (await postToSheet({
-    action: 'approveApplication',
-    mobile,
-  })) as {
-    ok?: boolean;
-    message?: string;
-    error?: string;
-  };
-
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not approve application.');
-  }
+  if (error) throw new Error(error.message);
 };
 
-export const rejectApplication = async (
-  mobile: string,
-  reason: string,
-): Promise<void> => {
-  if (!isRemote) {
-    throw new Error('Applications require VITE_USERS_ENDPOINT to be set.');
-  }
+/** Admin-only: reject the pending application for this mobile, with a reason. */
+export const rejectApplication = async (mobile: string, reason: string): Promise<void> => {
+  const { error } = await supabase
+    .from('applications')
+    .update({ status: 'rejected', rejection_reason: reason })
+    .eq('mobile', mobile)
+    .eq('status', 'pending');
 
-  const result = (await postToSheet({
-    action: 'rejectApplication',
-    mobile,
-    reason,
-  })) as {
-    ok?: boolean;
-    message?: string;
-    error?: string;
-  };
-
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not reject application.');
-  }
+  if (error) throw new Error(error.message);
 };
 
 /* ----------------------- application workflow ---------------------- */
 
+/**
+ * Public: submit a join application. BARE insert (no .select()) — the only
+ * SELECT policy on applications is admin-only, so reading the row back would
+ * fail RLS. Status defaults to 'pending' (and the insert policy enforces it).
+ */
 export const submitApplication = async (
   mobile: string,
   name: string,
   email: string,
 ): Promise<void> => {
-  if (!isRemote) {
-    throw new Error('Applications require VITE_USERS_ENDPOINT to be set.');
-  }
+  const { error } = await supabase
+    .from('applications')
+    .insert({ mobile: mobile.trim(), name: name.trim(), email: email.trim() });
 
-  const result = (await postToSheet({
-    action: 'submitApplication',
-    mobile,
-    name,
-    email,
-  })) as {
-    ok?: boolean;
-    message?: string;
-    error?: string;
-  };
-
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not submit application. Please try again.');
-  }
+  if (error) throw new Error(error.message);
 };
 
 export const registerWithToken = async (

@@ -33,7 +33,7 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c }) => {
     setApprovingMobile(mobile);
     try {
       await approveApplication(mobile);
-      showToast(`Application approved. Email sent to applicant.`, 'success');
+      showToast(`Application approved. They can now register.`, 'success');
       await loadApplications();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to approve application';

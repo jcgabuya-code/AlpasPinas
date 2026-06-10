@@ -3,23 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-const COUNTRY_CODES = [
-  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
-  { code: '+63', country: 'Philippines', flag: '🇵🇭' },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-  { code: '+1', country: 'USA', flag: '🇺🇸' },
-  { code: '+44', country: 'UK', flag: '🇬🇧' },
-  { code: '+61', country: 'Australia', flag: '🇦🇺' },
-  { code: '+81', country: 'Japan', flag: '🇯🇵' },
-];
-
 export const Login: React.FC = () => {
   const { theme } = useTheme();
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [countryCode, setCountryCode] = useState('+60');
-  const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,15 +50,14 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!mobile.trim() || !password.trim()) {
-      setError('Mobile and password are required.');
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required.');
       return;
     }
 
     setLoading(true);
     try {
-      const fullMobile = `${countryCode}${mobile.trim()}`;
-      await login(fullMobile, password);
+      await login(email.trim(), password);
       navigate('/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed.';
@@ -151,33 +139,17 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          {/* Country Code + Mobile */}
+          {/* Email */}
           <div>
-            <label style={labelStyle}>Mobile Number</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                style={{
-                  ...inputStyle,
-                  flex: '0 0 120px',
-                  padding: '0.7rem 0.6rem',
-                }}
-              >
-                {COUNTRY_CODES.map((cc) => (
-                  <option key={cc.code} value={cc.code}>
-                    {cc.flag} {cc.code}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="tel"
-                placeholder="123456789"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                style={{ ...inputStyle, flex: 1 }}
-              />
-            </div>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
           </div>
 
           {/* Password */}

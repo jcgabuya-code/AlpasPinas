@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { colors, emeraldGradient, type ColorPalette } from '../styles/colors';
 import {
   LayoutDashboard,
@@ -24,9 +25,6 @@ import { AdminApplications } from './admin/AdminApplications';
 
 /* ------------------------------------------------------------------ */
 
-const ADMIN_PIN = (import.meta.env.VITE_ADMIN_PIN ?? 'alpas2025').trim();
-const AUTH_KEY = 'alpas-admin-auth';
-
 export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster' | 'applications';
 export type ToastType = 'success' | 'error' | 'info';
 export type ShowToast = (msg: string, type?: ToastType) => void;
@@ -43,27 +41,36 @@ const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] =
 /* ------------------------------------------------------------------ */
 
 const Admin: React.FC = () => {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const { theme } = useTheme();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (!authed) {
+  // Wait for the session check before deciding.
+  if (loading) {
+    return <AdminGate theme={theme} title="Loading…" message="Checking your access." />;
+  }
+
+  // Not signed in → send to login.
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Signed in but not an admin → deny.
+  if (!user.isAdmin) {
     return (
-      <PinGate
+      <AdminGate
         theme={theme}
-        onSuccess={() => {
-          sessionStorage.setItem(AUTH_KEY, '1');
-          setAuthed(true);
-        }}
+        title="Not authorized"
+        message="Your account doesn't have admin access."
+        onHome={() => navigate('/')}
       />
     );
   }
 
   return (
     <AdminShell
-      onLogout={() => {
-        sessionStorage.removeItem(AUTH_KEY);
-        setAuthed(false);
+      onLogout={async () => {
+        await logout();
         navigate('/');
       }}
     />
@@ -74,25 +81,13 @@ export default Admin;
 
 /* ------------------------------------------------------------------ */
 
-const PinGate: React.FC<{ theme: 'dark' | 'light'; onSuccess: () => void }> = ({
-  theme,
-  onSuccess,
-}) => {
+const AdminGate: React.FC<{
+  theme: 'dark' | 'light';
+  title: string;
+  message: string;
+  onHome?: () => void;
+}> = ({ theme, title, message, onHome }) => {
   const c = colors[theme];
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin === ADMIN_PIN) {
-      onSuccess();
-    } else {
-      setError(true);
-      setPin('');
-      inputRef.current?.focus();
-    }
-  };
 
   return (
     <div
@@ -116,74 +111,33 @@ const PinGate: React.FC<{ theme: 'dark' | 'light'; onSuccess: () => void }> = ({
         }}
       >
         <div style={{ height: '3px', background: emeraldGradient(theme) }} />
-        <div style={{ padding: '2rem 1.75rem' }}>
-          <div style={{ marginBottom: '1.75rem', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
-              <ShieldCheck size={32} color={c.primary} />
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.9rem',
-                color: c.text,
-                letterSpacing: '0.03em',
-                lineHeight: 1,
-              }}
-            >
-              ALPAS<span style={{ color: c.primary }}>PINAS</span>
-            </div>
-            <div style={{ fontSize: '0.82rem', color: c.textSecondary, marginTop: '0.35rem' }}>
-              Admin panel
-            </div>
+        <div style={{ padding: '2rem 1.75rem', textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <ShieldCheck size={32} color={c.primary} />
           </div>
-
-          <form onSubmit={submit}>
-            <label
-              htmlFor="admin-pin"
-              style={{
-                display: 'block',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: c.textSecondary,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: '0.5rem',
-              }}
-            >
-              Admin PIN
-            </label>
-            <input
-              ref={inputRef}
-              id="admin-pin"
-              type="password"
-              value={pin}
-              onChange={(e) => { setPin(e.target.value); setError(false); }}
-              autoFocus
-              autoComplete="current-password"
-              placeholder="Enter PIN"
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                borderRadius: '0.6rem',
-                border: `1px solid ${error ? '#ef4444' : c.border}`,
-                backgroundColor: c.background,
-                color: c.text,
-                fontSize: '1rem',
-                fontFamily: 'inherit',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s',
-              }}
-            />
-            {error && (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#ef4444', fontWeight: 500 }}>
-                Incorrect PIN. Try again.
-              </div>
-            )}
+          <div
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.9rem',
+              color: c.text,
+              letterSpacing: '0.03em',
+              lineHeight: 1,
+            }}
+          >
+            ALPAS<span style={{ color: c.primary }}>PINAS</span>
+          </div>
+          <div style={{ fontSize: '1rem', color: c.text, fontWeight: 600, marginTop: '1rem' }}>
+            {title}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: c.textSecondary, marginTop: '0.4rem' }}>
+            {message}
+          </div>
+          {onHome && (
             <button
-              type="submit"
+              type="button"
+              onClick={onHome}
               style={{
-                marginTop: '1.1rem',
+                marginTop: '1.5rem',
                 width: '100%',
                 padding: '0.8rem',
                 borderRadius: '0.6rem',
@@ -196,9 +150,9 @@ const PinGate: React.FC<{ theme: 'dark' | 'light'; onSuccess: () => void }> = ({
                 fontFamily: 'inherit',
               }}
             >
-              Sign in
+              Back to home
             </button>
-          </form>
+          )}
         </div>
       </div>
     </div>

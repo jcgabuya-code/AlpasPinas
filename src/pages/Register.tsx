@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import { registerWithToken, type UserGender, type UserSide } from '../utils/users';
+import { registerWithEmail, type UserGender, type UserSide } from '../utils/users';
 
 const GENDERS: UserGender[] = ['Male', 'Female'];
 const SIDES: UserSide[] = ['Left', 'Right', 'Coxswain', 'Coach'];
@@ -19,17 +18,12 @@ const COUNTRY_CODES = [
 
 export const Register: React.FC = () => {
   const { theme } = useTheme();
-  const { register } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  const token = searchParams.get('token');
-  const [isTokenMode] = useState(!!token);
-
+  const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+60');
   const [mobile, setMobile] = useState('');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState<UserGender | ''>('');
   const [side, setSide] = useState<UserSide | ''>('');
@@ -76,66 +70,34 @@ export const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!password.trim()) {
-      setError('Password is required.');
-      return;
+    if (!email.trim()) return setError('Email is required.');
+    if (!name.trim()) return setError('Full name is required.');
+    if (!mobile.trim()) return setError('Mobile number is required.');
+    if (!gender) return setError('Please select your gender.');
+    if (!side) return setError('Please select your paddling side / role.');
+
+    const weightNum = Number(weight);
+    if (!weight.trim() || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200) {
+      return setError('Please enter a weight in kg between 30 and 200.');
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-
-    if (isTokenMode) {
-      if (!gender) {
-        setError('Please select your gender.');
-        return;
-      }
-      if (!side) {
-        setError('Please select your paddling side / role.');
-        return;
-      }
-      const weightNum = Number(weight);
-      if (!weight.trim() || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200) {
-        setError('Please enter a weight in kg between 30 and 200.');
-        return;
-      }
-    }
+    if (!password.trim()) return setError('Password is required.');
+    if (password.length < 6) return setError('Password must be at least 6 characters.');
+    if (password !== confirmPassword) return setError('Passwords do not match.');
 
     setLoading(true);
     try {
-      if (isTokenMode && token) {
-        // Token-based registration (approved application)
-        await registerWithToken(token, password, birthday.trim() || undefined, {
-          gender: gender as UserGender,
-          side: side as UserSide,
-          weight: Number(weight),
-        });
-      } else {
-        // Direct registration (legacy)
-        if (!mobile.trim() || !name.trim()) {
-          setError('Mobile and name are required.');
-          setLoading(false);
-          return;
-        }
-        const fullMobile = `${countryCode}${mobile.trim()}`;
-        await register(
-          fullMobile,
-          name.trim(),
-          email.trim() || undefined,
-          birthday.trim() || undefined,
-          password,
-        );
-      }
+      await registerWithEmail(email, password, {
+        mobile: `${countryCode}${mobile.trim()}`,
+        name,
+        birthday: birthday.trim() || undefined,
+        gender,
+        side,
+        weight: weightNum,
+      });
       navigate('/');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Registration failed.';
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -170,7 +132,6 @@ export const Register: React.FC = () => {
         {/* Gradient stripe */}
         <div style={{ height: '3px', ...gradientStyle }} />
 
-        {/* Form content */}
         <form
           onSubmit={handleSubmit}
           style={{
@@ -190,27 +151,12 @@ export const Register: React.FC = () => {
                 marginBottom: '0.5rem',
               }}
             >
-              {isTokenMode ? 'Complete Your Registration' : 'Create Account'}
+              Complete Your Registration
             </h1>
             <p style={{ color: c.textSecondary, margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
-              {isTokenMode ? 'Set your password to activate your account' : 'Join the AlpasPinas team'}
+              Use the email your application was approved with.
             </p>
           </div>
-
-          {!isTokenMode && !token && (
-            <div
-              style={{
-                backgroundColor: '#dbeafe',
-                border: `1px solid #93c5fd`,
-                borderRadius: '0.55rem',
-                padding: '0.75rem 0.85rem',
-                color: '#1e40af',
-                fontSize: '0.9rem',
-              }}
-            >
-              ℹ️ Direct registration is currently disabled. Click "Join the Team" to apply.
-            </div>
-          )}
 
           {/* Error banner */}
           {error && (
@@ -228,62 +174,55 @@ export const Register: React.FC = () => {
             </div>
           )}
 
-          {!isTokenMode && (
-            <>
-              {/* Country Code + Mobile */}
-              <div>
-                <label style={labelStyle}>Mobile Number</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    style={{
-                      ...inputStyle,
-                      flex: '0 0 120px',
-                      padding: '0.7rem 0.6rem',
-                    }}
-                  >
-                    {COUNTRY_CODES.map((cc) => (
-                      <option key={cc.code} value={cc.code}>
-                        {cc.flag} {cc.code}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="tel"
-                    placeholder="123456789"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
-                </div>
-              </div>
+          {/* Email */}
+          <div>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
 
-              {/* Name */}
-              <div>
-                <label style={labelStyle}>Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Juan Dela Cruz"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  style={inputStyle}
-                />
-              </div>
+          {/* Full Name */}
+          <div>
+            <label style={labelStyle}>Full Name</label>
+            <input
+              type="text"
+              placeholder="Juan Dela Cruz"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
 
-              {/* Email */}
-              <div>
-                <label style={labelStyle}>Email (Optional)</label>
-                <input
-                  type="email"
-                  placeholder="juan@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={inputStyle}
-                />
-              </div>
-            </>
-          )}
+          {/* Country Code + Mobile */}
+          <div>
+            <label style={labelStyle}>Mobile Number</label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                style={{ ...inputStyle, flex: '0 0 120px', padding: '0.7rem 0.6rem' }}
+              >
+                {COUNTRY_CODES.map((cc) => (
+                  <option key={cc.code} value={cc.code}>
+                    {cc.flag} {cc.code}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                placeholder="123456789"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                style={{ ...inputStyle, flex: 1 }}
+              />
+            </div>
+          </div>
 
           {/* Birthday */}
           <div>
@@ -296,69 +235,68 @@ export const Register: React.FC = () => {
             />
           </div>
 
-          {/* Paddler profile — captured during token registration */}
-          {isTokenMode && (
-            <>
-              <div>
-                <label style={labelStyle}>Gender</label>
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value as UserGender)}
-                  style={inputStyle}
-                >
-                  <option value="" disabled>
-                    Select…
-                  </option>
-                  {GENDERS.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Gender */}
+          <div>
+            <label style={labelStyle}>Gender</label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value as UserGender)}
+              style={inputStyle}
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              {GENDERS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              <div>
-                <label style={labelStyle}>Paddling Side / Role</label>
-                <select
-                  value={side}
-                  onChange={(e) => setSide(e.target.value as UserSide)}
-                  style={inputStyle}
-                >
-                  <option value="" disabled>
-                    Select…
-                  </option>
-                  {SIDES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Side / Role */}
+          <div>
+            <label style={labelStyle}>Paddling Side / Role</label>
+            <select
+              value={side}
+              onChange={(e) => setSide(e.target.value as UserSide)}
+              style={inputStyle}
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              {SIDES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              <div>
-                <label style={labelStyle}>Weight (kg)</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="72"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  min={30}
-                  max={200}
-                  style={inputStyle}
-                />
-                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                  Used to balance the boat — kept private.
-                </div>
-              </div>
-            </>
-          )}
+          {/* Weight */}
+          <div>
+            <label style={labelStyle}>Weight (kg)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="72"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              min={30}
+              max={200}
+              style={inputStyle}
+            />
+            <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+              Used to balance the boat — kept private.
+            </div>
+          </div>
 
           {/* Password */}
           <div>
             <label style={labelStyle}>Password</label>
             <input
               type="password"
+              autoComplete="new-password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -371,6 +309,7 @@ export const Register: React.FC = () => {
             <label style={labelStyle}>Confirm Password</label>
             <input
               type="password"
+              autoComplete="new-password"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -399,31 +338,24 @@ export const Register: React.FC = () => {
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
 
-          {/* Footer links */}
-          {!isTokenMode && (
-            <p style={{ textAlign: 'center', color: c.textSecondary, margin: 0, fontSize: '0.9rem' }}>
-              Already have an account?{' '}
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: c.primary,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  fontSize: 'inherit',
-                }}
-              >
-                Sign in
-              </button>
-            </p>
-          )}
-          {isTokenMode && (
-            <p style={{ textAlign: 'center', color: c.textSecondary, margin: 0, fontSize: '0.85rem' }}>
-              This link will expire in 7 days
-            </p>
-          )}
+          {/* Footer link */}
+          <p style={{ textAlign: 'center', color: c.textSecondary, margin: 0, fontSize: '0.9rem' }}>
+            Already have an account?{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: c.primary,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontSize: 'inherit',
+              }}
+            >
+              Sign in
+            </button>
+          </p>
         </form>
       </div>
     </div>

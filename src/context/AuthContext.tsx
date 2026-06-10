@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../utils/users';
-import { getCurrentUser, registerUser, loginUser, logoutUser, subscribeAuth } from '../utils/users';
+import { getCurrentProfile, loginWithEmail, logout as signOut, onAuthChange, registerUser } from '../utils/users';
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
   error: string | null;
+  // Legacy direct registration (Sheets) — disabled in the UI; migrated in 3b.
   register: (mobile: string, name: string, email: string | undefined, birthday: string | undefined, password: string) => Promise<void>;
-  login: (mobile: string, password: string) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,14 +20,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setUser(getCurrentUser());
-    setLoading(false);
+    let active = true;
 
-    const unsubscribe = subscribeAuth(() => {
-      setUser(getCurrentUser());
-    });
+    const refresh = async () => {
+      const profile = await getCurrentProfile();
+      if (active) {
+        setUser(profile);
+        setLoading(false);
+      }
+    };
 
-    return unsubscribe;
+    refresh();
+    // Re-sync whenever Supabase reports a sign-in, sign-out, or token refresh.
+    const unsubscribe = onAuthChange(refresh);
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const register = async (
@@ -39,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       await registerUser(mobile, name, email, birthday, password);
-      setUser(getCurrentUser());
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Registration failed.';
       setError(msg);
@@ -47,11 +57,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (mobile: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setError(null);
     try {
-      await loginUser(mobile, password);
-      setUser(getCurrentUser());
+      await loginWithEmail(email, password);
+      setUser(await getCurrentProfile());
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed.';
       setError(msg);
@@ -59,9 +69,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setError(null);
-    logoutUser();
+    await signOut();
     setUser(null);
   };
 
