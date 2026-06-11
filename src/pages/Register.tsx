@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { checkRegistrationToken, registerWithEmail, type UserGender, type UserSide } from '../utils/users';
+import { checkRegistrationToken, checkRegistrationConflict, registerWithEmail, type UserGender, type UserSide } from '../utils/users';
 
 const GENDERS: UserGender[] = ['Male', 'Female'];
 const SIDES: UserSide[] = ['Left', 'Right', 'Coxswain', 'Coach'];
@@ -115,8 +115,23 @@ export const Register: React.FC = () => {
 
     setLoading(true);
     try {
+      const fullMobile = `${countryCode}${mobile.trim()}`;
+      const conflict = await checkRegistrationConflict(fullMobile, email);
+      if (conflict === 'mobile') {
+        setError('A user with that mobile number already exists. Please sign in or contact the team admin.');
+        return;
+      }
+      if (conflict === 'email') {
+        setError('An account with this email already exists. Please sign in.');
+        return;
+      }
+      if (conflict === 'both') {
+        setError('A user with that mobile number and email already exists. Please sign in or contact the team admin.');
+        return;
+      }
+
       await registerWithEmail(token, password, {
-        mobile: `${countryCode}${mobile.trim()}`,
+        mobile: fullMobile,
         name,
         birthday: birthday.trim() || undefined,
         gender,

@@ -119,6 +119,25 @@ export const loginWithEmail = async (email: string, password: string): Promise<v
  * after the profile insert, so the link is single-use and expiring. Email
  * confirmation is off, so sign-up returns a live session immediately.
  */
+export const checkRegistrationConflict = async (
+  mobile: string,
+  email: string,
+): Promise<'mobile' | 'email' | 'both' | null> => {
+  const { data, error } = await supabase.rpc('check_registration_conflict', {
+    check_mobile: mobile.trim(),
+    check_email: email.trim(),
+  });
+
+  if (error) throw new Error(error.message);
+
+  const row = (data as { mobile_taken: boolean; email_taken: boolean }[])?.[0];
+  if (!row) return null;
+  if (row.mobile_taken && row.email_taken) return 'both';
+  if (row.mobile_taken) return 'mobile';
+  if (row.email_taken) return 'email';
+  return null;
+};
+
 export const registerWithEmail = async (
   token: string,
   password: string,
@@ -137,6 +156,19 @@ export const registerWithEmail = async (
     throw new Error('This registration link is invalid or has expired. Please contact the team admin.');
   }
   const cleanEmail = applicant.email.trim();
+  const cleanMobile = profile.mobile.trim();
+
+  // 1a. Prevent duplicate registrations by checking existing profile keys.
+  const conflict = await checkRegistrationConflict(cleanMobile, cleanEmail);
+  if (conflict === 'mobile') {
+    throw new Error('A user with that mobile number already exists. Please sign in or contact the team admin.');
+  }
+  if (conflict === 'email') {
+    throw new Error('An account with this email already exists. Please sign in.');
+  }
+  if (conflict === 'both') {
+    throw new Error('A user with that mobile number and email already exists. Please sign in or contact the team admin.');
+  }
 
   // 2. Create the auth user (confirmation off → immediate session).
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -158,7 +190,7 @@ export const registerWithEmail = async (
     .from('profiles')
     .insert({
       id: userId,
-      mobile: profile.mobile.trim(),
+      mobile: cleanMobile,
       name: profile.name.trim(),
       email: cleanEmail,
       birthday: profile.birthday?.trim() || null,
@@ -428,6 +460,36 @@ export const sendRegistrationEmail = async (
   }
 };
 
+export const checkApplicationConflict = async (
+  mobile: string,
+  email: string,
+): Promise<'mobile' | 'email' | 'both' | null> => {
+  if (!isRemote) {
+    const localUsersText = localStorage.getItem('alpas-local-users');
+    const users = localUsersText ? (JSON.parse(localUsersText) as User[]) : [];
+    const mobileTaken = users.some((u) => u.mobile === mobile.trim());
+    const emailTaken = users.some((u) => u.email?.toLowerCase() === email.trim().toLowerCase());
+    if (mobileTaken && emailTaken) return 'both';
+    if (mobileTaken) return 'mobile';
+    if (emailTaken) return 'email';
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc('check_application_conflict', {
+    check_mobile: mobile.trim(),
+    check_email: email.trim(),
+  });
+
+  if (error) throw new Error(error.message);
+
+  const row = (data as { mobile_taken: boolean; email_taken: boolean }[])?.[0];
+  if (!row) return null;
+  if (row.mobile_taken && row.email_taken) return 'both';
+  if (row.mobile_taken) return 'mobile';
+  if (row.email_taken) return 'email';
+  return null;
+};
+
 /** Admin-only: reject the pending application for this mobile, with a reason. */
 export const rejectApplication = async (mobile: string, reason: string): Promise<void> => {
   const { error } = await supabase
@@ -451,11 +513,29 @@ export const submitApplication = async (
   name: string,
   email: string,
 ): Promise<void> => {
+  const fullMobile = mobile.trim();
+  const cleanEmail = email.trim();
+  const conflict = await checkApplicationConflict(fullMobile, cleanEmail);
+  if (conflict === 'mobile') {
+    throw new Error('A user with that mobile number already exists or has already applied.');
+  }
+  if (conflict === 'email') {
+    throw new Error('A user with that email already exists or has already applied.');
+  }
+  if (conflict === 'both') {
+    throw new Error('A user with that mobile number and email already exists or has already applied.');
+  }
+
   const { error } = await supabase
     .from('applications')
-    .insert({ mobile: mobile.trim(), name: name.trim(), email: email.trim() });
+    .insert({ mobile: fullMobile, name: name.trim(), email: cleanEmail });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/duplicate|unique/i.test(error.message)) {
+      throw new Error('A user with that mobile number or email already exists or has already applied.');
+    }
+    throw new Error(error.message);
+  }
 };
 
 /* --------------------------- subscriptions -------------------------- */
