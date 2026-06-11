@@ -42,6 +42,9 @@ export type Application = {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   rejectionReason?: string;
+  registrationToken?: string | null;
+  tokenExpiresAt?: string | null;
+  tokenUsedAt?: string | null;
 };
 
 /* ===================================================================== */
@@ -110,13 +113,14 @@ export const loginWithEmail = async (email: string, password: string): Promise<v
 };
 
 /**
- * Register an approved applicant: pre-check approval, create the auth user,
- * then create their profile row. The email must already have an APPROVED
- * application (enforced both here and by RLS). Email confirmation is off, so
- * sign-up returns a live session immediately.
+ * Register via an emailed registration token: resolve the token (which also
+ * yields the canonical approved email), create the auth user, then create the
+ * profile row. RLS re-checks the token server-side, and a trigger burns it
+ * after the profile insert, so the link is single-use and expiring. Email
+ * confirmation is off, so sign-up returns a live session immediately.
  */
 export const registerWithEmail = async (
-  email: string,
+  token: string,
   password: string,
   profile: {
     mobile: string;
@@ -127,16 +131,12 @@ export const registerWithEmail = async (
     weight: number;
   },
 ): Promise<User> => {
-  const cleanEmail = email.trim();
-
-  // 1. Pre-check approval so we don't strand an auth user with no profile.
-  const { data: approved, error: rpcError } = await supabase.rpc('is_email_approved', {
-    check_email: cleanEmail,
-  });
-  if (rpcError) throw new Error(rpcError.message);
-  if (!approved) {
-    throw new Error('This email has not been approved yet. Please submit an application first.');
+  // 1. Resolve the token so we don't strand an auth user with no profile.
+  const applicant = await checkRegistrationToken(token);
+  if (!applicant) {
+    throw new Error('This registration link is invalid or has expired. Please contact the team admin.');
   }
+  const cleanEmail = applicant.email.trim();
 
   // 2. Create the auth user (confirmation off → immediate session).
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -338,6 +338,9 @@ type ApplicationRow = {
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason: string | null;
   created_at: string;
+  registration_token: string | null;
+  token_expires_at: string | null;
+  token_used_at: string | null;
 };
 
 const mapApplication = (row: ApplicationRow): Application => ({
@@ -347,6 +350,9 @@ const mapApplication = (row: ApplicationRow): Application => ({
   status: row.status,
   createdAt: row.created_at,
   rejectionReason: row.rejection_reason ?? undefined,
+  registrationToken: row.registration_token,
+  tokenExpiresAt: row.token_expires_at,
+  tokenUsedAt: row.token_used_at,
 });
 
 /** Admin-only: list all applications (RLS returns nothing for non-admins). */
@@ -360,15 +366,66 @@ export const getApplications = async (): Promise<Application[]> => {
   return (data as ApplicationRow[]).map(mapApplication);
 };
 
-/** Admin-only: approve the pending application for this mobile. */
-export const approveApplication = async (mobile: string): Promise<void> => {
-  const { error } = await supabase
-    .from('applications')
-    .update({ status: 'approved' })
-    .eq('mobile', mobile)
-    .eq('status', 'pending');
+/**
+ * Admin-only: approve the application for this mobile via the
+ * `approve_application` RPC, which mints a registration token with a 7-day
+ * expiry. Also works on already-approved applications (regenerates the token,
+ * i.e. "resend link"). Returns what the mailer needs.
+ */
+export const approveApplication = async (
+  mobile: string,
+): Promise<{ token: string; email: string; name: string }> => {
+  const { data, error } = await supabase.rpc('approve_application', {
+    app_mobile: mobile,
+  });
 
   if (error) throw new Error(error.message);
+  const row = (data as { reg_token: string; app_email: string; app_name: string }[])?.[0];
+  if (!row) throw new Error('Application not found.');
+  return { token: row.reg_token, email: row.app_email, name: row.app_name };
+};
+
+/**
+ * Public: resolve a registration token to the applicant it belongs to.
+ * Returns null when the token is unknown, expired, or already used — the
+ * Register page stays locked in that case.
+ */
+export const checkRegistrationToken = async (
+  token: string,
+): Promise<{ email: string; name: string } | null> => {
+  const { data, error } = await supabase.rpc('check_registration_token', {
+    check_token: token,
+  });
+
+  if (error) throw new Error(error.message);
+  const row = (data as { app_email: string; app_name: string }[])?.[0];
+  return row ? { email: row.app_email, name: row.app_name } : null;
+};
+
+/**
+ * Ask the Apps Script mailer to deliver the registration link. The script
+ * builds the URL itself from the token; we only pass the token. Returns
+ * whether the email went out — approval already succeeded either way, so the
+ * caller should fall back to copy-link rather than treat this as fatal.
+ */
+export const sendRegistrationEmail = async (
+  email: string,
+  name: string,
+  token: string,
+): Promise<boolean> => {
+  if (!isRemote) return false;
+  try {
+    const result = (await postToSheet({
+      action: 'sendRegistrationEmail',
+      secret: (import.meta.env.VITE_MAILER_SECRET ?? '').trim(),
+      email,
+      name,
+      token,
+    })) as { ok?: boolean };
+    return Boolean(result?.ok);
+  } catch {
+    return false;
+  }
 };
 
 /** Admin-only: reject the pending application for this mobile, with a reason. */
@@ -399,43 +456,6 @@ export const submitApplication = async (
     .insert({ mobile: mobile.trim(), name: name.trim(), email: email.trim() });
 
   if (error) throw new Error(error.message);
-};
-
-export const registerWithToken = async (
-  token: string,
-  password: string,
-  birthday: string | undefined,
-  profile: { gender: UserGender; side: UserSide; weight: number },
-): Promise<User> => {
-  if (!isRemote) {
-    throw new Error('Token registration requires VITE_USERS_ENDPOINT to be set.');
-  }
-
-  const result = (await postToSheet({
-    action: 'registerWithToken',
-    token,
-    password,
-    birthday,
-    gender: profile.gender,
-    side: profile.side,
-    weight: profile.weight,
-  })) as {
-    ok?: boolean;
-    user?: User;
-    error?: string;
-  };
-
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Registration failed. Please try again.');
-  }
-
-  const user = result.user;
-  if (user) {
-    setCurrentUser(user);
-    return user;
-  }
-
-  throw new Error('Registration failed: no user returned.');
 };
 
 /* --------------------------- subscriptions -------------------------- */

@@ -1,0 +1,33 @@
+name: Deploy Supabase migrations
+
+# Applies any new files in supabase/migrations/ to the production Supabase
+# project whenever they land on main. Needs two repo secrets (Settings →
+# Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN — from https://supabase.com/dashboard/account/tokens
+#   SUPABASE_DB_PASSWORD  — the project's database password
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+
+jobs:
+  push-migrations:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ywqsniqogwtucsbifosm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to the production project
+        run: supabase link --project-ref "$PROJECT_REF"
+
+      - name: Apply pending migrations
+        run: supabase db push

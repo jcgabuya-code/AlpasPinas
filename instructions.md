@@ -11,6 +11,10 @@ AlpasPinas is a dragon boat team portal website — a full-featured, full-stack 
 3. **Goal:** Build an intuitive, functional team portal with full features — registration, scheduling, results, communication, etc.
 4. **Clarification:** If a prompt has too many viable directions, ask before proceeding to narrow down the approach.
 
+## Claude Code Permissions
+
+- All Bash commands (including curl) are allowed for this project folder only — configured in `.claude/settings.local.json` via a blanket `"Bash"` allow rule.
+
 ## UI Design References
 
 ### Design Inspiration

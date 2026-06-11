@@ -1,7 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { type ColorPalette } from '../../styles/colors';
 import { type ShowToast } from '../Admin';
-import { getApplications, approveApplication, rejectApplication, type Application } from '../../utils/users';
+import {
+  getApplications,
+  approveApplication,
+  rejectApplication,
+  sendRegistrationEmail,
+  type Application,
+} from '../../utils/users';
+
+const registrationLink = (token: string) =>
+  `${window.location.origin}/register?token=${encodeURIComponent(token)}`;
+
+const isTokenLive = (app: Application) =>
+  Boolean(
+    app.registrationToken &&
+    !app.tokenUsedAt &&
+    app.tokenExpiresAt &&
+    new Date(app.tokenExpiresAt).getTime() > Date.now(),
+  );
 
 type Props = { showToast: ShowToast; c: ColorPalette };
 
@@ -29,17 +46,35 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c }) => {
     loadApplications();
   }, []);
 
+  // Approve (or re-approve to regenerate an expired link), then email the
+  // registration link. Approval already succeeded if the email fails — the
+  // admin can still use Copy Link on the approved card.
   const handleApprove = async (mobile: string) => {
     setApprovingMobile(mobile);
     try {
-      await approveApplication(mobile);
-      showToast(`Application approved. They can now register.`, 'success');
+      const { token, email, name } = await approveApplication(mobile);
+      const emailSent = await sendRegistrationEmail(email, name, token);
+      if (emailSent) {
+        showToast(`Approved — registration link emailed to ${email}.`, 'success');
+      } else {
+        showToast('Approved, but the email failed to send. Use "Copy link" to share it manually.', 'error');
+      }
       await loadApplications();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to approve application';
       showToast(msg, 'error');
     } finally {
       setApprovingMobile(null);
+    }
+  };
+
+  const handleCopyLink = async (app: Application) => {
+    if (!app.registrationToken) return;
+    try {
+      await navigator.clipboard.writeText(registrationLink(app.registrationToken));
+      showToast('Registration link copied to clipboard.', 'success');
+    } catch {
+      showToast('Could not copy — your browser blocked clipboard access.', 'error');
     }
   };
 
@@ -281,26 +316,79 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c }) => {
           <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: c.text, marginBottom: '1rem' }}>
             Approved ({approved.length})
           </h2>
-          {approved.map((app) => (
-            <div
-              key={app.mobile}
-              style={{
-                padding: '1rem',
-                marginBottom: '0.75rem',
-                backgroundColor: c.surface,
-                border: `1px solid ${c.primary}55`,
-                borderRadius: '0.55rem',
-              }}
-            >
-              <div style={{ fontWeight: 600, color: c.text }}>{app.name}</div>
-              <div style={{ fontSize: '0.85rem', color: c.textSecondary, marginTop: '0.25rem' }}>
-                {app.mobile} • {app.email}
+          {approved.map((app) => {
+            const live = isTokenLive(app);
+            const registered = Boolean(app.tokenUsedAt);
+            return (
+              <div
+                key={app.mobile}
+                style={{
+                  padding: '1rem',
+                  marginBottom: '0.75rem',
+                  backgroundColor: c.surface,
+                  border: `1px solid ${c.primary}55`,
+                  borderRadius: '0.55rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, color: c.text }}>{app.name}</div>
+                  <div style={{ fontSize: '0.85rem', color: c.textSecondary, marginTop: '0.25rem' }}>
+                    {app.mobile} • {app.email}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.25rem' }}>
+                    {registered
+                      ? 'Registered ✓'
+                      : live
+                        ? `Link expires ${new Date(app.tokenExpiresAt!).toLocaleDateString()} • Awaiting registration`
+                        : 'Registration link expired — resend to generate a new one'}
+                  </div>
+                </div>
+                {!registered && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {live && (
+                      <button
+                        onClick={() => handleCopyLink(app)}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: 'transparent',
+                          color: c.text,
+                          border: `1px solid ${c.border}`,
+                          borderRadius: '0.4rem',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Copy link
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleApprove(app.mobile)}
+                      disabled={approvingMobile === app.mobile}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: 'transparent',
+                        color: c.primary,
+                        border: `1px solid ${c.primary}`,
+                        borderRadius: '0.4rem',
+                        cursor: approvingMobile === app.mobile ? 'not-allowed' : 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        opacity: approvingMobile === app.mobile ? 0.6 : 1,
+                      }}
+                    >
+                      {approvingMobile === app.mobile ? 'Sending...' : 'Resend email'}
+                    </button>
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.25rem' }}>
-                Approved {new Date(app.createdAt).toLocaleDateString()} • Awaiting registration
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

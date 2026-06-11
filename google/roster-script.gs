@@ -29,7 +29,16 @@ var TOKENS_SHEET = 'Tokens';
 var TOKENS_HEADERS = ['Token', 'Mobile', 'Email', 'Name', 'ExpiresAt', 'Used'];
 
 var ADMIN_EMAIL = 'admin@alpaspinas.com';
-var APP_BASE_URL = 'http://localhost:5173'; // Change to https://alpaspinas.my for production
+var APP_BASE_URL = 'http://localhost:5173'; // Change to https://alpaspinas.com for production
+
+// Shared secret for the 'sendRegistrationEmail' action. Must match
+// VITE_MAILER_SECRET in the website's .env.local. The link is always built
+// here from APP_BASE_URL, so even with the secret a caller can't make this
+// script email out an arbitrary URL.
+// The real value is NOT committed (public repo) — when pasting this file into
+// the Apps Script editor, replace the placeholder with VITE_MAILER_SECRET
+// from .env.local.
+var MAILER_SECRET = 'REPLACE_WITH_VITE_MAILER_SECRET';
 
 function getSheet_(sheetName, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -157,6 +166,7 @@ function doGet(e) {
  *   { action: 'getApplications' }
  *   { action: 'registerWithToken', token, password, birthday?, gender?, side?, weight? }
  *   { action: 'login', mobile, password }
+ *   { action: 'sendRegistrationEmail', secret, email, name, token }
  */
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -196,6 +206,9 @@ function doPost(e) {
     }
     if (body.action === 'login') {
       return handleLogin_(body);
+    }
+    if (body.action === 'sendRegistrationEmail') {
+      return handleSendRegistrationEmail_(body);
     }
 
     return json_({ ok: false, error: 'Unknown action' });
@@ -328,6 +341,25 @@ function handleSubmitApplication_(body) {
     ok: true,
     message: 'Application submitted successfully. Please check your email for updates.'
   });
+}
+
+/**
+ * Mailer-only action for the Supabase era: the website approves in Supabase
+ * (which mints the token) and calls this just to deliver the email.
+ *   { action: 'sendRegistrationEmail', secret, email, name, token }
+ */
+function handleSendRegistrationEmail_(body) {
+  if (String(body.secret || '') !== MAILER_SECRET) {
+    return json_({ ok: false, error: 'Unauthorized.' });
+  }
+  var email = String(body.email || '').trim();
+  var name = String(body.name || '').trim();
+  var token = String(body.token || '').trim();
+  if (!email || !token) {
+    return json_({ ok: false, error: 'email and token are required.' });
+  }
+  var sent = sendRegistrationEmail_(email, name || 'there', token);
+  return json_({ ok: sent, emailSent: sent, error: sent ? undefined : 'Email failed to send.' });
 }
 
 function handleApproveApplication_(body) {

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { registerWithEmail, type UserGender, type UserSide } from '../utils/users';
+import { checkRegistrationToken, registerWithEmail, type UserGender, type UserSide } from '../utils/users';
 
 const GENDERS: UserGender[] = ['Male', 'Female'];
 const SIDES: UserSide[] = ['Left', 'Right', 'Coxswain', 'Coach'];
@@ -19,7 +19,11 @@ const COUNTRY_CODES = [
 export const Register: React.FC = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') ?? '';
 
+  // The page is invitation-only: without a live token there is no form.
+  const [gate, setGate] = useState<'checking' | 'invalid' | 'valid'>('checking');
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+60');
   const [mobile, setMobile] = useState('');
@@ -32,6 +36,31 @@ export const Register: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token) {
+      setGate('invalid');
+      return;
+    }
+    let cancelled = false;
+    checkRegistrationToken(token)
+      .then((applicant) => {
+        if (cancelled) return;
+        if (applicant) {
+          setEmail(applicant.email);
+          setName((current) => current || applicant.name);
+          setGate('valid');
+        } else {
+          setGate('invalid');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setGate('invalid');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const c = {
     background: theme === 'dark' ? '#0b1014' : '#f7faf8',
@@ -70,7 +99,6 @@ export const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim()) return setError('Email is required.');
     if (!name.trim()) return setError('Full name is required.');
     if (!mobile.trim()) return setError('Mobile number is required.');
     if (!gender) return setError('Please select your gender.');
@@ -87,7 +115,7 @@ export const Register: React.FC = () => {
 
     setLoading(true);
     try {
-      await registerWithEmail(email, password, {
+      await registerWithEmail(token, password, {
         mobile: `${countryCode}${mobile.trim()}`,
         name,
         birthday: birthday.trim() || undefined,
@@ -106,6 +134,67 @@ export const Register: React.FC = () => {
   const gradientStyle: React.CSSProperties = {
     background: 'linear-gradient(135deg, #047857 0%, #10b981 55%, #6ee7b7 100%)',
   };
+
+  if (gate !== 'valid') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: c.background,
+          padding: '2rem 1rem',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '420px',
+            backgroundColor: c.surface,
+            borderRadius: '0.95rem',
+            border: `1px solid ${c.border}`,
+            overflow: 'hidden',
+            boxShadow: `0 24px 80px ${c.primary}22`,
+          }}
+        >
+          <div style={{ height: '3px', ...gradientStyle }} />
+          <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
+            {gate === 'checking' ? (
+              <p style={{ color: c.textSecondary, margin: 0 }}>Checking your registration link…</p>
+            ) : (
+              <>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: c.text, margin: '0 0 0.75rem' }}>
+                  Registration is by invitation
+                </h1>
+                <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: '0 0 1.5rem', lineHeight: 1.6 }}>
+                  This link is invalid, expired, or already used. Registration links expire
+                  7 days after approval — if yours has lapsed, contact the team admin for a
+                  new one, or apply to join below.
+                </p>
+                <button
+                  onClick={() => navigate('/join-team')}
+                  style={{
+                    ...gradientStyle,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.6rem',
+                    padding: '0.85rem 1.5rem',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: `0 8px 24px ${c.primary}33`,
+                  }}
+                >
+                  Apply to Join
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -154,7 +243,7 @@ export const Register: React.FC = () => {
               Complete Your Registration
             </h1>
             <p style={{ color: c.textSecondary, margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
-              Use the email your application was approved with.
+              You're approved! Set a password to finish creating your account.
             </p>
           </div>
 
@@ -174,17 +263,19 @@ export const Register: React.FC = () => {
             </div>
           )}
 
-          {/* Email */}
+          {/* Email — fixed by the invitation, not editable */}
           <div>
             <label style={labelStyle}>Email</label>
             <input
               type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
+              readOnly
+              disabled
+              style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed' }}
             />
+            <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+              Locked to the email your application was approved with.
+            </div>
           </div>
 
           {/* Full Name */}

@@ -5,13 +5,34 @@
 
 ## 🔖 Resume here next session
 
-**Status:** ✅ Phase 3 "Step 2" is LIVE — training sign-ups are wired to the team Google Sheet via a deployed Apps Script web app (two-way sync), confirmed working by the user (2026-05-30). The site loads booking data from the sheet on every open (`fetchBookings()` on mount), so capacity counts + "your sign-ups" are accurate across devices; localStorage is just an instant-paint cache / offline fallback. The deployed `/exec` URL is set in the user's local `.env.local` as `VITE_BOOKINGS_ENDPOINT` (gitignored — NOT in the repo; will need to be re-set on any new machine and in the host's build/env settings for production).
+**Status (2026-06-11):** 🚧 Migrating **user/admin data to Supabase** (Postgres + Auth + RLS). **Training sign-ups stay on Google Sheets — untouched.** Phases 3a–3e done and committed; the new auth/registration/applications/admin flows are live and tested against the real Supabase project.
 
-**Next moves — pick a Phase 4 item:** member login, news/announcements, newsletter signup, or a results/standings page. (Also still open from Phase 3: wire the Contact form to actually send, and define a content-update workflow.)
+**Token-gated registration: ✅ DEPLOYED + E2E TESTED 2026-06-11.** Schema applied to production; Apps Script redeployed; full Playwright e2e passed (no-token blocked, bogus-token blocked, valid token → locked-email form → registered → token burned → link dead). Real email delivered via GmailApp. Test data cleaned up — DB now has only admin@alpaspinas.com + caloynezz's application.
+
+**⭐ NEXT TASK:**
+1. **Approve caloynezz@gmail.com via the admin UI** (`/admin` → Applications → "Resend email") — she's approved from the old system but has NO token, so she can't register until resent. This also exercises the one untested path: the `approve_application` RPC with a real admin JWT. ⚠️ Sends her a real email, and `APP_BASE_URL` in the Apps Script is still `http://localhost:5173` — flip it to the production URL first if the site is live for her.
+2. ~~GitHub Action auto-deploy secrets~~ ✅ done 2026-06-11: DB password RESET via Management API (`PATCH /v1/projects/<ref>/database/password`) and saved in `.env.local` (`SUPABASE_DB_PASSWORD`); both `SUPABASE_ACCESS_TOKEN` + `SUPABASE_DB_PASSWORD` set as repo secrets via `gh secret set`. First push to main will smoke-test the Action (expect "Remote database is up to date").
+3. Commit everything (token flow + migrations + workflow are all uncommitted).
+4. ~~Test-data cleanup~~ ✅ done 2026-06-11 (old test@/newpaddler@/applytest@ rows + e2e artifacts deleted).
+
+**Schema deploys — network gotcha:** this Mac's network **blocks outbound Postgres ports 5432/6543**, so local `supabase db push` hangs forever at "Initialising login role…". Workaround that works: run the migration SQL over HTTPS via the Management API — `POST https://api.supabase.com/v1/projects/ywqsniqogwtucsbifosm/database/query` with `{"query": "<sql>"}`, bearer token = CLI login token from keychain (`security find-generic-password -s "Supabase CLI" -w`). Then insert the version into `supabase_migrations.schema_migrations` so `db push` elsewhere stays in sync (baseline `20260611000000` recorded). The GitHub Action still uses normal `db push` — GitHub runners aren't port-blocked.
+
+**How it works (decision 2026-06-11):** chose approval **email with expiring link** (old token UX restored on Supabase). Approval mints a `registration_token` (uuid, 7-day expiry) on the application row via admin-only RPC; the email is sent by the existing Apps Script Gmail mailer (Supabase can't send arbitrary email from the browser); `/register?token=…` is the only way in — no token = invitation-only screen; email field locked to the approved email; RLS profile-insert gate now requires a live token (expiry enforced server-side); a trigger burns the token after profile creation. Admin UI has Copy-link + Resend (resend regenerates the token, invalidating the old link).
+
+**Also still pending:**
+- Test-data cleanup SQL was provided but NOT confirmed run (delete `test@alpaspinas.com` + `newpaddler@` auth users + leftover application rows). See session log.
+- Browser-verify the real admin login (`admin@alpaspinas.com` → `/admin`).
+- Phase 3f (deferred by user): remove the dead legacy Sheets functions in `src/utils/users.ts` — kept for now, unused, build-clean.
+
+**Supabase facts:**
+- Project ref `ywqsniqogwtucsbifosm`. Env in gitignored `.env.local`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (publishable key — public, RLS-guarded). Must be set on new machines + production host.
+- Schema source of truth: `supabase/migrations/` (CLI migrations; `schema.sql` is now just a pointer). Baseline = `20260611000000_baseline.sql` (tables `profiles`, `applications`, `roster`; `is_admin()` + registration-token SECURITY DEFINER helpers; RLS). New changes: `supabase migration new <name>` → write SQL → `supabase db push` (or push to main; `.github/workflows/supabase-migrations.yml` runs db push automatically — needs repo secrets `SUPABASE_ACCESS_TOKEN` + `SUPABASE_DB_PASSWORD`).
+- Decisions: **email + password** login; **fresh start** (no data migrated); email confirmation **OFF**; admin = `profiles.is_admin` flag (replaced the old client-side PIN).
+- Real admin: `admin@alpaspinas.com`, `is_admin=true` (created via dashboard Add-User + SQL profile insert, mobile blank).
 
 **To pick up next time, paste this in a new thread:**
 
-> Read `project-notes.md` in my AlpasPinas folder. Let's do <Phase 4 item | Contact form wiring>.
+> Read `project-notes.md` in my AlpasPinas folder. Let's deploy and test the token-gated registration flow.
 
 ## Project overview
 
@@ -85,6 +106,19 @@
 - Public site only, or member-only features needed?
 
 ## Session log
+
+### 2026-06-11 — Supabase migration for user/admin data (Phases 3a–3e)
+- **Goal:** move user/admin storage off Google Sheets to a real DB. Chose **Supabase** (Postgres + Auth + RLS) for <100 users — serverless, direct-from-SPA, managed auth (fixes the old plaintext-password problem). **Training sign-ups stay on Sheets.**
+- **Phase 1 — schema:** wrote `supabase/schema.sql` — `profiles` (links 1:1 to `auth.users`), `applications`, `roster`; `is_admin()` and `is_email_approved()` as SECURITY DEFINER helpers; RLS policies. User ran it in the Supabase SQL editor.
+- **Phase 2 — client:** installed `@supabase/supabase-js`; `src/utils/supabase.ts` singleton reads `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`. User switched to the new **publishable** key (`sb_publishable_…`).
+- **Phase 3a — login:** `AuthContext` now tracks the Supabase session (`onAuthChange` + `getCurrentProfile`); `Login.tsx` is email+password. Verified end-to-end with a scripted test user.
+- **Phase 3b — registration + gate:** `registerWithEmail` = pre-check `is_email_approved` RPC → `signUp` → insert gated profile. `Register.tsx` rewritten to single-mode email sign-up (token flow removed; gender/side/weight required). RLS gate: profile insert allowed only if `id=auth.uid()` AND email matches the login AND email has an approved application.
+- **Phase 3c — applications:** `submitApplication`/`getApplications`/`approve`/`reject` now hit Supabase. Public submit is a **bare insert** forced to `status='pending'`.
+- **Phase 3e — admin gate:** removed the client-side `VITE_ADMIN_PIN`/`PinGate` from `Admin.tsx`; now gates on `user.isAdmin` (redirect to `/login` when signed out, "Not authorized" for non-admins). `User` type gained `isAdmin`.
+- **RLS gotchas learned (important):** (1) new publishable keys are opaque — don't rely on `to anon`; use role-agnostic policies gated by `using`/`with check`. (2) Anonymous inserts must be **bare** (no `.select()`) — `INSERT…RETURNING` needs a SELECT policy and there isn't one for anon. (3) `create policy` isn't idempotent → schema uses `drop policy if exists`. (4) After creating RPC functions, may need `notify pgrst, 'reload schema'`.
+- **Real admin created:** `admin@alpaspinas.com` via dashboard Add-User + a SQL profile insert with `is_admin=true`, mobile blank (it's a service account, not a paddler — skipped the register form).
+- **Commits:** `93f03e5` (Supabase client + schema), `a897ee7` (auth/registration/applications/admin migration). `.env.local` stays gitignored.
+- **Where we left off:** functional Phase 3 done. **Open:** approval-notification gap (see Resume-here — the user asked to do this tomorrow), test-data cleanup not confirmed, real-admin browser login not yet confirmed, Phase 3f cleanup deferred.
 
 ### 2026-05-30 — Phase 3 Step 2 verified LIVE
 - User deployed the Apps Script web app and set `VITE_BOOKINGS_ENDPOINT` in `.env.local`. Confirmed end-to-end working: sign-ups write to the "Web Signups" tab and load back from the sheet on every site open.
