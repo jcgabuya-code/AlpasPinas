@@ -1,7 +1,9 @@
 -- Fix RPC signature ordering for the application conflict helper.
 -- Some Supabase clients resolve named parameters in alphabetical order,
 -- so the function signature must match the client-side expectation.
-create or replace function public.check_application_conflict(
+drop function if exists public.check_application_conflict(text, text);
+
+create function public.check_application_conflict(
   check_email text,
   check_mobile text
 )
