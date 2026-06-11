@@ -9,6 +9,8 @@
 
 **Token-gated registration: ✅ DEPLOYED + E2E TESTED 2026-06-11.** Schema applied to production; Apps Script redeployed; full Playwright e2e passed (no-token blocked, bogus-token blocked, valid token → locked-email form → registered → token burned → link dead). Real email delivered via GmailApp. Test data cleaned up — DB now has only admin@alpaspinas.com + caloynezz's application.
 
+**Duplicate protection:** ✅ Added mobile/email uniqueness checks for both registration and join applications. New Supabase migrations were committed and deployed, and the flow now rejects duplicate mobile/email submissions with a clear error.
+
 **⭐ NEXT TASK:**
 1. **Approve caloynezz@gmail.com via the admin UI** (`/admin` → Applications → "Resend email") — she's approved from the old system but has NO token, so she can't register until resent. This also exercises the one untested path: the `approve_application` RPC with a real admin JWT. ⚠️ Sends her a real email, and `APP_BASE_URL` in the Apps Script is still `http://localhost:5173` — flip it to the production URL first if the site is live for her.
 2. ~~GitHub Action auto-deploy secrets~~ ✅ done 2026-06-11: DB password RESET via Management API (`PATCH /v1/projects/<ref>/database/password`) and saved in `.env.local` (`SUPABASE_DB_PASSWORD`); both `SUPABASE_ACCESS_TOKEN` + `SUPABASE_DB_PASSWORD` set as repo secrets via `gh secret set`. First push to main will smoke-test the Action (expect "Remote database is up to date").

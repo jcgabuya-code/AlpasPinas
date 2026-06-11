@@ -165,7 +165,7 @@ export const Hero: React.FC = () => {
                 boxShadow: `0 8px 28px ${c.primary}44`,
               }}
             >
-              Join the Team →
+              Contact Us →
             </a>
             <button
               type="button"

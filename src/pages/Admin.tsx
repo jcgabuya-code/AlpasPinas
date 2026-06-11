@@ -31,8 +31,8 @@ export type ShowToast = (msg: string, type?: ToastType) => void;
 
 const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard',        icon: LayoutDashboard },
-  { id: 'applications', label: 'Applications',  icon: ClipboardList  },
-  { id: 'signups',   label: 'Sign-ups',          icon: ClipboardList  },
+  { id: 'applications', label: 'User Registrations',  icon: ClipboardList  },
+  { id: 'signups',   label: 'Training Sign-ups',          icon: ClipboardList  },
   { id: 'boats',     label: 'Boat Assignments',  icon: Anchor         },
   { id: 'events',    label: 'Events',            icon: CalendarDays   },
   { id: 'roster',    label: 'Roster',            icon: Users          },

@@ -92,8 +92,8 @@ export const Contact: React.FC = () => {
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
             <ContactRow icon="📍" label="Training base" value="Marina Putrajaya / Subang PARC · weekends" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
-            <ContactRow icon="✉" label="Email" value="hello@alpaspinas.team" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
-            <ContactRow icon="📱" label="Instagram" value="@alpaspinas" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon="✉" label="Email" value="admin@alpaspinas.com" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon="📱" label="Instagram" value="@alpaspinasdbt" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
           </ul>
         </div>
 
