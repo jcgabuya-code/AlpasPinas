@@ -150,19 +150,20 @@ export const Hero: React.FC = () => {
           </div>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: isMobile ? 'nowrap' : 'wrap' }}>
             <a
               href="#contact"
               style={{
                 background: emeraldGradient(theme),
                 color: '#fff',
-                padding: '0.95rem 1.75rem',
+                padding: isMobile ? '0.85rem 1.25rem' : '0.95rem 1.75rem',
                 borderRadius: '999px',
                 fontWeight: 600,
                 textDecoration: 'none',
-                fontSize: '0.95rem',
+                fontSize: isMobile ? '0.9rem' : '0.95rem',
                 letterSpacing: '0.02em',
                 boxShadow: `0 8px 28px ${c.primary}44`,
+                whiteSpace: 'nowrap',
               }}
             >
               Contact Us →
@@ -173,10 +174,10 @@ export const Hero: React.FC = () => {
               style={{
                 backgroundColor: 'transparent',
                 color: c.text,
-                padding: '0.95rem 1.6rem',
+                padding: isMobile ? '0.85rem 1.1rem' : '0.95rem 1.6rem',
                 borderRadius: '999px',
                 fontWeight: 600,
-                fontSize: '0.95rem',
+                fontSize: isMobile ? '0.9rem' : '0.95rem',
                 border: `1px solid ${c.border}`,
                 cursor: 'pointer',
                 display: 'inline-flex',
@@ -184,6 +185,7 @@ export const Hero: React.FC = () => {
                 gap: '0.55rem',
                 fontFamily: 'inherit',
                 letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
               }}
             >
               <span

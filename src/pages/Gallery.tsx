@@ -168,14 +168,10 @@ export const Gallery: React.FC = () => {
             role="tablist"
             aria-label="Gallery category"
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               flexWrap: 'wrap',
-              padding: '0.3rem',
-              borderRadius: '999px',
-              backgroundColor: c.surface,
-              border: `1px solid ${c.border}`,
               marginBottom: '1.75rem',
-              gap: '0.15rem',
+              gap: '0.5rem',
             }}
           >
             <TabButton active={filter === 'All'} onClick={() => setFilter('All')} c={c} label="All" count={counts.All} />
@@ -430,17 +426,20 @@ const TabButton: React.FC<{
     aria-selected={active}
     onClick={onClick}
     style={{
+      display: 'inline-flex',
+      alignItems: 'center',
       padding: '0.55rem 1.1rem',
       borderRadius: '999px',
       fontSize: '0.88rem',
       fontWeight: 600,
       cursor: 'pointer',
       fontFamily: 'inherit',
-      border: 'none',
-      backgroundColor: active ? c.primary : 'transparent',
+      border: `1px solid ${active ? c.primary : c.border}`,
+      backgroundColor: active ? c.primary : c.surface,
       color: active ? '#fff' : c.textSecondary,
       transition: 'all 0.15s ease',
       letterSpacing: '0.02em',
+      boxShadow: active ? `0 4px 14px ${c.primary}33` : 'none',
     }}
   >
     {label}

@@ -152,11 +152,9 @@ export const Events: React.FC = () => {
             role="tablist"
             aria-label="Events tab"
             style={{
-              display: 'inline-flex',
-              padding: '0.3rem',
-              borderRadius: '999px',
-              backgroundColor: c.surface,
-              border: `1px solid ${c.border}`,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
               marginBottom: '1.5rem',
             }}
           >
@@ -327,17 +325,20 @@ const TabButton: React.FC<{
     aria-selected={active}
     onClick={onClick}
     style={{
+      display: 'inline-flex',
+      alignItems: 'center',
       padding: '0.55rem 1.1rem',
       borderRadius: '999px',
       fontSize: '0.88rem',
       fontWeight: 600,
       cursor: 'pointer',
       fontFamily: 'inherit',
-      border: 'none',
-      backgroundColor: active ? c.primary : 'transparent',
+      border: `1px solid ${active ? c.primary : c.border}`,
+      backgroundColor: active ? c.primary : c.surface,
       color: active ? '#fff' : c.textSecondary,
       transition: 'all 0.15s ease',
       letterSpacing: '0.02em',
+      boxShadow: active ? `0 4px 14px ${c.primary}33` : 'none',
     }}
   >
     {label}

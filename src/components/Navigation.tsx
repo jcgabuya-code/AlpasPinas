@@ -49,6 +49,12 @@ export const Navigation: React.FC = () => {
 
   const closeMenu = () => setMenuOpen(false);
 
+  // Training is a member activity — only surface it to signed-in users.
+  const visibleItems = NAV_ITEMS.filter((item) =>
+    item.label === 'Training' ? Boolean(user) : true,
+  );
+  const canSeeAdmin = Boolean(user?.isAdmin);
+
   return (
     <nav
       style={{
@@ -123,7 +129,7 @@ export const Navigation: React.FC = () => {
                 padding: 0,
               }}
             >
-              {NAV_ITEMS.map((item) => {
+              {visibleItems.map((item) => {
                 const key = `${item.to}${item.hash ?? ''}`;
                 return (
                   <li key={key}>
@@ -170,28 +176,30 @@ export const Navigation: React.FC = () => {
                 {theme === 'dark' ? '☀' : '☾'}
               </button>
 
-              <Link
-                to="/admin"
-                aria-label="Admin panel"
-                title="Admin"
-                onMouseEnter={() => setHovered('__admin__')}
-                onMouseLeave={() => setHovered(null)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '2.25rem',
-                  height: '2.25rem',
-                  borderRadius: '999px',
-                  border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
-                  color: hovered === '__admin__' ? c.primary : c.textSecondary,
-                  textDecoration: 'none',
-                  transition: 'color 0.15s ease, border-color 0.15s ease',
-                  flexShrink: 0,
-                }}
-              >
-                <ShieldIcon size={15} />
-              </Link>
+              {canSeeAdmin && (
+                <Link
+                  to="/admin"
+                  aria-label="Admin panel"
+                  title="Admin"
+                  onMouseEnter={() => setHovered('__admin__')}
+                  onMouseLeave={() => setHovered(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '2.25rem',
+                    height: '2.25rem',
+                    borderRadius: '999px',
+                    border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
+                    color: hovered === '__admin__' ? c.primary : c.textSecondary,
+                    textDecoration: 'none',
+                    transition: 'color 0.15s ease, border-color 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                >
+                  <ShieldIcon size={15} />
+                </Link>
+              )}
 
               {user ? (
                 <div style={{ position: 'relative' }}>
@@ -363,14 +371,17 @@ export const Navigation: React.FC = () => {
             left: 0,
             right: 0,
             backgroundColor: theme === 'dark' ? 'rgba(11, 12, 16, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             borderBottom: `1px solid ${c.border}`,
-            padding: '0.75rem 1.5rem 1.25rem',
+            padding: '0.5rem 1rem 1.25rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.15rem',
+            gap: '0.2rem',
+            boxShadow: `0 18px 40px ${theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.12)'}`,
           }}
         >
-          {NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const key = `${item.to}${item.hash ?? ''}`;
             return (
               <NavLink
@@ -378,55 +389,90 @@ export const Navigation: React.FC = () => {
                 to={{ pathname: item.to, hash: item.hash ?? '' }}
                 end={item.end}
                 onClick={closeMenu}
-                style={({ isActive }) => ({
-                  color: isActive && !item.hash ? c.primary : c.text,
-                  textDecoration: 'none',
-                  fontWeight: 500,
-                  fontSize: '1.05rem',
-                  letterSpacing: '0.02em',
-                  padding: '0.75rem 0',
-                  borderBottom: `1px solid ${c.border}`,
-                  display: 'block',
-                })}
+                style={({ isActive }) => {
+                  const active = isActive && !item.hash;
+                  return {
+                    color: active ? c.primary : c.text,
+                    backgroundColor: active ? `${c.primary}14` : 'transparent',
+                    textDecoration: 'none',
+                    fontWeight: active ? 600 : 500,
+                    fontSize: '1.02rem',
+                    letterSpacing: '0.01em',
+                    padding: '0.85rem 0.9rem',
+                    borderRadius: '0.6rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'background-color 0.15s ease, color 0.15s ease',
+                  };
+                }}
               >
                 {item.label}
               </NavLink>
             );
           })}
 
-          <Link
-            to="/admin"
-            onClick={closeMenu}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              color: c.textSecondary,
-              textDecoration: 'none',
-              fontWeight: 500,
-              fontSize: '1.05rem',
-              letterSpacing: '0.02em',
-              padding: '0.75rem 0',
-              borderBottom: `1px solid ${c.border}`,
-            }}
-          >
-            <ShieldIcon size={15} />
-            Admin
-          </Link>
+          {canSeeAdmin && (
+            <NavLink
+              to="/admin"
+              onClick={closeMenu}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                color: isActive ? c.primary : c.text,
+                backgroundColor: isActive ? `${c.primary}14` : 'transparent',
+                textDecoration: 'none',
+                fontWeight: isActive ? 600 : 500,
+                fontSize: '1.02rem',
+                letterSpacing: '0.01em',
+                padding: '0.85rem 0.9rem',
+                borderRadius: '0.6rem',
+                transition: 'background-color 0.15s ease, color 0.15s ease',
+              })}
+            >
+              <ShieldIcon size={16} />
+              Admin
+            </NavLink>
+          )}
 
           {user ? (
-            <div style={{ paddingTop: '0.85rem', borderTop: `1px solid ${c.border}` }}>
-              <div style={{ fontSize: '0.85rem', color: c.textSecondary, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                Logged in
-              </div>
-              <div style={{ fontSize: '1rem', color: c.text, marginBottom: '0.75rem', fontWeight: 600 }}>
-                {user.name}
-              </div>
-              {user.mobile && (
-                <div style={{ fontSize: '0.8rem', color: c.textSecondary, marginBottom: '0.75rem' }}>
-                  {user.mobile}
+            <div style={{ marginTop: '0.6rem', paddingTop: '1rem', borderTop: `1px solid ${c.border}` }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  marginBottom: '0.9rem',
+                  padding: '0 0.15rem',
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: '2.6rem',
+                    height: '2.6rem',
+                    borderRadius: '999px',
+                    background: emeraldGradient(theme),
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.05rem',
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.name.trim().charAt(0).toUpperCase()}
                 </div>
-              )}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '1rem', color: c.text, fontWeight: 600, lineHeight: 1.3 }}>
+                    {user.name}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: c.textSecondary, lineHeight: 1.3 }}>
+                    {user.mobile || 'Signed in'}
+                  </div>
+                </div>
+              </div>
               <button
                 onClick={() => {
                   logout();
@@ -436,13 +482,12 @@ export const Navigation: React.FC = () => {
                   width: '100%',
                   background: 'transparent',
                   color: c.primary,
-                  border: `1px solid ${c.primary}33`,
-                  borderRadius: '0.55rem',
-                  padding: '0.65rem',
+                  border: `1px solid ${c.primary}44`,
+                  borderRadius: '0.6rem',
+                  padding: '0.75rem',
                   cursor: 'pointer',
                   fontSize: '0.95rem',
                   fontWeight: 600,
-                  textDecoration: 'none',
                   letterSpacing: '0.02em',
                 }}
               >
@@ -450,7 +495,7 @@ export const Navigation: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '0.85rem', borderTop: `1px solid ${c.border}` }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem', paddingTop: '1rem', borderTop: `1px solid ${c.border}` }}>
               <Link
                 to="/login"
                 onClick={closeMenu}
@@ -459,8 +504,8 @@ export const Navigation: React.FC = () => {
                   textAlign: 'center',
                   color: c.text,
                   border: `1px solid ${c.border}`,
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '0.55rem',
+                  padding: '0.8rem 1.25rem',
+                  borderRadius: '0.6rem',
                   fontWeight: 600,
                   fontSize: '0.95rem',
                   textDecoration: 'none',
@@ -477,8 +522,8 @@ export const Navigation: React.FC = () => {
                   textAlign: 'center',
                   background: emeraldGradient(theme),
                   color: '#fff',
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '0.55rem',
+                  padding: '0.8rem 1.25rem',
+                  borderRadius: '0.6rem',
                   fontWeight: 600,
                   fontSize: '0.95rem',
                   textDecoration: 'none',

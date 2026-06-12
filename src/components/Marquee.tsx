@@ -214,35 +214,70 @@ const Inner: React.FC = () => (
   </span>
 );
 
+// One wave period: starts and ends at the same height (y≈11.38) so periods chain
+// seamlessly. Written relative so it can be repeated to form a single continuous
+// path — that avoids per-tile vertical seams that show on high-DPR mobile screens.
+const WAVE_PERIOD_W = 174.47;
+const WAVE_PERIOD_PX = 175; // rendered width of one period (matches the scroll keyframe)
+// ~1400px wide: comfortably wider than any phone viewport (incl. landscape) so the
+// repeat seam stays off-screen where it was visible (high-DPR mobile), but small
+// enough to keep the animated layer's GPU texture cheap. Going much wider (we had
+// 24 here) blows the mobile texture budget and makes layers flicker / drop paints.
+const WAVE_PERIODS = 8;
+const WAVE_REL_PERIOD =
+  ' c 0,0 21.133851,11.39531 43.617661,11.38441' +
+  ' c 22.4838,-0.0106 64.3509,-22.736 86.8903,-22.7685' +
+  ' c 22.53944,-0.0325 43.96264,11.38441 43.96264,11.38441';
+
+const WAVE_PATH_D =
+  'm 0,11.38448' +
+  WAVE_REL_PERIOD.repeat(WAVE_PERIODS) +
+  ' V 46.34594 H 0 Z';
+
 const WAVE_URL = `url("data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 174.47 46.35">' +
-  '<path fill="white" fill-opacity="0.18" d="m 0,11.38448 c 0,0 21.133851,11.39531 43.617661,11.38441 C 66.101471,22.75799 107.96856,0.03262 130.508,7e-5 c 22.53944,-0.0325 43.96264,11.38441 43.96264,11.38441 V 46.34594 H 0 Z"/>' +
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WAVE_PERIOD_W * WAVE_PERIODS} 46.35" preserveAspectRatio="none">` +
+  `<path fill="white" fill-opacity="0.18" d="${WAVE_PATH_D}"/>` +
   '</svg>'
 )}")`;
+
+const WAVE_TILE_W = WAVE_PERIOD_PX * WAVE_PERIODS;
 
 const waveLayerBase: React.CSSProperties = {
   position: 'absolute',
   left: 0,
-  right: 0,
+  // Extend one period past the right edge so the leftward transform scroll
+  // (translateX up to -175px) never exposes a gap; overflow:hidden clips it.
+  right: `-${WAVE_PERIOD_PX}px`,
   // Same height as the strip, but shifted down so the wave sits lower.
   // overflow:hidden on the container clips the part that drops below.
   top: '34px',
   bottom: '-34px',
   backgroundImage: WAVE_URL,
   backgroundRepeat: 'repeat-x',
-  backgroundSize: '175px 100%',
+  backgroundSize: `${WAVE_TILE_W}px 100%`,
   backgroundPosition: 'bottom',
 };
 
-// Tileable wave-shaped edge divider, filled with the page background so it
-// carves a wavy contour out of the emerald band. `flip` mirrors it for the
-// bottom edge (wavy top boundary instead of wavy bottom boundary).
+// Wave-shaped edge divider, filled with the page background so it carves a wavy
+// contour out of the emerald band. `flip` mirrors it for the bottom edge (wavy
+// top boundary instead of wavy bottom boundary). Built as one continuous path
+// across many periods so there are no per-tile vertical seams on high-DPR mobile.
+const EDGE_PERIOD_W = 40;
+const EDGE_PERIOD_PX = 300; // rendered width of one period (matches the waveEdge keyframe)
+// ~1500px: wider than any phone viewport (keeps the seam off-screen) while staying
+// small enough to keep the animated layer's texture cheap. See WAVE_PERIODS note.
+const EDGE_PERIODS = 5;
+const EDGE_TILE_W = EDGE_PERIOD_PX * EDGE_PERIODS;
+
 const edgeUrl = (fill: string, flip: boolean) => {
-  const wave = flip
-    ? 'M0 5 C6.66 9 13.33 9 20 5 C26.66 1 33.33 1 40 5 V10 H0 Z'
-    : 'M0 5 C6.66 1 13.33 1 20 5 C26.66 9 33.33 9 40 5 V0 H0 Z';
+  // One relative period of the wavy boundary; chains seamlessly start-to-end.
+  const period = flip
+    ? ' c 6.66 4 13.33 4 20 0 c 6.66 -4 13.33 -4 20 0'
+    : ' c 6.66 -4 13.33 -4 20 0 c 6.66 4 13.33 4 20 0';
+  const close = flip ? ' V10 H0 Z' : ' V0 H0 Z';
+  const d = 'M0 5' + period.repeat(EDGE_PERIODS) + close;
   return `url("data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 10" preserveAspectRatio="none"><path fill="${fill}" d="${wave}"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${EDGE_PERIOD_W * EDGE_PERIODS} 10" preserveAspectRatio="none"><path fill="${fill}" d="${d}"/></svg>`
   )}")`;
 };
 
@@ -252,11 +287,13 @@ export const Marquee: React.FC = () => {
 
   const edgeBase: React.CSSProperties = {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    // Extend one period past both edges so the transform scroll (which runs in
+    // both directions — the bottom edge is reversed) never exposes a gap.
+    left: `-${EDGE_PERIOD_PX}px`,
+    right: `-${EDGE_PERIOD_PX}px`,
     height: '13px',
     backgroundRepeat: 'repeat-x',
-    backgroundSize: '300px 13px',
+    backgroundSize: `${EDGE_TILE_W}px 13px`,
     zIndex: 2,
     pointerEvents: 'none',
   };
@@ -270,10 +307,10 @@ export const Marquee: React.FC = () => {
         padding: '1.35rem 0',
       }}
     >
-      {/* Wave layer 1 — primary scroll */}
-      <div style={{ ...waveLayerBase, animation: 'wave 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite' }} />
-      {/* Wave layer 2 — offset for depth */}
-      <div style={{ ...waveLayerBase, backgroundSize: '175px 80%', opacity: 0.7, animation: 'wave 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) -1.25s infinite, swell 6s ease -1.25s infinite' }} />
+      {/* Wave layer 1 — primary scroll (transform-driven, compositor-only) */}
+      <div style={{ ...waveLayerBase, animation: 'waveScroll 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite' }} />
+      {/* Wave layer 2 — offset for depth, scroll + swell combined into one transform */}
+      <div style={{ ...waveLayerBase, backgroundSize: `${WAVE_TILE_W}px 80%`, opacity: 0.7, animation: 'waveScrollSwell 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) -1.25s infinite' }} />
 
       {/* Wavy top edge */}
       <div
@@ -281,7 +318,7 @@ export const Marquee: React.FC = () => {
           ...edgeBase,
           top: 0,
           backgroundImage: edgeUrl(c.background, false),
-          animation: 'waveEdge 5s linear infinite',
+          animation: 'edgeScroll 5s linear infinite',
         }}
       />
       {/* Wavy bottom edge */}
@@ -290,7 +327,7 @@ export const Marquee: React.FC = () => {
           ...edgeBase,
           bottom: 0,
           backgroundImage: edgeUrl(c.background, true),
-          animation: 'waveEdge 5s linear infinite reverse',
+          animation: 'edgeScroll 5s linear infinite reverse',
         }}
       />
 

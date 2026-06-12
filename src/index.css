@@ -45,17 +45,28 @@ button {
   65%       { transform: translateY(-3px); }
 }
 
-@keyframes wave {
-  from { background-position-x: 0; }
-  to   { background-position-x: -175px; }
+/* Wave + edge layers scroll via transform (compositor-only) instead of
+   background-position. Animating background-position repaints the whole layer
+   every frame; on high-DPR mobile those large wave textures thrash the GPU and
+   intermittently drop sibling layers (the marquee text would flicker/vanish).
+   transform just re-positions the existing texture — no per-frame repaint.
+   One wave period = 175px; layers extend past their edges so the shift never
+   exposes a gap, and the path is periodic so the loop is seamless. */
+@keyframes waveScroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-175px, 0, 0); }
 }
 
-@keyframes swell {
-  0%, 100% { transform: translateY(-4px); }
-  50%       { transform: translateY(4px); }
+/* Same leftward scroll plus the gentle vertical swell, for the depth layer.
+   Combined into one keyframe because two animations can't both drive transform. */
+@keyframes waveScrollSwell {
+  0%   { transform: translate3d(0, -4px, 0); }
+  50%  { transform: translate3d(-87.5px, 4px, 0); }
+  100% { transform: translate3d(-175px, -4px, 0); }
 }
 
-@keyframes waveEdge {
-  from { background-position-x: 0; }
-  to   { background-position-x: -300px; }
+/* Edge dividers: one period = 300px. */
+@keyframes edgeScroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-300px, 0, 0); }
 }
