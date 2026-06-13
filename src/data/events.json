@@ -1,16 +1,5 @@
 [
   {
-    "id": "pasig-2026",
-    "name": "Pasig River Regatta",
-    "location": "Pasig River, Manila",
-    "date": "2026-06-14",
-    "type": "Regatta",
-    "description": "Season opener on the Pasig. Mixed 500m and 200m sprints, plus the open standard category.",
-    "thumbnail": "https://images.unsplash.com/photo-1747326842329-fa63e8748fc4?w=800&q=80&auto=format&fit=crop",
-    "thumbnailCredit": "Photo by Joseph Corl on Unsplash",
-    "result": null
-  },
-  {
     "id": "putrajaya-2026",
     "name": "Putrajaya International Dragon Boat Festival",
     "location": "Putrajaya Lake, Malaysia",

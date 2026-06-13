@@ -305,7 +305,7 @@ export const Marquee: React.FC = () => {
         backgroundColor: c.primary,
         overflow: 'hidden',
         padding: '1.35rem 0',
-        marginTop: '4.5rem',
+        marginTop: '2.0rem',
       }}
     >
       {/* Wave layer 1 — primary scroll (transform-driven, compositor-only) */}

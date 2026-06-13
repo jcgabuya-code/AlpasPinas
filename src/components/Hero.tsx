@@ -61,9 +61,6 @@ export const Hero: React.FC = () => {
   const chipBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.7)';
   const chipBorder = isDark ? 'rgba(255,255,255,0.3)' : c.border;
   const hairline = isDark ? 'rgba(255,255,255,0.18)' : c.border;
-  const accentGradient = isDark
-    ? `linear-gradient(135deg, ${c.primaryLight} 0%, ${c.accent} 100%)`
-    : `linear-gradient(135deg, ${c.primary} 0%, ${c.primaryDark} 100%)`;
 
   const nextEvent = useMemo(() => {
     const upcoming = (eventsData as RaceEvent[])
@@ -77,7 +74,7 @@ export const Hero: React.FC = () => {
       id="home"
       style={{
         position: 'relative',
-        minHeight: isMobile ? '58dvh' : '44vh',
+        minHeight: isMobile ? '62dvh' : '68dvh',
         display: 'flex',
         overflow: 'hidden',
         backgroundColor: panel,
@@ -97,6 +94,16 @@ export const Hero: React.FC = () => {
           height: '100%',
           objectFit: isMobile ? 'contain' : 'cover',
           objectPosition: isMobile ? 'center top' : 'center',
+          // Wide: feather the photo's own left edge to transparent so it dissolves
+          // into the panel — a true alpha blend, no panel-color wash over the image.
+          ...(isMobile
+            ? {}
+            : {
+                WebkitMaskImage:
+                  'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 2%, rgba(0,0,0,0.8) 4%, #000 6%)',
+                maskImage:
+                  'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 2%, rgba(0,0,0,0.8) 4%, #000 6%)',
+              }),
         }}
       />
 
@@ -108,9 +115,8 @@ export const Hero: React.FC = () => {
           inset: 0,
           background: isMobile
             ? `linear-gradient(180deg, rgba(${panelRgb},0.4) 0%, rgba(${panelRgb},0) 20%, rgba(${panelRgb},0) 38%, rgba(${panelRgb},0.65) 68%, rgba(${panelRgb},0.96) 100%)`
-            : // top+bottom fade, then the left-seam fade — together they feather all three image edges into the panel
-              `linear-gradient(180deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},0) 16%, rgba(${panelRgb},0) 84%, rgba(${panelRgb},1) 100%), ` +
-              `linear-gradient(90deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},1) 37%, rgba(${panelRgb},0) 58%)`,
+            : // top+bottom fade only — the left seam is feathered by the image's own mask
+              `linear-gradient(180deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},0) 6%, rgba(${panelRgb},0) 94%, rgba(${panelRgb},1) 100%)`,
         }}
       />
 
@@ -277,14 +283,7 @@ export const Hero: React.FC = () => {
             RULERS OF
             <br />
             THE{' '}
-            <span
-              style={{
-                background: accentGradient,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
+            <span style={{ color: isDark ? c.primaryLight : c.primary }}>
               WATER
             </span>
           </h1>
