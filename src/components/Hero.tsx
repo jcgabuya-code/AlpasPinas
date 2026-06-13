@@ -15,6 +15,32 @@ const STATS = [
 // Keyword tagline — echoes the team's identity, separated by emerald marks.
 const KEYWORDS = ['SPEED', 'SYNC', 'STRENGTH'];
 
+// Hand-drawn trophy — line-art to match the nav glyphs, with a ✦ sparkle in the cup
+// echoing the SPEED ✦ SYNC ✦ STRENGTH motif.
+const TrophyGlyph: React.FC<{ size?: number }> = ({ size = 24 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M7 4.5 H17 V7 A5 5 0 0 1 7 7 Z" />
+    <path d="M7 5.5 H5 A2.2 2.2 0 0 0 7 9.3" />
+    <path d="M17 5.5 H19 A2.2 2.2 0 0 1 17 9.3" />
+    <path d="M12 12 V15" />
+    <path d="M9.5 15 H14.5" />
+    <path d="M10.5 15 L9 19.5" />
+    <path d="M13.5 15 L15 19.5" />
+    <path d="M8.5 19.5 H15.5" />
+    <path d="M12 5.9 L12.6 7.2 L14 7.6 L12.6 8 L12 9.3 L11.4 8 L10 7.6 L11.4 7.2 Z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   month: 'long',
   day: 'numeric',
@@ -51,7 +77,7 @@ export const Hero: React.FC = () => {
       id="home"
       style={{
         position: 'relative',
-        minHeight: isMobile ? '80dvh' : '66vh',
+        minHeight: isMobile ? '58dvh' : '44vh',
         display: 'flex',
         overflow: 'hidden',
         backgroundColor: panel,
@@ -67,7 +93,7 @@ export const Hero: React.FC = () => {
           bottom: 0,
           right: 0,
           left: isMobile ? 0 : 'auto',
-          width: isMobile ? '100%' : '60%',
+          width: isMobile ? '100%' : '55%',
           height: '100%',
           objectFit: isMobile ? 'contain' : 'cover',
           objectPosition: isMobile ? 'center top' : 'center',
@@ -82,9 +108,62 @@ export const Hero: React.FC = () => {
           inset: 0,
           background: isMobile
             ? `linear-gradient(180deg, rgba(${panelRgb},0.4) 0%, rgba(${panelRgb},0) 20%, rgba(${panelRgb},0) 38%, rgba(${panelRgb},0.65) 68%, rgba(${panelRgb},0.96) 100%)`
-            : `linear-gradient(90deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},1) 32%, rgba(${panelRgb},0) 54%)`,
+            : // top+bottom fade, then the left-seam fade — together they feather all three image edges into the panel
+              `linear-gradient(180deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},0) 16%, rgba(${panelRgb},0) 84%, rgba(${panelRgb},1) 100%), ` +
+              `linear-gradient(90deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},1) 37%, rgba(${panelRgb},0) 58%)`,
         }}
       />
+
+      {/* Next-race badge — overlaid on the photo (wide screens), frosted + seamless */}
+      {!isMobile && nextEvent && (
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 2,
+            bottom: '1.75rem',
+            // Centered horizontally over the image (the right 55%): 45% + 55%/2
+            left: '72.5%',
+            right: 'auto',
+            transform: 'translateX(-50%)',
+            maxWidth: '520px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.95rem',
+            background: isDark ? 'rgba(8,11,10,0.42)' : 'rgba(255,255,255,0.55)',
+            backdropFilter: 'blur(20px) saturate(135%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(135%)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)'}`,
+            borderRadius: '0.95rem',
+            padding: '0.7rem 1.5rem 0.7rem 0.85rem',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.20)',
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '999px',
+              backgroundColor: isDark ? `${c.primary}26` : `${c.primary}1f`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isDark ? c.primaryLight : c.primary,
+              flexShrink: 0,
+            }}
+          >
+            <TrophyGlyph size={24} />
+          </span>
+          <div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 600, color: c.text, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+              Next race: {nextEvent.name}
+            </div>
+            <div style={{ fontSize: '0.74rem', color: c.textSecondary, marginTop: '0.15rem', whiteSpace: 'nowrap' }}>
+              {parseEventDate(nextEvent.date).toLocaleDateString(undefined, DATE_FORMAT)} · {nextEvent.location}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content — phone: full-width column; wide: the left 40% text side */}
       <div
@@ -92,13 +171,13 @@ export const Hero: React.FC = () => {
           position: 'relative',
           zIndex: 1,
           width: '100%',
-          maxWidth: isMobile ? '100%' : '40%',
+          maxWidth: isMobile ? '100%' : '45%',
           marginRight: 'auto',
-          padding: isMobile ? '1.75rem 1.25rem 2rem' : '3rem 2.5rem 3rem 3rem',
+          padding: isMobile ? '1.75rem 1.25rem 2rem' : '1.5rem 2.5rem 1.5rem 3rem',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '2rem',
+          gap: isMobile ? '2rem' : '1rem',
         }}
       >
         {/* Top row: logo + identity badge */}
@@ -142,8 +221,8 @@ export const Hero: React.FC = () => {
 
         {/* Bottom: headline, tagline, CTAs, stats */}
         <div>
-          {/* Next-race pill */}
-          {nextEvent && (
+          {/* Next-race pill — phone only; on wide screens it's overlaid on the photo (see below) */}
+          {isMobile && nextEvent && (
             <div
               style={{
                 display: 'inline-flex',
@@ -186,7 +265,7 @@ export const Hero: React.FC = () => {
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? 'clamp(3.25rem, 17vw, 5rem)' : 'clamp(3.5rem, 6vw, 6rem)',
+              fontSize: isMobile ? 'clamp(3.25rem, 17vw, 5rem)' : 'clamp(2.5rem, 4vw, 4.25rem)',
               fontWeight: 400,
               color: c.text,
               margin: 0,
@@ -217,7 +296,7 @@ export const Hero: React.FC = () => {
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: '0.65rem',
-              marginTop: '1.1rem',
+              marginTop: isMobile ? '1.1rem' : '0.7rem',
             }}
           >
             {KEYWORDS.map((word, i) => (
@@ -243,11 +322,11 @@ export const Hero: React.FC = () => {
 
           <p
             style={{
-              fontSize: isMobile ? '0.95rem' : '1.1rem',
+              fontSize: isMobile ? '0.95rem' : '1.05rem',
               color: c.textSecondary,
-              margin: '1.1rem 0 1.6rem 0',
+              margin: isMobile ? '1.1rem 0 1.6rem 0' : '0.7rem 0 1rem 0',
               maxWidth: '440px',
-              lineHeight: 1.6,
+              lineHeight: 1.5,
             }}
           >
             One stroke. One team. A community of paddlers chasing speed, sync, and
@@ -255,7 +334,7 @@ export const Hero: React.FC = () => {
           </p>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: isMobile ? '2rem' : '1rem' }}>
             <a
               href="#contact"
               style={{
@@ -322,7 +401,7 @@ export const Hero: React.FC = () => {
               display: 'flex',
               alignItems: 'stretch',
               borderTop: `1px solid ${hairline}`,
-              paddingTop: '1.25rem',
+              paddingTop: isMobile ? '1.25rem' : '0.9rem',
             }}
           >
             {STATS.map((s, i) => (
@@ -337,7 +416,7 @@ export const Hero: React.FC = () => {
                 <div
                   style={{
                     fontFamily: 'var(--font-display)',
-                    fontSize: isMobile ? '1.5rem' : '2.1rem',
+                    fontSize: isMobile ? '1.5rem' : '1.75rem',
                     color: c.text,
                     letterSpacing: '0.02em',
                     lineHeight: 1,
