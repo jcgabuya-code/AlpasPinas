@@ -182,8 +182,11 @@ export const Hero: React.FC = () => {
           padding: isMobile ? '1.75rem 1.25rem 2rem' : '1.5rem 2.5rem 1.5rem 3rem',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: isMobile ? '2rem' : '1rem',
+          // Mobile: text overlays the contained photo, so keep logo-top / content-bottom.
+          // Wide: cluster the whole group and center it so extra height becomes even
+          // top/bottom margins instead of a dead gap.
+          justifyContent: isMobile ? 'space-between' : 'center',
+          gap: isMobile ? '2rem' : 'clamp(1.5rem, 4vh, 3rem)',
         }}
       >
         {/* Top row: logo + identity badge */}
@@ -271,7 +274,7 @@ export const Hero: React.FC = () => {
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? 'clamp(3.25rem, 17vw, 5rem)' : 'clamp(2.5rem, 4vw, 4.25rem)',
+              fontSize: isMobile ? 'clamp(3.25rem, 17vw, 5rem)' : 'clamp(2.5rem, 3.4vw + 1.4vh, 4.5rem)',
               fontWeight: 400,
               color: c.text,
               margin: 0,
