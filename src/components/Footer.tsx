@@ -4,6 +4,15 @@ import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
+const LINKS: { label: string; to: string; hash?: string }[] = [
+  { label: 'About', to: '/', hash: '#about' },
+  { label: 'Roster', to: '/roster' },
+  { label: 'Events', to: '/events' },
+  { label: 'Training', to: '/training' },
+  { label: 'Gallery', to: '/gallery' },
+  { label: 'Contact', to: '/', hash: '#contact' },
+];
+
 export const Footer: React.FC = () => {
   const { theme } = useTheme();
   const c = colors[theme];
@@ -12,58 +21,126 @@ export const Footer: React.FC = () => {
   return (
     <footer
       style={{
-        backgroundColor: c.surface,
-        borderTop: `1px solid ${c.border}`,
-        padding: '2.5rem 1.5rem 2rem',
+        position: 'relative',
+        background: 'linear-gradient(160deg, #065f46 0%, #032d22 100%)',
+        color: '#fff',
+        overflow: 'hidden',
+        padding: isMobile ? '3rem 1.5rem 2rem' : '4.5rem 2rem 2.5rem',
       }}
     >
+      {/* soft emerald glow accent */}
       <div
+        aria-hidden="true"
         style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          justifyContent: isMobile ? 'center' : 'space-between',
-          alignItems: isMobile ? 'center' : 'center',
-          gap: isMobile ? '1.25rem' : '1rem',
-          textAlign: isMobile ? 'center' : 'left',
+          position: 'absolute',
+          top: '-30%',
+          right: '-10%',
+          width: '50%',
+          height: '120%',
+          background: `radial-gradient(circle, ${c.primary}55 0%, transparent 70%)`,
+          pointerEvents: 'none',
         }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span
+      />
+
+      <div style={{ position: 'relative', maxWidth: '1280px', margin: '0 auto' }}>
+        {/* Top: brand + tagline + CTA */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            gap: '1.5rem',
+            paddingBottom: '2rem',
+            borderBottom: '1px solid rgba(255,255,255,0.18)',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: isMobile ? 'clamp(2.25rem, 11vw, 3rem)' : '3.25rem',
+                letterSpacing: '0.02em',
+                lineHeight: 1,
+              }}
+            >
+              ALPAS<span style={{ color: c.primaryLight }}>PINAS</span>
+            </div>
+            <p
+              style={{
+                margin: '0.85rem 0 0',
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: '1rem',
+                maxWidth: '340px',
+                lineHeight: 1.55,
+              }}
+            >
+              One stroke. One team. Filipino dragon boat crew based in Malaysia.
+            </p>
+          </div>
+
+          <Link
+            to="/join-team"
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.3rem',
-              letterSpacing: '0.04em',
-              color: c.text,
+              flexShrink: 0,
+              background: '#fff',
+              color: '#065f46',
+              padding: '0.9rem 1.6rem',
+              borderRadius: '999px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+              letterSpacing: '0.02em',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+              whiteSpace: 'nowrap',
             }}
           >
-            ALPAS<span style={{ color: c.primary }}>PINAS</span>
-          </span>
-          <span
-            style={{
-              color: c.textSecondary,
-              fontSize: '0.85rem',
-              borderLeft: `1px solid ${c.border}`,
-              paddingLeft: '0.75rem',
-              marginLeft: '0.25rem',
-            }}
-          >
-            One stroke. One team.
-          </span>
+            Join the Team →
+          </Link>
         </div>
 
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Link to={{ pathname: '/', hash: '#about' }} style={{ color: c.textSecondary, fontSize: '0.85rem', textDecoration: 'none' }}>About</Link>
-          <Link to="/roster" style={{ color: c.textSecondary, fontSize: '0.85rem', textDecoration: 'none' }}>Roster</Link>
-          <Link to="/events" style={{ color: c.textSecondary, fontSize: '0.85rem', textDecoration: 'none' }}>Events</Link>
-          <Link to="/training" style={{ color: c.textSecondary, fontSize: '0.85rem', textDecoration: 'none' }}>Training</Link>
-          <Link to="/gallery" style={{ color: c.textSecondary, fontSize: '0.85rem', textDecoration: 'none' }}>Gallery</Link>
-          <Link to={{ pathname: '/', hash: '#contact' }} style={{ color: c.textSecondary, fontSize: '0.85rem', textDecoration: 'none' }}>Contact</Link>
-        </div>
+        {/* Link row */}
+        <nav
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: isMobile ? '1rem 1.5rem' : '2rem',
+            padding: '1.75rem 0',
+          }}
+        >
+          {LINKS.map((l) => (
+            <Link
+              key={l.label}
+              to={{ pathname: l.to, hash: l.hash ?? '' }}
+              style={{
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: '0.92rem',
+                fontWeight: 500,
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
 
-        <div style={{ color: c.textSecondary, fontSize: '0.8rem' }}>
-          © {new Date().getFullYear()} AlpasPinas Dragon Boat Team
+        {/* Bottom legal row */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            gap: '0.75rem',
+            paddingTop: '1.5rem',
+            borderTop: '1px solid rgba(255,255,255,0.18)',
+            color: 'rgba(255,255,255,0.65)',
+            fontSize: '0.8rem',
+          }}
+        >
+          <span>© {new Date().getFullYear()} AlpasPinas Dragon Boat Team</span>
+          <span style={{ letterSpacing: '0.06em' }}>@alpaspinasdbt</span>
         </div>
       </div>
     </footer>

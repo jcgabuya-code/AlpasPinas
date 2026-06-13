@@ -31,7 +31,7 @@ export const Contact: React.FC = () => {
     <section
       id="contact"
       style={{
-        backgroundColor: c.background,
+        backgroundColor: c.sand,
         padding: isMobile ? '3rem 1rem' : '6rem 1.5rem',
         borderTop: `1px solid ${c.border}`,
       }}
@@ -63,7 +63,7 @@ export const Contact: React.FC = () => {
               marginBottom: '1rem',
             }}
           >
-            Get in Touch
+            ✦ Get in Touch
           </span>
           <h2
             style={{
