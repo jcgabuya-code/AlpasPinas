@@ -63,7 +63,7 @@ export const Features: React.FC = () => {
     <section
       id="about"
       style={{
-        backgroundColor: c.background,
+        backgroundColor: c.sand,
         padding: isMobile ? '3.5rem 1rem' : '6rem 2rem',
       }}
     >
@@ -86,7 +86,7 @@ export const Features: React.FC = () => {
               marginBottom: '0.85rem',
             }}
           >
-            Why AlpasPinas
+            ✦ Why AlpasPinas
           </span>
           <h2
             style={{

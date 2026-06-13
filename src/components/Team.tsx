@@ -57,7 +57,7 @@ export const Team: React.FC = () => {
                 marginBottom: '0.85rem',
               }}
             >
-              The Roster
+              ✦ The Roster
             </span>
             <h2
               style={{

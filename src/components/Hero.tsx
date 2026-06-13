@@ -12,6 +12,35 @@ const STATS = [
   { value: '#3', label: 'Regional Rank' },
 ];
 
+// Keyword tagline — echoes the team's identity, separated by emerald marks.
+const KEYWORDS = ['SPEED', 'SYNC', 'STRENGTH'];
+
+// Hand-drawn trophy — line-art to match the nav glyphs, with a ✦ sparkle in the cup
+// echoing the SPEED ✦ SYNC ✦ STRENGTH motif.
+const TrophyGlyph: React.FC<{ size?: number }> = ({ size = 24 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M7 4.5 H17 V7 A5 5 0 0 1 7 7 Z" />
+    <path d="M7 5.5 H5 A2.2 2.2 0 0 0 7 9.3" />
+    <path d="M17 5.5 H19 A2.2 2.2 0 0 1 17 9.3" />
+    <path d="M12 12 V15" />
+    <path d="M9.5 15 H14.5" />
+    <path d="M10.5 15 L9 19.5" />
+    <path d="M13.5 15 L15 19.5" />
+    <path d="M8.5 19.5 H15.5" />
+    <path d="M12 5.9 L12.6 7.2 L14 7.6 L12.6 8 L12 9.3 L11.4 8 L10 7.6 L11.4 7.2 Z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   month: 'long',
   day: 'numeric',
@@ -25,6 +54,14 @@ export const Hero: React.FC = () => {
   const isMobile = useIsMobile();
   const [videoOpen, setVideoOpen] = useState(false);
 
+  // Theme-aware panel — the text side + gradient blend to this so light/dark stay aligned.
+  const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
+  const panel = `rgb(${panelRgb})`;
+  // Frosted chip surface that reads over both the panel and the photo, in both themes.
+  const chipBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.7)';
+  const chipBorder = isDark ? 'rgba(255,255,255,0.3)' : c.border;
+  const hairline = isDark ? 'rgba(255,255,255,0.18)' : c.border;
+
   const nextEvent = useMemo(() => {
     const upcoming = (eventsData as RaceEvent[])
       .filter((e) => isUpcoming(e.date))
@@ -37,132 +74,278 @@ export const Hero: React.FC = () => {
       id="home"
       style={{
         position: 'relative',
-        backgroundColor: c.background,
-        backgroundImage: isDark
-          ? `radial-gradient(circle at 80% 20%, ${c.primary}22 0%, transparent 45%),
-             radial-gradient(circle at 10% 90%, ${c.primary}11 0%, transparent 50%),
-             linear-gradient(180deg, ${c.background} 0%, #07080c 100%)`
-          : `linear-gradient(135deg, ${c.background} 0%, ${c.primaryLight}22 100%)`,
-        padding: isMobile ? '3rem 1.25rem 2.5rem' : '5rem 2rem 4rem',
+        minHeight: isMobile ? '62dvh' : '68dvh',
+        display: 'flex',
         overflow: 'hidden',
+        backgroundColor: panel,
       }}
     >
+      {/* Team photo — phone: contained at top (whole crew); wide: covers the right 60% top-to-bottom */}
+      <img
+        src="/team.jpg"
+        alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          right: 0,
+          left: isMobile ? 0 : 'auto',
+          width: isMobile ? '100%' : '55%',
+          height: '100%',
+          objectFit: isMobile ? 'contain' : 'cover',
+          objectPosition: isMobile ? 'center top' : 'center',
+          // Wide: feather the photo's own left edge to transparent so it dissolves
+          // into the panel — a true alpha blend, no panel-color wash over the image.
+          ...(isMobile
+            ? {}
+            : {
+                WebkitMaskImage:
+                  'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 2%, rgba(0,0,0,0.8) 4%, #000 6%)',
+                maskImage:
+                  'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 2%, rgba(0,0,0,0.8) 4%, #000 6%)',
+              }),
+        }}
+      />
+
+      {/* Gradient — blends the panel seamlessly into the photo. Phone: vertical; wide: at the 40/60 seam */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: isMobile
+            ? `linear-gradient(180deg, rgba(${panelRgb},0.4) 0%, rgba(${panelRgb},0) 20%, rgba(${panelRgb},0) 38%, rgba(${panelRgb},0.65) 68%, rgba(${panelRgb},0.96) 100%)`
+            : // top+bottom fade only — the left seam is feathered by the image's own mask
+              `linear-gradient(180deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},0) 6%, rgba(${panelRgb},0) 94%, rgba(${panelRgb},1) 100%)`,
+        }}
+      />
+
+      {/* Next-race badge — overlaid on the photo (wide screens), frosted + seamless */}
+      {!isMobile && nextEvent && (
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 2,
+            bottom: '1.75rem',
+            // Centered horizontally over the image (the right 55%): 45% + 55%/2
+            left: '72.5%',
+            right: 'auto',
+            transform: 'translateX(-50%)',
+            maxWidth: '520px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.95rem',
+            background: isDark ? 'rgba(8,11,10,0.42)' : 'rgba(255,255,255,0.55)',
+            backdropFilter: 'blur(20px) saturate(135%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(135%)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)'}`,
+            borderRadius: '0.95rem',
+            padding: '0.7rem 1.5rem 0.7rem 0.85rem',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.20)',
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '999px',
+              backgroundColor: isDark ? `${c.primary}26` : `${c.primary}1f`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isDark ? c.primaryLight : c.primary,
+              flexShrink: 0,
+            }}
+          >
+            <TrophyGlyph size={24} />
+          </span>
+          <div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 600, color: c.text, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+              Next race: {nextEvent.name}
+            </div>
+            <div style={{ fontSize: '0.74rem', color: c.textSecondary, marginTop: '0.15rem', whiteSpace: 'nowrap' }}>
+              {parseEventDate(nextEvent.date).toLocaleDateString(undefined, DATE_FORMAT)} · {nextEvent.location}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content — phone: full-width column; wide: the left 40% text side */}
       <div
         style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1.25fr)',
-          gap: isMobile ? '2rem' : '3.5rem',
-          alignItems: 'center',
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          maxWidth: isMobile ? '100%' : '45%',
+          marginRight: 'auto',
+          padding: isMobile ? '1.75rem 1.25rem 2rem' : '1.5rem 2.5rem 1.5rem 3rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: isMobile ? '2rem' : '1rem',
         }}
       >
-        {/* Left: text content */}
+        {/* Top row: logo + identity badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div
+            style={{
+              width: isMobile ? '54px' : '64px',
+              height: isMobile ? '54px' : '64px',
+              borderRadius: '999px',
+              overflow: 'hidden',
+              flexShrink: 0,
+              border: `2px solid ${isDark ? 'rgba(255,255,255,0.5)' : c.border}`,
+              boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
+            }}
+          >
+            <img
+              src="/logo.jpg"
+              alt="AlpasPinas logo"
+              style={{ width: '130%', height: '130%', marginLeft: '-15%', marginTop: '-15%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '0.4rem 0.9rem',
+              borderRadius: '999px',
+              border: `1px solid ${chipBorder}`,
+              backgroundColor: chipBg,
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              color: c.text,
+              fontSize: isMobile ? '0.62rem' : '0.72rem',
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Filipino Dragon Boat Team · Malaysia
+          </span>
+        </div>
+
+        {/* Bottom: headline, tagline, CTAs, stats */}
         <div>
-          {/* Logo + badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', marginBottom: '1.75rem' }}>
-            <div style={{ width: '72px', height: '72px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0, boxShadow: `0 8px 28px ${c.primary}33` }}>
-              <img
-                src="/logo.jpg"
-                alt="AlpasPinas Dragonboat Team Malaysia logo"
-                style={{ width: '130%', height: '130%', marginLeft: '-15%', marginTop: '-15%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-            <span
+          {/* Next-race pill — phone only; on wide screens it's overlaid on the photo (see below) */}
+          {isMobile && nextEvent && (
+            <div
               style={{
-                display: 'inline-block',
-                padding: '0.35rem 0.9rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.4rem 0.85rem 0.4rem 0.45rem',
                 borderRadius: '999px',
-                border: `1px solid ${c.primary}55`,
-                backgroundColor: `${c.primary}15`,
-                color: c.primary,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                backgroundColor: chipBg,
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: `1px solid ${chipBorder}`,
+                marginBottom: '1.1rem',
               }}
             >
-              Filipino Dragon Boat Team · Malaysia
-            </span>
-          </div>
+              <span
+                style={{
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '999px',
+                  background: emeraldGradient(theme),
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.7rem',
+                }}
+              >
+                🏆
+              </span>
+              <span style={{ color: c.text, fontSize: '0.78rem', fontWeight: 600 }}>
+                Next race: {nextEvent.name}
+                <span style={{ color: c.textSecondary, fontWeight: 400 }}>
+                  {' · '}
+                  {parseEventDate(nextEvent.date).toLocaleDateString(undefined, DATE_FORMAT)}
+                </span>
+              </span>
+            </div>
+          )}
 
           {/* Headline */}
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? 'clamp(3.5rem, 20vw, 5.5rem)' : 'clamp(4rem, 9vw, 7rem)',
+              fontSize: isMobile ? 'clamp(3.25rem, 17vw, 5rem)' : 'clamp(2.5rem, 4vw, 4.25rem)',
               fontWeight: 400,
               color: c.text,
-              margin: '0 0 1.25rem 0',
+              margin: 0,
               lineHeight: 0.9,
               letterSpacing: '0.01em',
+              textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : 'none',
             }}
           >
             RULERS OF
             <br />
             THE{' '}
-            <span
-              style={{
-                background: emeraldGradient(theme),
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
+            <span style={{ color: isDark ? c.primaryLight : c.primary }}>
               WATER
             </span>
           </h1>
 
-          <p
+          {/* Keyword tagline */}
+          <div
             style={{
-              fontSize: 'clamp(0.95rem, 2vw, 1.1rem)',
-              color: c.textSecondary,
-              margin: '0 0 2rem 0',
-              maxWidth: '480px',
-              lineHeight: 1.65,
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.65rem',
+              marginTop: isMobile ? '1.1rem' : '0.7rem',
             }}
           >
-            One stroke. One team. AlpasPinas is a community of paddlers chasing
-            speed, sync, and the thrill of the finish line.
-          </p>
-
-          {/* Stat chips */}
-          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            {STATS.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  padding: '0.7rem 1.1rem',
-                  backgroundColor: isDark ? c.surface : '#fff',
-                  border: `1px solid ${c.border}`,
-                  borderRadius: '0.65rem',
-                  minWidth: '88px',
-                }}
-              >
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: c.text, letterSpacing: '0.02em', lineHeight: 1 }}>
-                  {s.value}
-                </div>
-                <div style={{ fontSize: '0.68rem', color: c.textSecondary, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.3rem' }}>
-                  {s.label}
-                </div>
-              </div>
+            {KEYWORDS.map((word, i) => (
+              <React.Fragment key={word}>
+                {i > 0 && (
+                  <span aria-hidden="true" style={{ color: isDark ? c.primaryLight : c.primary, fontSize: '0.9rem' }}>
+                    ✦
+                  </span>
+                )}
+                <span
+                  style={{
+                    color: c.text,
+                    fontSize: isMobile ? '0.8rem' : '0.95rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.18em',
+                  }}
+                >
+                  {word}
+                </span>
+              </React.Fragment>
             ))}
           </div>
 
+          <p
+            style={{
+              fontSize: isMobile ? '0.95rem' : '1.05rem',
+              color: c.textSecondary,
+              margin: isMobile ? '1.1rem 0 1.6rem 0' : '0.7rem 0 1rem 0',
+              maxWidth: '440px',
+              lineHeight: 1.5,
+            }}
+          >
+            One stroke. One team. A community of paddlers chasing speed, sync, and
+            the thrill of the finish line.
+          </p>
+
           {/* CTAs */}
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: isMobile ? 'nowrap' : 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: isMobile ? '2rem' : '1rem' }}>
             <a
               href="#contact"
               style={{
                 background: emeraldGradient(theme),
                 color: '#fff',
-                padding: isMobile ? '0.85rem 1.25rem' : '0.95rem 1.75rem',
+                padding: isMobile ? '0.9rem 1.4rem' : '1rem 1.9rem',
                 borderRadius: '999px',
                 fontWeight: 600,
                 textDecoration: 'none',
-                fontSize: isMobile ? '0.9rem' : '0.95rem',
+                fontSize: isMobile ? '0.92rem' : '0.98rem',
                 letterSpacing: '0.02em',
-                boxShadow: `0 8px 28px ${c.primary}44`,
+                boxShadow: `0 10px 30px ${c.primary}55`,
                 whiteSpace: 'nowrap',
               }}
             >
@@ -172,13 +355,15 @@ export const Hero: React.FC = () => {
               type="button"
               onClick={() => setVideoOpen(true)}
               style={{
-                backgroundColor: 'transparent',
+                backgroundColor: chipBg,
                 color: c.text,
-                padding: isMobile ? '0.85rem 1.1rem' : '0.95rem 1.6rem',
+                padding: isMobile ? '0.9rem 1.25rem' : '1rem 1.7rem',
                 borderRadius: '999px',
                 fontWeight: 600,
-                fontSize: isMobile ? '0.9rem' : '0.95rem',
-                border: `1px solid ${c.border}`,
+                fontSize: isMobile ? '0.92rem' : '0.98rem',
+                border: `1px solid ${chipBorder}`,
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -208,81 +393,50 @@ export const Hero: React.FC = () => {
               Watch Us Race
             </button>
           </div>
-        </div>
 
-        {/* Right: hero image card */}
-        <div
-          style={{
-            position: 'relative',
-            aspectRatio: '4 / 3',
-            borderRadius: '1.25rem',
-            overflow: 'hidden',
-            border: `1px solid ${c.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: isMobile ? '260px' : '420px',
-            backgroundColor: c.surface,
-          }}
-        >
-          <img
-            src="/team.jpg"
-            alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-
+          {/* Stats strip */}
           <div
             style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%)',
+              display: 'flex',
+              alignItems: 'stretch',
+              borderTop: `1px solid ${hairline}`,
+              paddingTop: isMobile ? '1.25rem' : '0.9rem',
             }}
-          />
-
-          {/* Next event badge */}
-          {nextEvent && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '1rem',
-                left: '1rem',
-                right: '1rem',
-                backgroundColor: 'rgba(11,12,16,0.72)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '0.75rem',
-                padding: '0.8rem 1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-              }}
-            >
+          >
+            {STATS.map((s, i) => (
               <div
+                key={s.label}
                 style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '999px',
-                  background: emeraldGradient(theme),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1rem',
-                  flexShrink: 0,
+                  flex: 1,
+                  paddingLeft: i === 0 ? 0 : isMobile ? '0.9rem' : '1.75rem',
+                  borderLeft: i === 0 ? 'none' : `1px solid ${hairline}`,
                 }}
               >
-                🏆
-              </div>
-              <div style={{ color: '#fff' }}>
-                <div style={{ fontSize: '0.83rem', fontWeight: 600 }}>
-                  Next race: {nextEvent.name}
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: isMobile ? '1.5rem' : '1.75rem',
+                    color: c.text,
+                    letterSpacing: '0.02em',
+                    lineHeight: 1,
+                  }}
+                >
+                  {s.value}
                 </div>
-                <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.1rem' }}>
-                  {parseEventDate(nextEvent.date).toLocaleDateString(undefined, DATE_FORMAT)} · {nextEvent.location}
+                <div
+                  style={{
+                    fontSize: isMobile ? '0.6rem' : '0.7rem',
+                    color: c.textSecondary,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginTop: '0.4rem',
+                  }}
+                >
+                  {s.label}
                 </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
 

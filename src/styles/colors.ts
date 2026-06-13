@@ -13,6 +13,7 @@ export const colors = {
     border: '#243240',
     hover: '#161f29',
     overlay: 'rgba(0, 0, 0, 0.55)',
+    sand: '#0e161b',             // alternating "cream" band — a touch lifted/warm vs background
   },
   light: {
     background: '#f7faf8',       // cool white with a hint of green
@@ -27,6 +28,7 @@ export const colors = {
     border: '#dde6e0',
     hover: '#eff4f0',
     overlay: 'rgba(255, 255, 255, 0.6)',
+    sand: '#f3efe6',             // warm cream band — earthy contrast against white/emerald
   },
 };
 

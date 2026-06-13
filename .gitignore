@@ -29,3 +29,6 @@ dist-ssr
 # Supabase CLI working files
 supabase/.temp
 supabase/.branches
+
+# Screenshot artifacts from dev scripts
+scripts/*.png
