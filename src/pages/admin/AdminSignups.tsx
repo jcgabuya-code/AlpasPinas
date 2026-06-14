@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { type ColorPalette } from '../../styles/colors';
 import { type ShowToast } from '../Admin';
 import {
@@ -19,6 +20,9 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  // Pending is the actionable list → open; Confirmed is the long archive → closed.
+  const [openPending, setOpenPending] = useState(true);
+  const [openConfirmed, setOpenConfirmed] = useState(false);
 
   const reload = () => {
     setLoading(true);
@@ -99,26 +103,32 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
       {!loading && (
         <>
           {/* Pending section */}
-          <SectionHeader c={c} title="Pending approval" count={pending.length} accent="#d97706" />
-          {pending.length === 0 ? (
-            <EmptyState c={c} msg="No pending sign-ups." />
-          ) : (
-            byEvent(pending).map(({ event, rows }) => (
-              <EventGroup key={event.id} event={event} rows={rows} c={c} busyKey={busyKey}
-                onApprove={handleApprove} onCancel={handleCancel} showApprove />
-            ))
+          <SectionHeader c={c} title="Pending approval" count={pending.length} accent="#d97706"
+            open={openPending} onToggle={() => setOpenPending((o) => !o)} />
+          {openPending && (
+            pending.length === 0 ? (
+              <EmptyState c={c} msg="No pending sign-ups." />
+            ) : (
+              byEvent(pending).map(({ event, rows }) => (
+                <EventGroup key={event.id} event={event} rows={rows} c={c} busyKey={busyKey}
+                  onApprove={handleApprove} onCancel={handleCancel} showApprove />
+              ))
+            )
           )}
 
           {/* Confirmed section */}
           <div style={{ marginTop: '2rem' }}>
-            <SectionHeader c={c} title="Confirmed" count={confirmed.length} accent="#16a34a" />
-            {confirmed.length === 0 ? (
-              <EmptyState c={c} msg="No confirmed sign-ups yet." />
-            ) : (
-              byEvent(confirmed).map(({ event, rows }) => (
-                <EventGroup key={event.id} event={event} rows={rows} c={c} busyKey={busyKey}
-                  onApprove={handleApprove} onCancel={handleCancel} showApprove={false} />
-              ))
+            <SectionHeader c={c} title="Confirmed" count={confirmed.length} accent="#16a34a"
+              open={openConfirmed} onToggle={() => setOpenConfirmed((o) => !o)} />
+            {openConfirmed && (
+              confirmed.length === 0 ? (
+                <EmptyState c={c} msg="No confirmed sign-ups yet." />
+              ) : (
+                byEvent(confirmed).map(({ event, rows }) => (
+                  <EventGroup key={event.id} event={event} rows={rows} c={c} busyKey={busyKey}
+                    onApprove={handleApprove} onCancel={handleCancel} showApprove={false} />
+                ))
+              )
             )}
           </div>
         </>
@@ -129,15 +139,38 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
 
 /* ------------------------------------------------------------------ */
 
-const SectionHeader: React.FC<{ c: ColorPalette; title: string; count: number; accent: string }> = ({ c, title, count, accent }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.85rem' }}>
+const SectionHeader: React.FC<{
+  c: ColorPalette;
+  title: string;
+  count: number;
+  accent: string;
+  open: boolean;
+  onToggle: () => void;
+}> = ({ c, title, count, accent, open, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    aria-expanded={open}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.55rem',
+      marginBottom: '0.85rem',
+      padding: 0,
+      background: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      fontFamily: 'inherit',
+    }}
+  >
+    {open ? <ChevronDown size={18} color={c.textSecondary} /> : <ChevronRight size={18} color={c.textSecondary} />}
     <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', color: c.text, letterSpacing: '0.02em' }}>
       {title.toUpperCase()}
     </span>
     <span style={{ padding: '0.15rem 0.6rem', borderRadius: '999px', background: accent + '20', border: `1px solid ${accent}44`, color: accent, fontSize: '0.68rem', fontWeight: 700 }}>
       {count}
     </span>
-  </div>
+  </button>
 );
 
 const EmptyState: React.FC<{ c: ColorPalette; msg: string }> = ({ c, msg }) => (
@@ -172,26 +205,30 @@ const EventGroup: React.FC<{
         </span>
       ))}
     </div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
       {rows.map((b) => {
         const key = `${b.eventId}::${b.name}`;
         const busy = busyKey === key;
+        const meta = [
+          b.gender,
+          b.side,
+          `${b.weight} kg`,
+          ...(b.needPFD === 'Yes' ? ['PFD'] : []),
+          ...(b.needPaddle === 'Yes' ? ['Paddle'] : []),
+        ].join(' · ');
         return (
           <div
             key={key}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', padding: '0.75rem 0.9rem', borderRadius: '0.65rem', backgroundColor: c.surface, border: `1px solid ${c.border}` }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.7rem', borderRadius: '0.5rem', backgroundColor: c.surface, border: `1px solid ${c.border}` }}
           >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.92rem', color: c.text }}>{b.name}</span>
-                <Chip label={attendingLabel(b.attending)} color={c.primary} />
-              </div>
-              <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
-                {[b.gender, b.side, `${b.weight} kg`, ...(b.needPFD === 'Yes' ? ['PFD'] : []), ...(b.needPaddle === 'Yes' ? ['Paddle'] : [])].map((t) => (
-                  <SmallChip key={t} label={t} c={c} />
-                ))}
-              </div>
-            </div>
+            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: c.text, flexShrink: 0, whiteSpace: 'nowrap' }}>{b.name}</span>
+            <Chip label={attendingLabel(b.attending)} color={c.primary} />
+            <span
+              style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: c.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={meta}
+            >
+              {meta}
+            </span>
             <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
               {showApprove && (
                 <ActionBtn onClick={() => onApprove(b)} disabled={busy} color="#16a34a" label={busy ? '…' : '✓ Approve'} />
@@ -207,12 +244,6 @@ const EventGroup: React.FC<{
 
 const Chip: React.FC<{ label: string; color: string }> = ({ label, color }) => (
   <span style={{ padding: '0.12rem 0.5rem', borderRadius: '999px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', backgroundColor: color + '20', color, border: `1px solid ${color}44` }}>
-    {label}
-  </span>
-);
-
-const SmallChip: React.FC<{ label: string; c: ColorPalette }> = ({ label, c }) => (
-  <span style={{ padding: '0.12rem 0.45rem', borderRadius: '999px', fontSize: '0.68rem', backgroundColor: c.background, color: c.textSecondary, border: `1px solid ${c.border}` }}>
     {label}
   </span>
 );

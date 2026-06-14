@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
 import { TrainingCard, type TrainingEvent } from '../components/TrainingCard';
 import { getTrainingEvents, subscribeTrainingEvents } from '../utils/adminTrainingEvents';
@@ -36,6 +37,7 @@ const saveSeenStatuses = (bookings: Booking[]) => {
 
 export const Training: React.FC = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const c = colors[theme];
 
   const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
@@ -44,14 +46,22 @@ export const Training: React.FC = () => {
   const [pendingCancel, setPendingCancel] = useState<string | null>(null);
   const [confirmedNotices, setConfirmedNotices] = useState<Booking[]>([]);
 
+  // Latest signed-in name, read inside the mount effect without re-subscribing.
+  const myNameRef = useRef<string | undefined>(undefined);
+  myNameRef.current = user?.name.trim().toLowerCase();
+
   useEffect(() => {
     const refresh = () => setBookings(getAllBookings());
     const unsub = subscribeBookings(refresh);
     const unsubEvents = subscribeTrainingEvents(() => setEvents(getTrainingEvents()));
     fetchBookings().then((fresh) => {
-      // Compare fresh statuses against last-seen to detect newly confirmed bookings.
+      // Detect the signed-in user's OWN newly confirmed bookings (status flipped
+      // since last seen). Scoped by name so one person's approval doesn't pop a
+      // confirmation modal for everyone viewing the page.
       const seen = getSeenStatuses();
+      const me = myNameRef.current;
       const newlyConfirmed = fresh.filter((b) => {
+        if (!me || b.name.trim().toLowerCase() !== me) return false;
         const key = `${b.eventId}::${b.name}`;
         return b.status === 'confirmed' && seen[key] !== 'confirmed';
       });
@@ -74,16 +84,20 @@ export const Training: React.FC = () => {
     return m;
   }, [events]);
 
-  // Bookings the user has made for events that still have at least one upcoming day.
+  // The signed-in user's own bookings, for events that still have at least one
+  // upcoming day. Matched by name (bookings carry no user id). Without this the
+  // panel would list — and offer to cancel — everyone's sign-ups.
+  const myName = user?.name.trim().toLowerCase();
   const myBookings = useMemo(
     () =>
       bookings
         .filter((b) => {
+          if (!myName || b.name.trim().toLowerCase() !== myName) return false;
           const ev = eventById.get(b.eventId);
           return ev && ev.days.some((d) => isUpcomingDate(d.date));
         })
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-    [bookings, eventById],
+    [bookings, eventById, myName],
   );
 
   return (

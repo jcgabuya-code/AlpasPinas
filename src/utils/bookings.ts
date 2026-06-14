@@ -14,6 +14,10 @@
 const ENDPOINT = (import.meta.env.VITE_BOOKINGS_ENDPOINT ?? '').trim();
 const isRemote = ENDPOINT.length > 0;
 
+// Dev-only: when VITE_SEED_BOOKINGS=1, serve sample athletes instead of the
+// sheet so the admin Boat Assignments planner has a bench to test with.
+const useSeed = (import.meta.env.VITE_SEED_BOOKINGS ?? '').trim() === '1';
+
 const CACHE_KEY = 'alpas-bookings-v2';
 const CHANGE_EVENT = 'alpas-bookings-changed';
 
@@ -69,6 +73,12 @@ const writeCache = (bookings: Booking[]) => {
  * Returns the freshest list it could get (falls back to cache on error).
  */
 export const fetchBookings = async (): Promise<Booking[]> => {
+  if (useSeed) {
+    const { getSeedBookings } = await import('./seedBookings');
+    const seeded = getSeedBookings();
+    writeCache(seeded);
+    return seeded;
+  }
   if (!isRemote) return getAllBookings();
   try {
     const res = await fetch(ENDPOINT, { method: 'GET' });
