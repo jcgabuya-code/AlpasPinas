@@ -1,0 +1,82 @@
+BEGIN:VCALENDAR
+METHOD:REQUEST
+PRODID:Microsoft Exchange Server 2010
+VERSION:2.0
+BEGIN:VTIMEZONE
+TZID:Singapore Standard Time
+BEGIN:STANDARD
+DTSTART:16010101T000000
+TZOFFSETFROM:+0800
+TZOFFSETTO:+0800
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:16010101T000000
+TZOFFSETFROM:+0800
+TZOFFSETTO:+0800
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+ORGANIZER;CN=Joydeep Chatterjee:mailto:joy@inscale.net
+ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=Jc Gabuya:
+ mailto:jcgabuya.my@gmail.com
+ATTACH:CID:723DB0EE01AC8247835BC04A9DEA2982@apcprd02.prod.outlook.com
+DESCRIPTION;LANGUAGE=en-US:Hi Bro\,\n\nAs discussed I will take your HR Int
+ erview on next week Monday ( 15/6) evening at 8.30 PM – 9.30 PM Over Ms 
+ Team\n____________________________________________________________________
+ ____________\nMicrosoft Teams meeting\nJoin: https://teams.microsoft.com/m
+ eet/4806552614674?p=p8sElzWzNoaWbb5NQb\nMeeting ID: 480 655 261 467 4\nPas
+ scode: 8Ks6it2H\n________________________________\nNeed help?<https://aka.
+ ms/JoinTeamsMeeting?omkt=en-US> | System reference<https://teams.microsoft
+ .com/l/meetup-join/19%3ameeting_ODVlNWFkOWItZTFiOS00MTI4LWExOTEtY2VhNWI4ZG
+ ZkMjg2%40thread.v2/0?context=%7b%22Tid%22%3a%220508641b-a013-4d77-89df-ebf
+ b07c53180%22%2c%22Oid%22%3a%226ca129c6-738b-4c02-af8d-c29046af1dc6%22%7d>\
+ nFor organizers: Meeting options<https://teams.microsoft.com/meetingOption
+ s/?organizerId=6ca129c6-738b-4c02-af8d-c29046af1dc6&tenantId=0508641b-a013
+ -4d77-89df-ebfb07c53180&threadId=19_meeting_ODVlNWFkOWItZTFiOS00MTI4LWExOT
+ EtY2VhNWI4ZGZkMjg2@thread.v2&messageId=0&language=en-US>\n________________
+ ________________________________________________________________\n\n\nConf
+ identiality disclaimer: This email and any attachments are confidential an
+ d intended solely for the addressee. If you are not the intended recipient
+ \, please notify the sender immediately and delete this email.\n
+UID:040000008200E00074C5B7101A82E0080000000080922641C6F9DC01000000000000000
+ 010000000A2B459634C7DE94AB3B62C9F7DE8EEFB
+SUMMARY;LANGUAGE=en-US:MS Team : HR Interview : Senior Software Developer .
+ NET : SEB ADC : John Carlo Gabuya
+DTSTART;TZID=Singapore Standard Time:20260616T123000
+DTEND;TZID=Singapore Standard Time:20260616T133000
+CLASS:PRIVATE
+PRIORITY:5
+DTSTAMP:20260615T123211Z
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+SEQUENCE:1
+LOCATION;LANGUAGE=en-US:Microsoft Teams Meeting
+X-MICROSOFT-CDO-APPT-SEQUENCE:1
+X-MICROSOFT-CDO-OWNERAPPTID:1712023530
+X-MICROSOFT-CDO-BUSYSTATUS:TENTATIVE
+X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY
+X-MICROSOFT-CDO-ALLDAYEVENT:FALSE
+X-MICROSOFT-CDO-IMPORTANCE:1
+X-MICROSOFT-CDO-INSTTYPE:0
+X-MICROSOFT-ONLINEMEETINGINFORMATION:{"OnlineMeetingChannelId":null\,"Onlin
+ eMeetingProvider":3}
+X-MICROSOFT-SKYPETEAMSMEETINGURL:https://teams.microsoft.com/l/meetup-join/
+ 19%3ameeting_ODVlNWFkOWItZTFiOS00MTI4LWExOTEtY2VhNWI4ZGZkMjg2%40thread.v2/
+ 0?context=%7b%22Tid%22%3a%220508641b-a013-4d77-89df-ebfb07c53180%22%2c%22O
+ id%22%3a%226ca129c6-738b-4c02-af8d-c29046af1dc6%22%7d
+X-MICROSOFT-SCHEDULINGSERVICEUPDATEURL:https://api.scheduler.teams.microsof
+ t.com/teams/0508641b-a013-4d77-89df-ebfb07c53180/6ca129c6-738b-4c02-af8d-c
+ 29046af1dc6/19_meeting_ODVlNWFkOWItZTFiOS00MTI4LWExOTEtY2VhNWI4ZGZkMjg2@th
+ read.v2/0
+X-MICROSOFT-SKYPETEAMSPROPERTIES:{"cid":"19:meeting_ODVlNWFkOWItZTFiOS00MTI
+ 4LWExOTEtY2VhNWI4ZGZkMjg2@thread.v2"\,"private":true\,"type":0\,"mid":0\,"
+ rid":0\,"uid":null}
+X-MICROSOFT-DONOTFORWARDMEETING:FALSE
+X-MICROSOFT-DISALLOW-COUNTER:FALSE
+X-MICROSOFT-REQUESTEDATTENDANCEMODE:DEFAULT
+X-MICROSOFT-ISRESPONSEREQUESTED:TRUE
+X-MICROSOFT-LOCATIONS:[ { "DisplayName" : "Microsoft Teams Meeting"\, "Loca
+ tionAnnotation" : ""\, "LocationSource" : 0\, "Unresolved" : false\, "Loca
+ tionUri" : "" } ]
+END:VEVENT
+END:VCALENDAR

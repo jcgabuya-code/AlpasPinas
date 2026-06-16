@@ -70,3 +70,52 @@ button {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(-300px, 0, 0); }
 }
+
+/* Hero entrance: content blocks rise + fade in. Staggered via per-element
+   animation-delay set inline. Compositor-only (opacity + transform). */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-rise {
+  opacity: 0;
+  animation: heroRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Ken Burns: slow continuous zoom + pan so slider stills "breathe". Alternates
+   forever so there's no reset jump when slides change; runs on every slide. */
+@keyframes kenBurns {
+  from { transform: scale(1.04) translate(0%, 0%); }
+  to   { transform: scale(1.16) translate(-2%, -1.5%); }
+}
+
+.ken-burns {
+  animation: kenBurns 16s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Scroll-down cue: gentle vertical bob for the chevron at the hero's base. */
+@keyframes heroScrollCue {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(7px); opacity: 1; }
+}
+
+.hero-scroll-cue {
+  animation: heroScrollCue 1.9s ease-in-out infinite;
+}
+
+/* Respect users who ask for less motion — show everything, animate nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .hero-scroll-cue {
+    animation: none;
+  }
+  .ken-burns {
+    animation: none;
+  }
+}

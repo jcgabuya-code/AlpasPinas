@@ -35,6 +35,12 @@ const IconTeam = () => (
   </svg>
 );
 
+const IconCheck = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 12.5l5 5 11-11" />
+  </svg>
+);
+
 const IconGear = () => (
   <svg width="26" height="26" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10 4h8l2 4v6l-2 3H10L8 14V8Z" />
@@ -330,6 +336,9 @@ export const Features: React.FC = () => {
             <span
               style={{
                 flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
                 padding: '0.5rem 1.1rem',
                 borderRadius: '999px',
                 backgroundColor: `${c.primary}15`,
@@ -341,7 +350,8 @@ export const Features: React.FC = () => {
                 whiteSpace: 'nowrap',
               }}
             >
-              No gear needed ✓
+              No gear needed
+              <IconCheck />
             </span>
           </div>
         </div>

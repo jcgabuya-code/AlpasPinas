@@ -3,6 +3,32 @@ import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
+// Line-art glyphs (handmade) to match the site's icon system — replace the old emoji.
+const IconBase: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+const LocationIcon = () => (
+  <IconBase>
+    <path d="M12 21s-6.5-5.2-6.5-10.2A6.5 6.5 0 0 1 18.5 10.8C18.5 15.8 12 21 12 21z" />
+    <circle cx="12" cy="10.5" r="2.4" />
+  </IconBase>
+);
+const MailIcon = () => (
+  <IconBase>
+    <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
+    <path d="M4 7.5l8 5.5 8-5.5" />
+  </IconBase>
+);
+const InstagramIcon = () => (
+  <IconBase>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
+    <circle cx="12" cy="12" r="3.6" />
+    <circle cx="16.7" cy="7.3" r="0.7" fill="currentColor" stroke="none" />
+  </IconBase>
+);
+
 export const Contact: React.FC = () => {
   const { theme } = useTheme();
   const c = colors[theme];
@@ -91,9 +117,9 @@ export const Contact: React.FC = () => {
           </p>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
-            <ContactRow icon="📍" label="Training base" value="Marina Putrajaya / Subang PARC · weekends" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
-            <ContactRow icon="✉" label="Email" value="admin@alpaspinas.com" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
-            <ContactRow icon="📱" label="Instagram" value="@alpaspinasdbt" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon={<LocationIcon />} label="Training base" value="Marina Putrajaya / Subang PARC · weekends" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon={<MailIcon />} label="Email" value="admin@alpaspinas.com" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon={<InstagramIcon />} label="Instagram" value="@alpaspinasdbt" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
           </ul>
         </div>
 
@@ -201,7 +227,7 @@ const Field: React.FC<{ label: string; color: string; children: React.ReactNode 
 );
 
 const ContactRow: React.FC<{
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   value: string;
   color: string;
@@ -215,10 +241,10 @@ const ContactRow: React.FC<{
         height: '40px',
         borderRadius: '0.55rem',
         backgroundColor: `${color}1f`,
+        color,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.05rem',
         flexShrink: 0,
       }}
     >

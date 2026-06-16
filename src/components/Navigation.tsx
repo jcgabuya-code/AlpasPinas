@@ -140,6 +140,45 @@ const CloseIcon = ({ size = 22 }: { size?: number }) => (
   </svg>
 );
 
+// Sun — shown in dark mode (tap to go light). Disc + eight rays, line-art to match.
+const SunIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="3.6" />
+    <path d="M12 2.5v2.2" />
+    <path d="M12 19.3v2.2" />
+    <path d="M4.6 4.6l1.55 1.55" />
+    <path d="M17.85 17.85l1.55 1.55" />
+    <path d="M2.5 12h2.2" />
+    <path d="M19.3 12h2.2" />
+    <path d="M4.6 19.4l1.55-1.55" />
+    <path d="M17.85 6.15l1.55-1.55" />
+  </svg>
+);
+
+// Moon — shown in light mode (tap to go dark). Single crescent path.
+const MoonIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20.5 13.2A8 8 0 1 1 10.8 3.5a6.2 6.2 0 0 0 9.7 9.7z" />
+  </svg>
+);
+
+// Hamburger — three rules, matching the stroke weight of the other glyphs.
+const MenuIcon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 7h16" />
+    <path d="M4 12h16" />
+    <path d="M4 17h16" />
+  </svg>
+);
+
+// Single paddler — head + shoulders, for the signed-in user chip.
+const UserIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="3.4" />
+    <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+  </svg>
+);
+
 type NavItem = {
   label: string;
   to: string;
@@ -312,7 +351,7 @@ export const Navigation: React.FC = () => {
                   justifyContent: 'center',
                 }}
               >
-                {theme === 'dark' ? '☀' : '☾'}
+                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
 
               {canSeeAdmin && (
@@ -361,7 +400,7 @@ export const Navigation: React.FC = () => {
                       gap: '0.4rem',
                     }}
                   >
-                    👤 {user.name.split(' ')[0]}
+                    <UserIcon size={16} /> {user.name.split(' ')[0]}
                   </button>
 
                   {userMenuOpen && (
@@ -475,7 +514,7 @@ export const Navigation: React.FC = () => {
                 justifyContent: 'center',
               }}
             >
-              {theme === 'dark' ? '☀' : '☾'}
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </button>
             <button
               onClick={() => setMenuOpen((o) => !o)}
@@ -495,7 +534,7 @@ export const Navigation: React.FC = () => {
                 justifyContent: 'center',
               }}
             >
-              {menuOpen ? '✕' : '☰'}
+              {menuOpen ? <CloseIcon size={18} /> : <MenuIcon />}
             </button>
           </div>
         )}
