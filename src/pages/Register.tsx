@@ -34,6 +34,7 @@ export const Register: React.FC = () => {
   const [weight, setWeight] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -93,6 +94,22 @@ export const Register: React.FC = () => {
     color: c.text,
     boxSizing: 'border-box',
     fontFamily: 'inherit',
+  };
+
+  const pwToggleStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '50%',
+    right: '0.6rem',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    color: c.primary,
+    cursor: 'pointer',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    padding: '0.25rem',
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -400,27 +417,47 @@ export const Register: React.FC = () => {
           {/* Password */}
           <div>
             <label style={labelStyle}>Password</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ ...inputStyle, paddingRight: '4rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={pwToggleStyle}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           {/* Confirm Password */}
           <div>
             <label style={labelStyle}>Confirm Password</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={{ ...inputStyle, paddingRight: '4rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={pwToggleStyle}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           {/* Submit button */}
