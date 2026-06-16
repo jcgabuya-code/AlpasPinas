@@ -2,10 +2,10 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { colors, emeraldGradient } from '../styles/colors';
 import {
-  countForEventDay,
+  takenForDay,
   formatShortDate,
   isUpcomingDate,
-  type Booking,
+  type EventCounts,
 } from '../utils/bookings';
 import { Clock, MapPin, Users, ArrowRight } from 'lucide-react';
 
@@ -29,16 +29,16 @@ export type TrainingEvent = {
 
 type Props = {
   event: TrainingEvent;
-  bookings: Booking[];
+  counts: EventCounts;
   onBook: (event: TrainingEvent) => void;
 };
 
-export const TrainingCard: React.FC<Props> = ({ event, bookings, onBook }) => {
+export const TrainingCard: React.FC<Props> = ({ event, counts, onBook }) => {
   const { theme } = useTheme();
   const c = colors[theme];
 
   const dayStats = event.days.map((d) => {
-    const taken = countForEventDay(bookings, event.id, d.key);
+    const taken = takenForDay(counts, event.id, d.key);
     const remaining = Math.max(0, d.capacity - taken);
     return { day: d, taken, remaining, full: remaining === 0 };
   });

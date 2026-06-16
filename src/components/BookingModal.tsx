@@ -1,15 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { colors, emeraldGradient, type ColorPalette } from '../styles/colors';
 import type { TrainingEvent } from './TrainingCard';
 import {
   addBooking,
-  countForEventDay,
+  ageFromBirthday,
   fetchBookings,
+  fetchEventCounts,
   formatShortDate,
-  getAllBookings,
+  getEventCounts,
   hasNameBooked,
+  takenForDay,
+  type EventCounts,
   type Attending,
   type Gender,
   type SideRole,
@@ -34,6 +38,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   // Form state — name defaults to the logged-in user and is locked to them.
   const [name, setName] = useState(user?.name ?? '');
   const [gender, setGender] = useState<Gender>('Male');
+  const [birthday, setBirthday] = useState<string>(user?.birthday ?? '');
   const [side, setSide] = useState<SideRole>('Left');
   const [weight, setWeight] = useState<string>('');
   const [needPFD, setNeedPFD] = useState<YesNo>('No');
@@ -42,14 +47,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  // Bumped after a sheet refresh so dayStats recomputes with live counts.
-  const [refreshTick, setRefreshTick] = useState(0);
+  // Live capacity counts (PII-free) from the counts RPC.
+  const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
 
   // Reset whenever the modal opens for a new event, and pull live counts.
   useEffect(() => {
     if (open && event) {
       setName(user?.name ?? '');
       setGender('Male');
+      setBirthday(user?.birthday ?? '');
       setSide('Left');
       setWeight('');
       setNeedPFD('No');
@@ -58,7 +64,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
       setError(null);
       setConfirmed(false);
       setSubmitting(false);
-      fetchBookings().then(() => setRefreshTick((t) => t + 1));
+      fetchEventCounts().then(setCounts);
     }
   }, [open, event, user]);
 
@@ -79,12 +85,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
 
   const dayStats = useMemo(() => {
     if (!event) return [];
-    const bookings = getAllBookings();
     return event.days.map((d) => {
-      const taken = countForEventDay(bookings, event.id, d.key);
+      const taken = takenForDay(counts, event.id, d.key);
       return { day: d, remaining: Math.max(0, d.capacity - taken), full: taken >= d.capacity };
     });
-  }, [event, open, confirmed, refreshTick]); // recompute on open, after a confirm, and on sheet refresh
+  }, [event, counts]); // recompute when counts refresh
 
   if (!open || !event) return null;
 
@@ -111,42 +116,44 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
     setError(null);
 
     if (!name.trim()) return setError('Please enter your name.');
+    if (!birthday) return setError('Please enter your date of birth.');
+    const age = ageFromBirthday(birthday);
+    if (age === undefined || age < 8 || age > 100)
+      return setError('Please enter a valid date of birth.');
     const weightNum = Number(weight);
     if (!weight || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200)
       return setError('Please enter a weight in kg between 30 and 200.');
 
-    // Re-check against the freshest list from the sheet before writing.
+    // Re-check the freshest counts (capacity) + own rows (dedup) before writing.
     setSubmitting(true);
-    let current = getAllBookings();
+    let freshCounts = counts;
     try {
-      current = await fetchBookings();
+      const [mine, latest] = await Promise.all([fetchBookings(), fetchEventCounts()]);
+      freshCounts = latest;
+      setCounts(latest);
+      if (hasNameBooked(mine, event.id, name)) {
+        setSubmitting(false);
+        return setError('You have already signed up for this weekend.');
+      }
     } catch {
-      // fall back to cache if the refresh fails
+      // fall back to the counts we have if the refresh fails
     }
 
-    if (hasNameBooked(current, event.id, name)) {
-      setSubmitting(false);
-      return setError('This name is already booked for this weekend.');
-    }
-
-    const satTaken = countForEventDay(current, event.id, 'sat');
-    const sunTaken = countForEventDay(current, event.id, 'sun');
+    const satTaken = takenForDay(freshCounts, event.id, 'sat');
+    const sunTaken = takenForDay(freshCounts, event.id, 'sun');
     const satCap = event.days.find((d) => d.key === 'sat')?.capacity ?? 0;
     const sunCap = event.days.find((d) => d.key === 'sun')?.capacity ?? 0;
 
     if (effectiveAttending === 'sat' && satTaken >= satCap) {
       setSubmitting(false);
-      setRefreshTick((t) => t + 1);
       return setError('Saturday just filled up.');
     }
     if (effectiveAttending === 'sun' && sunTaken >= sunCap) {
       setSubmitting(false);
-      setRefreshTick((t) => t + 1);
       return setError('Sunday just filled up.');
     }
     if (effectiveAttending === 'both' && (satTaken >= satCap || sunTaken >= sunCap)) {
       setSubmitting(false);
-      setRefreshTick((t) => t + 1);
       return setError('One of the days just filled up — pick a single day instead.');
     }
 
@@ -157,6 +164,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
         attending: effectiveAttending,
         name: name.trim(),
         gender,
+        birthday,
         side,
         weight: weightNum,
         needPFD,
@@ -236,7 +244,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
           ×
         </button>
 
-        {confirmed ? (
+        {!user ? (
+          <LoginPrompt c={c} theme={theme} onClose={onClose} />
+        ) : confirmed ? (
           <WaitingView event={event} attending={effectiveAttending} name={name} onClose={onClose} />
         ) : (
           <form onSubmit={handleSubmit} style={{ padding: '1.75rem' }}>
@@ -315,6 +325,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
 
             <Field label="Gender" c={c}>
               <Chips options={GENDERS} value={gender} onChange={setGender} c={c} />
+            </Field>
+
+            <Field label="Date of birth" c={c}>
+              <input
+                type="date"
+                value={birthday}
+                onChange={(e) => setBirthday(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                style={inputStyle(c)}
+              />
+              <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                Used for age-based crews (e.g. Masters 40+) — kept private.
+              </div>
             </Field>
 
             <Field label="Paddling side / role" c={c}>
@@ -433,6 +456,66 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
             </p>
           </form>
         )}
+      </div>
+    </div>
+  );
+};
+
+const LoginPrompt: React.FC<{ c: ColorPalette; theme: 'light' | 'dark'; onClose: () => void }> = ({ c, theme, onClose }) => {
+  const navigate = useNavigate();
+  return (
+    <div style={{ padding: '2.25rem 1.75rem', textAlign: 'center' }}>
+      <h2
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(1.5rem, 4vw, 1.9rem)',
+          letterSpacing: '0.02em',
+          margin: '0 0 0.6rem',
+          lineHeight: 1.1,
+        }}
+      >
+        SIGN IN TO SIGN UP
+      </h2>
+      <p style={{ color: c.textSecondary, fontSize: '0.92rem', margin: '0 0 1.5rem', lineHeight: 1.6 }}>
+        Training sign-ups are now tied to your team account. Log in (or register
+        with your invite) to reserve your seat.
+      </p>
+      <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => { onClose(); navigate('/login'); }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.6rem',
+            border: 'none',
+            background: emeraldGradient(theme),
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: `0 8px 24px ${c.primary}33`,
+          }}
+        >
+          Log in
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.6rem',
+            border: `1px solid ${c.border}`,
+            background: 'transparent',
+            color: c.text,
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

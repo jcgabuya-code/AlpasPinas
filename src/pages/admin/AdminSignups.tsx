@@ -40,14 +40,12 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
       .filter((g) => g.rows.length > 0);
 
   const handleApprove = async (b: Booking) => {
-    const key = `${b.eventId}::${b.name}`;
-    setBusyKey(key);
+    if (!b.id) return;
+    setBusyKey(b.id);
     try {
-      await approveBooking(b.eventId, b.name);
+      await approveBooking(b.id);
       setBookings((prev) =>
-        prev.map((x) =>
-          x.eventId === b.eventId && x.name === b.name ? { ...x, status: 'confirmed' } : x,
-        ),
+        prev.map((x) => (x.id === b.id ? { ...x, status: 'confirmed' } : x)),
       );
       showToast(`${b.name} confirmed!`);
     } catch (err) {
@@ -58,13 +56,11 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
   };
 
   const handleCancel = async (b: Booking) => {
-    const key = `${b.eventId}::${b.name}`;
-    setBusyKey(key);
+    if (!b.id) return;
+    setBusyKey(b.id);
     try {
-      await cancelBooking(b.eventId, b.name);
-      setBookings((prev) =>
-        prev.filter((x) => !(x.eventId === b.eventId && x.name === b.name)),
-      );
+      await cancelBooking(b.id);
+      setBookings((prev) => prev.filter((x) => x.id !== b.id));
       showToast(`${b.name} removed.`, 'info');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to cancel.', 'error');
@@ -207,8 +203,7 @@ const EventGroup: React.FC<{
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
       {rows.map((b) => {
-        const key = `${b.eventId}::${b.name}`;
-        const busy = busyKey === key;
+        const busy = busyKey === b.id;
         const meta = [
           b.gender,
           b.side,
@@ -218,7 +213,7 @@ const EventGroup: React.FC<{
         ].join(' · ');
         return (
           <div
-            key={key}
+            key={b.id ?? `${b.eventId}::${b.name}`}
             style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.7rem', borderRadius: '0.5rem', backgroundColor: c.surface, border: `1px solid ${c.border}` }}
           >
             <span style={{ fontWeight: 700, fontSize: '0.88rem', color: c.text, flexShrink: 0, whiteSpace: 'nowrap' }}>{b.name}</span>

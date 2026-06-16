@@ -411,9 +411,10 @@ const RegRow: React.FC<{ b: ReturnType<typeof getAllBookings>[0]; c: ColorPalett
   if (removed) return null;
 
   const handleCancel = async () => {
+    if (!b.id) return;
     setBusy(true);
     try {
-      await cancelBooking(b.eventId, b.name);
+      await cancelBooking(b.id);
       setRemoved(true);
       showToast(`${b.name} removed.`, 'info');
     } catch {

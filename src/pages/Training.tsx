@@ -10,11 +10,14 @@ import {
   attendingLabel,
   cancelBooking,
   fetchBookings,
+  fetchEventCounts,
   formatShortDate,
   getAllBookings,
+  getEventCounts,
   isUpcomingDate,
   subscribeBookings,
   type Booking,
+  type EventCounts,
 } from '../utils/bookings';
 
 const STATUS_SEEN_KEY = 'alpas-booking-status-seen';
@@ -42,6 +45,7 @@ export const Training: React.FC = () => {
 
   const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
   const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
+  const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
   const [modalEvent, setModalEvent] = useState<TrainingEvent | null>(null);
   const [pendingCancel, setPendingCancel] = useState<string | null>(null);
   const [confirmedNotices, setConfirmedNotices] = useState<Booking[]>([]);
@@ -51,9 +55,10 @@ export const Training: React.FC = () => {
   myNameRef.current = user?.name.trim().toLowerCase();
 
   useEffect(() => {
-    const refresh = () => setBookings(getAllBookings());
+    const refresh = () => { setBookings(getAllBookings()); setCounts(getEventCounts()); };
     const unsub = subscribeBookings(refresh);
     const unsubEvents = subscribeTrainingEvents(() => setEvents(getTrainingEvents()));
+    fetchEventCounts().then(setCounts);
     fetchBookings().then((fresh) => {
       // Detect the signed-in user's OWN newly confirmed bookings (status flipped
       // since last seen). Scoped by name so one person's approval doesn't pop a
@@ -72,8 +77,9 @@ export const Training: React.FC = () => {
     return () => { unsub(); unsubEvents(); };
   }, []);
 
-  const handleCancel = (eventId: string, name: string) => {
-    cancelBooking(eventId, name).catch(() => {
+  const handleCancel = (b: Booking) => {
+    if (!b.id) return;
+    cancelBooking(b.id).catch(() => {
       // Swallow — the list stays as-is; user can retry.
     });
   };
@@ -345,7 +351,7 @@ export const Training: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setPendingCancel(null);
-                              handleCancel(b.eventId, b.name);
+                              handleCancel(b);
                             }}
                             style={{
                               background: '#ef4444',
@@ -431,7 +437,7 @@ export const Training: React.FC = () => {
               <TrainingCard
                 key={ev.id}
                 event={ev}
-                bookings={bookings}
+                counts={counts}
                 onBook={setModalEvent}
               />
             ))}
@@ -448,7 +454,7 @@ export const Training: React.FC = () => {
           >
             Edit{' '}
             <code style={{ color: c.primary }}>src/data/training.json</code> for the
-            real schedule. Sign-ups are saved to the team's Google Sheet.
+            real schedule. Sign-ups are saved to your team account.
           </p>
         </div>
       </section>

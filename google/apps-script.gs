@@ -1,13 +1,21 @@
 /**
- * AlpasPinas — Training sign-up web app
+ * AlpasPinas — Training sign-up web app  ⚠️ DEPRECATED (2026-06-16)
  * ------------------------------------------------------------------
+ * Training sign-ups have moved to Supabase (public.training_signups). The app
+ * no longer calls this web app — it's kept only as an archive of the old data
+ * path and can be retired once the Sheet history is no longer needed.
+ *
  * Backs the /training page. Reads + writes a single append-only tab
  * called "Web Signups" in the team spreadsheet so the website is the
  * same source of truth on every device.
  *
  * Tab columns (row 1 is the header, created automatically on first run):
  *   Timestamp | EventId | EventTitle | Name | Gender | Side/Role |
- *   Weight (kg) | Need PFD? | Need Paddle? | Joining | Status
+ *   Weight (kg) | Need PFD? | Need Paddle? | Joining | Status | Birthday
+ *
+ * NOTE: Birthday is the LAST column on purpose — appended so existing rows
+ * (which only have 11 columns) keep working. If you already have a deployed
+ * sheet, add a "Birthday" header in column L manually (older rows stay blank).
  *
  * Deploy:  Extensions -> Apps Script -> paste this -> Deploy ->
  *          New deployment -> Web app -> Execute as: Me,
@@ -18,7 +26,7 @@
 var SHEET_NAME = 'Web Signups';
 var HEADERS = [
   'Timestamp', 'EventId', 'EventTitle', 'Name', 'Gender', 'Side/Role',
-  'Weight (kg)', 'Need PFD?', 'Need Paddle?', 'Joining', 'Status'
+  'Weight (kg)', 'Need PFD?', 'Need Paddle?', 'Joining', 'Status', 'Birthday'
 ];
 
 // attending key <-> human label shown in the sheet
@@ -43,6 +51,14 @@ function json_(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Normalise a Birthday cell (Date or 'YYYY-MM-DD' text) to a 'YYYY-MM-DD' string. */
+function formatBirthday_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return String(v).replace(/^'/, '').trim();
 }
 
 /** GET -> { ok: true, bookings: Booking[] } of all active sign-ups. */
@@ -70,7 +86,8 @@ function doGet() {
           needPFD: String(r[7] || 'No'),
           needPaddle: String(r[8] || 'No'),
           attending: JOINING_TO_KEY[String(r[9] || '')] || 'both',
-          status: status === 'confirmed' ? 'confirmed' : 'waiting'
+          status: status === 'confirmed' ? 'confirmed' : 'waiting',
+          birthday: r[11] ? formatBirthday_(r[11]) : ''
         });
       }
     }
@@ -106,7 +123,8 @@ function doPost(e) {
         b.needPFD || 'No',
         b.needPaddle || 'No',
         KEY_TO_JOINING[b.attending] || 'Both Days',
-        'waiting'
+        'waiting',
+        b.birthday ? "'" + b.birthday : ''  // leading apostrophe keeps Sheets from reformatting the date
       ]);
       return json_({
         ok: true,
@@ -114,7 +132,7 @@ function doPost(e) {
           eventId: b.eventId, eventTitle: b.eventTitle || '', attending: b.attending,
           name: b.name, gender: b.gender, side: b.side, weight: b.weight,
           needPFD: b.needPFD, needPaddle: b.needPaddle, createdAt: now.toISOString(),
-          status: 'waiting'
+          status: 'waiting', birthday: b.birthday || ''
         }
       });
     }

@@ -20,9 +20,22 @@ const CACHE_KEY = 'alpas-boat-plans-v1';
 
 export type SeatId = 'DRUMMER' | 'STEERS' | string; // `${row}L` | `${row}R`
 
+/** Crew-composition preset for a boat. Drives auto-seat eligibility + warnings.
+ *  'open' = no restriction (default / back-compat for rows saved before presets). */
+export type CrewPreset = 'open' | 'male' | 'female' | 'mixed' | 'masters';
+
+export const CREW_PRESETS: { id: CrewPreset; label: string }[] = [
+  { id: 'open', label: 'Open' },
+  { id: 'male', label: 'Male crew' },
+  { id: 'female', label: 'Female crew' },
+  { id: 'mixed', label: 'Mixed crew' },
+  { id: 'masters', label: 'Masters (40+)' },
+];
+
 export type Boat = {
   id: string;
   name: string;
+  preset?: CrewPreset; // undefined = 'open' (older rows)
   seats: Record<SeatId, string>; // seatId → athlete name
 };
 
@@ -31,6 +44,7 @@ type StoredPlan = { eventId: string; dayKey: string; boats: Boat[] };
 export const emptyBoat = (suffix: string): Boat => ({
   id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
   name: `Boat ${suffix}`,
+  preset: 'open',
   seats: {},
 });
 

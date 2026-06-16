@@ -11,21 +11,21 @@
  */
 import type { Booking, Gender, SideRole, Attending } from './bookings';
 
-type Person = { name: string; gender: Gender; side: SideRole; weight: number };
+type Person = { name: string; gender: Gender; side: SideRole; weight: number; birthday: string };
 
-// 24 paddlers (11 Left, 11 Right) + 2 steers-eligible coxswains + 1 coach.
+// Mixed roster — varied ages so the Masters (40+) crew preset has eligible and
+// ineligible athletes of both genders to exercise.
 const ROSTER: Person[] = [
-  { name: 'JC Gabuya',     gender: 'Male', side: 'Left',     weight: 72 },
-  { name: 'Aaron Cruz',      gender: 'Male',   side: 'Left',     weight: 78 },
-  { name: 'Bianca Reyes',    gender: 'Female', side: 'Right',    weight: 58 },
-  { name: 'Carlo Mendoza',   gender: 'Male',   side: 'Left',     weight: 84 },
-  { name: 'Diana Santos',    gender: 'Female', side: 'Right',    weight: 61 },
-  { name: 'Elias Tan',       gender: 'Male',   side: 'Left',     weight: 72 },
-  { name: 'Faith Lim',       gender: 'Female', side: 'Right',    weight: 55 },
-  { name: 'Gabriel Ong',     gender: 'Male',   side: 'Left',     weight: 90 },
-  { name: 'Hana Yusof',      gender: 'Female', side: 'Right',    weight: 64 },
-  { name: 'Ian Navarro',     gender: 'Male',   side: 'Left',     weight: 75 },
-
+  { name: 'JC Gabuya',       gender: 'Male',   side: 'Left',     weight: 72, birthday: '1984-03-12' }, // 42 — masters
+  { name: 'Aaron Cruz',      gender: 'Male',   side: 'Left',     weight: 78, birthday: '1990-07-20' }, // 35
+  { name: 'Bianca Reyes',    gender: 'Female', side: 'Right',    weight: 58, birthday: '1998-02-11' }, // 28
+  { name: 'Carlo Mendoza',   gender: 'Male',   side: 'Left',     weight: 84, birthday: '1980-11-05' }, // 45 — masters
+  { name: 'Diana Santos',    gender: 'Female', side: 'Right',    weight: 61, birthday: '1995-09-30' }, // 30
+  { name: 'Elias Tan',       gender: 'Male',   side: 'Left',     weight: 72, birthday: '1983-01-15' }, // 43 — masters
+  { name: 'Faith Lim',       gender: 'Female', side: 'Right',    weight: 55, birthday: '2000-06-25' }, // 25
+  { name: 'Gabriel Ong',     gender: 'Male',   side: 'Left',     weight: 90, birthday: '1978-04-18' }, // 48 — masters
+  { name: 'Hana Yusof',      gender: 'Female', side: 'Right',    weight: 64, birthday: '1985-05-10' }, // 41 — masters
+  { name: 'Ian Navarro',     gender: 'Male',   side: 'Left',     weight: 75, birthday: '1988-08-08' }, // 37
 ];
 
 // Spread attendance so the day filter (sat / sun / both) has something to show.
@@ -42,11 +42,13 @@ export const getSeedBookings = (): Booking[] => {
   const base = Date.parse('2026-06-01T00:00:00Z');
   return EVENTS.flatMap((ev) =>
     ROSTER.map((p, i) => ({
+      id: `seed-${ev.id}-${i}`,
       eventId: ev.id,
       eventTitle: ev.title,
       attending: attendingFor(i),
       name: p.name,
       gender: p.gender,
+      birthday: p.birthday,
       side: p.side,
       weight: p.weight,
       needPFD: 'No' as const,
