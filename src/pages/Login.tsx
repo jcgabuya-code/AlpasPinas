@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -7,6 +7,9 @@ export const Login: React.FC = () => {
   const { theme } = useTheme();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Where to return after a successful sign-in (set by RequireAuth), else home.
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +62,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed.';
       setError(msg);

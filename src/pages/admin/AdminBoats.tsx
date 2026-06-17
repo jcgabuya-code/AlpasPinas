@@ -41,7 +41,11 @@ const presetMismatchLabel = (preset: CrewPreset | undefined, info?: AthleteInfo)
 /* ------------------------------------------------------------------ */
 
 const ROWS = 10;
-const BOAT_NAMES = ['A', 'B', 'C', 'D', 'E'];
+
+/** Bench list sizing — how many cards are visible before it scrolls. */
+const BENCH_ROW_PX = 40; // approx height of one compact card + gap
+const BENCH_VISIBLE_ROWS = 5;
+const BENCH_MAX_HEIGHT = BENCH_VISIBLE_ROWS * BENCH_ROW_PX;
 
 /** What side an athlete must paddle to "fit" a given seat. */
 type ExpectedSide = 'Left' | 'Right' | 'Coxswain' | 'Any';
@@ -99,6 +103,8 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const [dragOverSeat, setDragOverSeat] = useState<SeatId | null>(null);
   const [pickerSeat, setPickerSeat] = useState<SeatId | null>(null); // mobile seat-picker sheet
   const [benchOpen, setBenchOpen] = useState(false); // mobile: bench collapsed by default
+  const [benchQuery, setBenchQuery] = useState(''); // bench name filter
+  const [excludeOtherBoats, setExcludeOtherBoats] = useState(false); // auto-seat: skip paddlers already in another boat
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -176,6 +182,12 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
     [activeBoat],
   );
   const unassigned = athletes.filter((b) => !seatedInActiveBoat.has(b.name));
+
+  // Bench list filtered by the search box (case-insensitive name match).
+  const benchAthletes = useMemo(() => {
+    const q = benchQuery.trim().toLowerCase();
+    return q ? athletes.filter((b) => b.name.toLowerCase().includes(q)) : athletes;
+  }, [athletes, benchQuery]);
 
   // name → other boats they're already seated in (shown as a hint on the bench).
   const otherBoatsByName = useMemo(() => {
@@ -269,8 +281,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
 
   const addBoat = () => {
     if (boats.length >= 5) { showToast('Maximum 5 boats.', 'error'); return; }
-    const suffix = BOAT_NAMES[boats.length] ?? String(boats.length + 1);
-    const newBoat = emptyBoat(suffix);
+    const newBoat = emptyBoat();
     persist([...boats, newBoat]);
     setActiveBoatId(newBoat.id);
   };
@@ -287,7 +298,9 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   };
 
   const setPreset = (id: string, preset: CrewPreset) => {
-    persist(boats.map((b) => (b.id === id ? { ...b, preset } : b)));
+    // Selecting a preset also renames the boat to match it (e.g. "Mixed crew").
+    const name = CREW_PRESETS.find((p) => p.id === preset)?.label ?? preset;
+    persist(boats.map((b) => (b.id === id ? { ...b, preset, name } : b)));
   };
 
   /**
@@ -298,11 +311,16 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const autoFillBoat = () => {
     if (!activeBoat) return;
 
+    // A paddler may sit in more than one boat on the same day (e.g. an Open boat
+    // AND a Mixed boat), so by default auto-seat draws from EVERYONE matching
+    // this boat's preset — mirroring the manual flow. When "exclude paddlers
+    // already in another boat" is on, it skips anyone seated elsewhere so a squad
+    // gets split across boats instead.
     const takenElsewhere = new Set(
       boats.filter((b) => b.id !== activeBoatId).flatMap((b) => Object.values(b.seats)),
     );
     const pool = athletes
-      .filter((a) => !takenElsewhere.has(a.name))
+      .filter((a) => !excludeOtherBoats || !takenElsewhere.has(a.name))
       .filter((a) => fitsPreset(activeBoat.preset, infoByName.get(a.name)));
     if (pool.length === 0) {
       showToast(
@@ -315,15 +333,35 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
     }
 
     const byWeightDesc = (a: Booking, b: Booking) => b.weight - a.weight;
-    const lefts = pool.filter((a) => a.side === 'Left').sort(byWeightDesc);
-    const rights = pool.filter((a) => a.side === 'Right').sort(byWeightDesc);
     const coxes = pool.filter((a) => a.side === 'Coxswain');
     const coaches = pool.filter((a) => a.side === 'Coach');
+    const paddlerPool = pool.filter((a) => a.side === 'Left' || a.side === 'Right');
+
+    // A paddleable boat needs roughly equal numbers each side, but the eligible
+    // pool can be lopsided (e.g. a female crew that's mostly right-side). Decide
+    // per-side targets that split the paddlers as evenly as possible without
+    // exceeding ROWS per side.
+    const seatable = Math.min(paddlerPool.length, ROWS * 2);
+    const leftTarget = Math.min(ROWS, Math.ceil(seatable / 2));
+    const rightTarget = seatable - leftTarget;
+
+    // Start everyone on their preferred side (heaviest first), then rebalance the
+    // COUNTS by flipping the lightest paddlers off the overloaded side onto the
+    // other. Flipping the lightest keeps the heavy hitters on their natural side;
+    // flipped paddlers show the usual off-side warning so the choice is visible.
+    const lefts = paddlerPool.filter((a) => a.side === 'Left').sort(byWeightDesc);
+    const rights = paddlerPool.filter((a) => a.side === 'Right').sort(byWeightDesc);
+    while (lefts.length > leftTarget && rights.length < rightTarget) rights.push(lefts.pop()!);
+    while (rights.length > rightTarget && lefts.length < leftTarget) lefts.push(rights.pop()!);
+
+    // Trim to capacity (heaviest stay seated) and re-sort for weight-balanced trim.
+    const seatLeft = lefts.sort(byWeightDesc).slice(0, leftTarget);
+    const seatRight = rights.sort(byWeightDesc).slice(0, rightTarget);
 
     const order = middleOutOrder(ROWS);
     const seats: Record<SeatId, string> = {};
-    lefts.forEach((a, i) => { if (i < order.length) seats[`${order[i]}L`] = a.name; });
-    rights.forEach((a, i) => { if (i < order.length) seats[`${order[i]}R`] = a.name; });
+    seatLeft.forEach((a, i) => { if (i < order.length) seats[`${order[i]}L`] = a.name; });
+    seatRight.forEach((a, i) => { if (i < order.length) seats[`${order[i]}R`] = a.name; });
 
     // Steers ← a coxswain; Drummer ← a coach (or a spare coxswain).
     const steers = coxes[0];
@@ -334,10 +372,14 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
     persist(boats.map((b) => (b.id === activeBoatId ? { ...b, seats } : b)));
     setSelected(null);
 
-    const paddlers = Math.min(lefts.length, ROWS) + Math.min(rights.length, ROWS);
+    const paddlers = seatLeft.length + seatRight.length;
+    const flipped =
+      seatLeft.filter((a) => a.side === 'Right').length +
+      seatRight.filter((a) => a.side === 'Left').length;
     const benched = pool.length - paddlers - (steers ? 1 : 0) - (drummer ? 1 : 0);
     showToast(
       `Seated ${paddlers} paddlers${steers ? ' + steers' : ''}${drummer ? ' + drummer' : ''}, weight-balanced.` +
+        (flipped > 0 ? ` ${flipped} moved off-side to even the boat.` : '') +
         (benched > 0 ? ` ${benched} left on the bench.` : ''),
     );
   };
@@ -440,9 +482,32 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
             {benchListOpen && athletes.length === 0 && (
               <p style={{ fontSize: '0.8rem', color: c.textSecondary, marginTop: isMobile ? '0.75rem' : 0 }}>No sign-ups for this day.</p>
             )}
+            {benchListOpen && athletes.length > 0 && (
+              <input
+                value={benchQuery}
+                onChange={(e) => setBenchQuery(e.target.value)}
+                placeholder="Search bench…"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginTop: '0.75rem',
+                  padding: '0.4rem 0.65rem',
+                  borderRadius: '0.45rem',
+                  border: `1px solid ${c.border}`,
+                  backgroundColor: c.surfaceAlt,
+                  color: c.text,
+                  fontSize: '0.8rem',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+              />
+            )}
             {benchListOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: isMobile ? '0.75rem' : 0, ...(isMobile ? { maxHeight: 220, overflowY: 'auto' as const } : {}) }}>
-              {athletes.map((b) => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem', maxHeight: BENCH_MAX_HEIGHT, overflowY: 'auto' }}>
+              {benchAthletes.length === 0 && (
+                <p style={{ fontSize: '0.78rem', color: c.textSecondary, margin: '0.25rem 0' }}>No one matches “{benchQuery}”.</p>
+              )}
+              {benchAthletes.map((b) => {
                 // "Assigned" here = already in THIS boat (a person may be in others).
                 const isAssigned = seatedInActiveBoat.has(b.name);
                 const isSel = selected === b.name;
@@ -457,9 +522,13 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                     onClick={() => !isAssigned && handleBenchClick(b.name)}
                     title={offPreset ? `Off-preset for ${activeBoat?.name} (${presetMismatchLabel(activeBoat?.preset, infoByName.get(b.name))})` : undefined}
                     style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
                       width: '100%',
-                      padding: '0.45rem 0.7rem',
-                      borderRadius: '0.45rem',
+                      padding: '0.35rem 0.6rem',
+                      borderRadius: '0.4rem',
                       border: `1px solid ${isSel ? c.primary : offPreset ? '#f59e0b66' : c.border}`,
                       backgroundColor: isSel ? `${c.primary}22` : isAssigned ? c.background : c.surfaceAlt,
                       color: isAssigned ? c.textSecondary : c.text,
@@ -472,16 +541,16 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                       transition: 'background-color 0.1s, border-color 0.1s',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <span>{b.name}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', minWidth: 0 }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
                       {offPreset && <AlertTriangle size={11} color="#f59e0b" style={{ flexShrink: 0 }} />}
-                    </div>
-                    <div style={{ fontSize: '0.68rem', color: c.textSecondary }}>
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: c.textSecondary, flexShrink: 0, whiteSpace: 'nowrap' }}>
                       {sideLabel(b.side)} · {b.weight}kg
                       {elsewhere && elsewhere.length > 0 && (
-                        <span style={{ color: c.primary }}> · in {elsewhere.join(', ')}</span>
+                        <span style={{ color: c.primary }}> · {elsewhere.join(', ')}</span>
                       )}
-                    </div>
+                    </span>
                   </button>
                 );
               })}
@@ -606,6 +675,20 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                 >
                   <Eraser size={15} /> Clear boat
                 </button>
+                {boats.length > 1 && (
+                  <label
+                    title="When on, auto-seat skips anyone already seated in another boat — useful for splitting a squad across boats"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: c.textSecondary, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={excludeOtherBoats}
+                      onChange={(e) => setExcludeOtherBoats(e.target.checked)}
+                      style={{ accentColor: c.primary, cursor: 'pointer' }}
+                    />
+                    Exclude paddlers already in another boat
+                  </label>
+                )}
               </div>
             )}
 

@@ -41,14 +41,18 @@ export type Boat = {
 
 type StoredPlan = { eventId: string; dayKey: string; boats: Boat[] };
 
-export const emptyBoat = (suffix: string): Boat => ({
+// New boats default to the Open crew preset and are named after it, so the very
+// first boat on the planner reads "Open" (the auto-rename keeps name = preset).
+const OPEN_LABEL = CREW_PRESETS.find((p) => p.id === 'open')!.label;
+
+export const emptyBoat = (): Boat => ({
   id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-  name: `Boat ${suffix}`,
+  name: OPEN_LABEL,
   preset: 'open',
   seats: {},
 });
 
-const defaultBoats = (): Boat[] => [emptyBoat('A')];
+const defaultBoats = (): Boat[] => [emptyBoat()];
 
 /* --------------------------- cache helpers --------------------------- */
 

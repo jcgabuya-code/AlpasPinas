@@ -7,7 +7,7 @@ import {
   isUpcomingDate,
   type EventCounts,
 } from '../utils/bookings';
-import { Clock, MapPin, Users, ArrowRight } from 'lucide-react';
+import { Clock, MapPin, Users, ArrowRight, Check } from 'lucide-react';
 
 export type TrainingDay = {
   key: string;        // 'sat' | 'sun' (free-form so future events can have any day key)
@@ -31,9 +31,11 @@ type Props = {
   event: TrainingEvent;
   counts: EventCounts;
   onBook: (event: TrainingEvent) => void;
+  /** True when the signed-in user already has a sign-up for this event. */
+  alreadyBooked?: boolean;
 };
 
-export const TrainingCard: React.FC<Props> = ({ event, counts, onBook }) => {
+export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBooked = false }) => {
   const { theme } = useTheme();
   const c = colors[theme];
 
@@ -236,31 +238,33 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook }) => {
       <button
         type="button"
         onClick={() => onBook(event)}
-        disabled={!anyOpen || !stillUpcoming}
+        disabled={alreadyBooked || !anyOpen || !stillUpcoming}
         style={{
           marginTop: '0.2rem',
           padding: '0.8rem 1rem',
           borderRadius: '999px',
-          border: 'none',
-          background: !anyOpen || !stillUpcoming ? c.border : emeraldGradient(theme),
-          color: '#fff',
+          border: alreadyBooked ? `1px solid ${c.primary}66` : 'none',
+          background: alreadyBooked ? `${c.primary}18` : !anyOpen || !stillUpcoming ? c.border : emeraldGradient(theme),
+          color: alreadyBooked ? c.primaryLight : '#fff',
           fontWeight: 700,
           fontSize: '0.92rem',
           letterSpacing: '0.02em',
-          cursor: !anyOpen || !stillUpcoming ? 'not-allowed' : 'pointer',
+          cursor: alreadyBooked || !anyOpen || !stillUpcoming ? 'not-allowed' : 'pointer',
           fontFamily: 'inherit',
-          boxShadow: !anyOpen || !stillUpcoming ? 'none' : `0 6px 18px ${c.primary}33`,
+          boxShadow: alreadyBooked || !anyOpen || !stillUpcoming ? 'none' : `0 6px 18px ${c.primary}33`,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '0.4rem',
         }}
       >
-        {!stillUpcoming
-          ? 'Past weekend'
-          : !anyOpen
-            ? 'Both days full'
-            : <><span>Sign up</span><ArrowRight size={16} /></>}
+        {alreadyBooked
+          ? <><Check size={16} /><span>Already signed up</span></>
+          : !stillUpcoming
+            ? 'Past weekend'
+            : !anyOpen
+              ? 'Both days full'
+              : <><span>Sign up</span><ArrowRight size={16} /></>}
       </button>
       </div>
     </article>

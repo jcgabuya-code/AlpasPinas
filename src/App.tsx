@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/Layout';
+import { RequireAuth } from './components/RequireAuth';
 import { ScrollToHash } from './components/ScrollToHash';
 import { Home } from './pages/Home';
 import { Roster } from './pages/Roster';
@@ -26,11 +27,14 @@ function App() {
               <Route index element={<Home />} />
               <Route path="/roster" element={<Roster />} />
               <Route path="/events" element={<Events />} />
-              <Route path="/training" element={<Training />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/join-team" element={<JoinTeam />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              {/* Login-only pages */}
+              <Route element={<RequireAuth />}>
+                <Route path="/training" element={<Training />} />
+              </Route>
             </Route>
             <Route
               path="/admin"

@@ -211,9 +211,16 @@ export const logout = async (): Promise<void> => {
   await supabase.auth.signOut();
 };
 
-/** Subscribe to Supabase auth changes; fires on sign-in / sign-out / refresh. */
+/** Subscribe to Supabase auth changes; fires on sign-in / sign-out / refresh.
+ *
+ * The handler is deferred with setTimeout(0) so it runs AFTER supabase-js
+ * releases its internal auth lock. Calling Supabase methods (e.g. getSession,
+ * or any query that attaches the access token) synchronously inside this
+ * callback would otherwise deadlock against signInWithPassword on first login. */
 export const onAuthChange = (handler: () => void) => {
-  const { data } = supabase.auth.onAuthStateChange(() => handler());
+  const { data } = supabase.auth.onAuthStateChange(() => {
+    setTimeout(handler, 0);
+  });
   return () => data.subscription.unsubscribe();
 };
 
