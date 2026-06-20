@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, AlertTriangle, Scale, Wand2, ChevronDown, ChevronRight, Eraser } from 'lucide-react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Trash2, AlertTriangle, Scale, Wand2, ChevronDown, ChevronRight, Eraser, Share2, Printer, Check, Image as ImageIcon } from 'lucide-react';
 import { emeraldGradient, type ColorPalette } from '../../styles/colors';
 import { type ShowToast } from '../Admin';
 import { fetchBookings, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
@@ -106,6 +106,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const [benchQuery, setBenchQuery] = useState(''); // bench name filter
   const [excludeOtherBoats, setExcludeOtherBoats] = useState(false); // auto-seat: skip paddlers already in another boat
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [exportOpen, setExportOpen] = useState(false); // share / export lineup sheet
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -208,6 +209,16 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
    *  athlete dropped onto an occupied seat bumps the occupant back to the bench. */
   const placeAthlete = (name: string, fromSeat: SeatId | null, toSeat: SeatId) => {
     if (!activeBoat) return;
+    // Strict crew preset: a paddler coming from the bench (fromSeat === null)
+    // must satisfy this boat's preset. Moves WITHIN the boat (fromSeat set) are
+    // always allowed — everyone already seated fits by construction.
+    if (!fromSeat) {
+      const mismatch = presetMismatchLabel(activeBoat.preset, infoByName.get(name));
+      if (mismatch) {
+        showToast(`${name} can't join ${activeBoat.name} — ${mismatch}.`, 'error');
+        return;
+      }
+    }
     const updated = boats.map((boat) => {
       if (boat.id !== activeBoatId) return boat;
       const seats = { ...boat.seats };
@@ -300,7 +311,22 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const setPreset = (id: string, preset: CrewPreset) => {
     // Selecting a preset also renames the boat to match it (e.g. "Mixed crew").
     const name = CREW_PRESETS.find((p) => p.id === preset)?.label ?? preset;
-    persist(boats.map((b) => (b.id === id ? { ...b, preset, name } : b)));
+    // Strict crew preset: anyone already seated who no longer fits the new preset
+    // is evicted to the bench, so the boat is always valid for its crew type.
+    let evicted = 0;
+    const updated = boats.map((b) => {
+      if (b.id !== id) return b;
+      const seats: Record<SeatId, string> = {};
+      (Object.entries(b.seats) as [SeatId, string][]).forEach(([seatId, occupant]) => {
+        if (fitsPreset(preset, infoByName.get(occupant))) seats[seatId] = occupant;
+        else evicted++;
+      });
+      return { ...b, preset, name, seats };
+    });
+    persist(updated);
+    if (evicted > 0) {
+      showToast(`Switched to ${name} crew — ${evicted} off-preset paddler${evicted > 1 ? 's' : ''} returned to the bench.`);
+    }
   };
 
   /**
@@ -337,31 +363,42 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
     const coaches = pool.filter((a) => a.side === 'Coach');
     const paddlerPool = pool.filter((a) => a.side === 'Left' || a.side === 'Right');
 
-    // A paddleable boat needs roughly equal numbers each side, but the eligible
-    // pool can be lopsided (e.g. a female crew that's mostly right-side). Decide
-    // per-side targets that split the paddlers as evenly as possible without
-    // exceeding ROWS per side.
-    const seatable = Math.min(paddlerPool.length, ROWS * 2);
-    const leftTarget = Math.min(ROWS, Math.ceil(seatable / 2));
-    const rightTarget = seatable - leftTarget;
+    // A dragon boat must paddle in PAIRS — equal numbers each side. An odd,
+    // unpaired paddler lists the boat and skews the head-count, so seat only full
+    // rows: floor(pool / 2) per side, capped at ROWS. The lightest odd paddler (and
+    // anyone beyond capacity) stays on the bench.
+    const perSide = Math.min(Math.floor(paddlerPool.length / 2), ROWS);
+    const leftTarget = perSide;
+    const rightTarget = perSide;
 
-    // Start everyone on their preferred side (heaviest first), then rebalance the
-    // COUNTS by flipping the lightest paddlers off the overloaded side onto the
-    // other. Flipping the lightest keeps the heavy hitters on their natural side;
-    // flipped paddlers show the usual off-side warning so the choice is visible.
-    const lefts = paddlerPool.filter((a) => a.side === 'Left').sort(byWeightDesc);
-    const rights = paddlerPool.filter((a) => a.side === 'Right').sort(byWeightDesc);
-    while (lefts.length > leftTarget && rights.length < rightTarget) rights.push(lefts.pop()!);
-    while (rights.length > rightTarget && lefts.length < leftTarget) lefts.push(rights.pop()!);
+    // Seat the heaviest `perSide * 2` paddlers; lighter spares stay on the bench.
+    const seated = [...paddlerPool].sort(byWeightDesc).slice(0, perSide * 2);
 
-    // Trim to capacity (heaviest stay seated) and re-sort for weight-balanced trim.
-    const seatLeft = lefts.sort(byWeightDesc).slice(0, leftTarget);
-    const seatRight = rights.sort(byWeightDesc).slice(0, rightTarget);
+    // Weight-first side assignment: walk heaviest → lightest and drop each paddler
+    // on whichever side currently carries less weight, so port/starboard kg end up
+    // even. Once a side reaches its count target the rest go to the other side.
+    // Preferred side only breaks ties (equal weight so far), so anyone placed
+    // against their preference shows the usual off-side warning.
+    const seatLeft: Booking[] = [];
+    const seatRight: Booking[] = [];
+    let leftKg = 0;
+    let rightKg = 0;
+    for (const a of seated) {
+      const leftFull = seatLeft.length >= leftTarget;
+      const rightFull = seatRight.length >= rightTarget;
+      const toLeft = leftFull ? false
+        : rightFull ? true
+        : leftKg !== rightKg ? leftKg < rightKg
+        : a.side === 'Left'; // even so far → honor their preferred side
+      if (toLeft) { seatLeft.push(a); leftKg += a.weight; }
+      else { seatRight.push(a); rightKg += a.weight; }
+    }
 
+    // Seat heaviest-first from the centre outward so weight sits amidships (trim).
     const order = middleOutOrder(ROWS);
     const seats: Record<SeatId, string> = {};
-    seatLeft.forEach((a, i) => { if (i < order.length) seats[`${order[i]}L`] = a.name; });
-    seatRight.forEach((a, i) => { if (i < order.length) seats[`${order[i]}R`] = a.name; });
+    seatLeft.sort(byWeightDesc).forEach((a, i) => { if (i < order.length) seats[`${order[i]}L`] = a.name; });
+    seatRight.sort(byWeightDesc).forEach((a, i) => { if (i < order.length) seats[`${order[i]}R`] = a.name; });
 
     // Steers ← a coxswain; Drummer ← a coach (or a spare coxswain).
     const steers = coxes[0];
@@ -410,8 +447,10 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
           : 'Click a seat to pick a paddler, or drag athletes from the bench onto seats. Changes auto-save.'}
       </p>
 
-      {/* Event + Day selectors */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
+      {/* Event + Day selectors. On mobile they share one no-wrap row to save
+          vertical space: the event select flexes/shrinks (its long title truncates),
+          the day select keeps its natural width, and "Saved" tucks in at the end. */}
+      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: isMobile ? 'nowrap' : 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
         <select
           value={eventId}
           onChange={(e) => {
@@ -419,13 +458,17 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
             setEventId(e.target.value);
             setDayKey(ev?.days[0]?.key ?? '');
           }}
-          style={selectStyle(c)}
+          style={{ ...selectStyle(c), ...(isMobile ? { flex: 1, minWidth: 0, padding: '0.5rem 0.6rem' } : {}) }}
         >
           {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
         </select>
 
         {currentEvent && (
-          <select value={dayKey} onChange={(e) => setDayKey(e.target.value)} style={selectStyle(c)}>
+          <select
+            value={dayKey}
+            onChange={(e) => setDayKey(e.target.value)}
+            style={{ ...selectStyle(c), ...(isMobile ? { flexShrink: 0, padding: '0.5rem 0.6rem' } : {}) }}
+          >
             {currentEvent.days.map((d) => (
               <option key={d.key} value={d.key}>{d.label}</option>
             ))}
@@ -513,14 +556,17 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                 const isSel = selected === b.name;
                 const elsewhere = otherBoatsByName.get(b.name);
                 const offPreset = !!activeBoat && !fitsPreset(activeBoat.preset, infoByName.get(b.name));
+                // Off-preset paddlers can't join this boat (strict crew preset), so
+                // they're shown but non-interactive — same as ones already seated here.
+                const blocked = isAssigned || offPreset;
                 return (
                   <button
                     key={b.name}
                     type="button"
-                    draggable={!isAssigned}
-                    onDragStart={(e) => !isAssigned && writeDrag(e, { name: b.name, fromSeat: null })}
-                    onClick={() => !isAssigned && handleBenchClick(b.name)}
-                    title={offPreset ? `Off-preset for ${activeBoat?.name} (${presetMismatchLabel(activeBoat?.preset, infoByName.get(b.name))})` : undefined}
+                    draggable={!blocked}
+                    onDragStart={(e) => !blocked && writeDrag(e, { name: b.name, fromSeat: null })}
+                    onClick={() => !blocked && handleBenchClick(b.name)}
+                    title={offPreset ? `Can't join ${activeBoat?.name} — ${presetMismatchLabel(activeBoat?.preset, infoByName.get(b.name))}` : undefined}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -531,13 +577,13 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                       borderRadius: '0.4rem',
                       border: `1px solid ${isSel ? c.primary : offPreset ? '#f59e0b66' : c.border}`,
                       backgroundColor: isSel ? `${c.primary}22` : isAssigned ? c.background : c.surfaceAlt,
-                      color: isAssigned ? c.textSecondary : c.text,
+                      color: blocked ? c.textSecondary : c.text,
                       fontSize: '0.82rem',
                       fontWeight: isSel ? 700 : 500,
                       textAlign: 'left',
-                      cursor: isAssigned ? 'default' : 'grab',
+                      cursor: blocked ? 'not-allowed' : 'grab',
                       fontFamily: 'inherit',
-                      opacity: isAssigned ? 0.5 : 1,
+                      opacity: blocked ? 0.5 : 1,
                       transition: 'background-color 0.1s, border-color 0.1s',
                     }}
                   >
@@ -619,62 +665,94 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
               </button>
             </div>
 
-            {/* Rename + auto-seat */}
+            {/* Rename + boat actions (auto-seat, clear, share on one line) */}
             {activeBoat && (
-              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '0.6rem', alignItems: isMobile ? 'stretch' : 'center', flexWrap: isMobile ? 'nowrap' : 'wrap', marginBottom: '1rem' }}>
                 <input
                   value={activeBoat.name}
                   onChange={(e) => renameBoat(activeBoat.id, e.target.value)}
                   placeholder="Boat name"
-                  style={{ ...selectStyle(c), maxWidth: '200px' }}
+                  style={{ ...selectStyle(c), width: isMobile ? '100%' : undefined, maxWidth: isMobile ? '100%' : '200px', boxSizing: 'border-box' }}
                 />
-                <button
-                  type="button"
-                  onClick={autoFillBoat}
-                  title="Seat everyone signed up by their side and balance the weight"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.5rem 0.95rem',
-                    borderRadius: '0.5rem',
-                    border: 'none',
-                    background: emeraldGradient(theme),
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    boxShadow: `0 4px 14px ${c.primary}33`,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Wand2 size={15} /> Auto-seat &amp; balance
-                </button>
-                <button
-                  type="button"
-                  onClick={clearBoat}
-                  title="Empty every seat in this boat — everyone returns to the bench"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.5rem 0.9rem',
-                    borderRadius: '0.5rem',
-                    border: `1px solid ${c.border}`,
-                    background: 'transparent',
-                    color: c.textSecondary,
-                    fontWeight: 600,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Eraser size={15} /> Clear boat
-                </button>
+                {/* The three actions share a row; on mobile they split evenly. */}
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={autoFillBoat}
+                    title="Seat everyone signed up by their side and balance the weight"
+                    style={{
+                      flex: isMobile ? 1 : undefined,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      padding: '0.5rem 0.8rem',
+                      borderRadius: '0.5rem',
+                      border: 'none',
+                      background: emeraldGradient(theme),
+                      color: '#fff',
+                      fontWeight: 700,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      boxShadow: `0 4px 14px ${c.primary}33`,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Wand2 size={15} /> Auto-seat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearBoat}
+                    title="Empty every seat in this boat — everyone returns to the bench"
+                    style={{
+                      flex: isMobile ? 1 : undefined,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      padding: '0.5rem 0.8rem',
+                      borderRadius: '0.5rem',
+                      border: `1px solid ${c.border}`,
+                      background: 'transparent',
+                      color: c.textSecondary,
+                      fontWeight: 600,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Eraser size={15} /> Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportOpen(true)}
+                    title="Preview the lineup, copy it as an image, or print a boat sheet"
+                    style={{
+                      flex: isMobile ? 1 : undefined,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      padding: '0.5rem 0.8rem',
+                      borderRadius: '0.5rem',
+                      border: `1px solid ${c.border}`,
+                      background: 'transparent',
+                      color: c.textSecondary,
+                      fontWeight: 600,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Share2 size={15} /> Share
+                  </button>
+                </div>
                 {boats.length > 1 && (
                   <label
                     title="When on, auto-seat skips anyone already seated in another boat — useful for splitting a squad across boats"
@@ -745,6 +823,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                     onSeatDragLeave={() => setDragOverSeat(null)}
                     onSeatDragStart={(e, name, fromSeat) => writeDrag(e, { name, fromSeat })}
                     c={c}
+                    fluid={isMobile}
                   />
                 </div>
               </div>
@@ -785,6 +864,19 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
           onPlace={(name) => { placeAthlete(name, null, pickerSeat); setPickerSeat(null); }}
           onRemove={() => { clearSeat(pickerSeat); setPickerSeat(null); }}
           onClose={() => setPickerSeat(null)}
+        />
+      )}
+
+      {exportOpen && activeBoat && (
+        <ExportSheet
+          boat={activeBoat}
+          eventTitle={currentEvent?.title ?? ''}
+          dayLabel={currentEvent?.days.find((d) => d.key === dayKey)?.label ?? ''}
+          bench={unassigned.map((b) => b.name)}
+          c={c}
+          isMobile={isMobile}
+          showToast={showToast}
+          onClose={() => setExportOpen(false)}
         />
       )}
     </div>
@@ -921,11 +1013,16 @@ const SeatPickerSheet: React.FC<{
               {sorted.map((a) => {
                 const off = isOffSide(seatId, a.side);
                 const presetTag = presetMismatchLabel(boat.preset, infoByName.get(a.name));
+                // Strict crew preset: off-preset paddlers are shown but can't be
+                // placed (off-SIDE is still allowed — that's only a warning).
+                const blocked = !!presetTag;
                 return (
                   <button
                     key={a.name}
                     type="button"
-                    onClick={() => onPlace(a.name)}
+                    onClick={() => !blocked && onPlace(a.name)}
+                    disabled={blocked}
+                    title={blocked ? `Can't join ${boat.name} — ${presetTag}` : undefined}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -940,7 +1037,8 @@ const SeatPickerSheet: React.FC<{
                       fontFamily: 'inherit',
                       fontSize: '0.9rem',
                       textAlign: 'left',
-                      cursor: 'pointer',
+                      cursor: blocked ? 'not-allowed' : 'pointer',
+                      opacity: blocked ? 0.5 : 1,
                     }}
                   >
                     <span style={{ fontWeight: 600 }}>{a.name}</span>
@@ -965,6 +1063,538 @@ const SeatPickerSheet: React.FC<{
 };
 
 /* ------------------------------------------------------------------ */
+/* Share / Export — preview the printable sheet, copy it as an image,   */
+/* or print it. Same layout everywhere so the preview === the printout.  */
+
+/** Brand hand-drawn line-art used on the printable sheet (see public/icons). */
+const SHEET_ICONS = {
+  boat: '/icons/dragonboat-icon2.png',
+  paddle: '/icons/paddle-icon1.png',
+} as const;
+
+/** Fetch an asset and return it as a base64 data URL, cached so we fetch once.
+ *  Inlining is required for the copy-image path: an external URL won't load once
+ *  the sheet is serialized into an SVG and rendered as an image. */
+const dataUrlCache = new Map<string, Promise<string>>();
+const loadDataUrl = (path: string): Promise<string> => {
+  let p = dataUrlCache.get(path);
+  if (!p) {
+    p = fetch(path)
+      .then((r) => r.blob())
+      .then(
+        (blob) =>
+          new Promise<string>((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result as string);
+            fr.onerror = reject;
+            fr.readAsDataURL(blob);
+          }),
+      );
+    dataUrlCache.set(path, p);
+  }
+  return p;
+};
+
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = reject;
+    im.src = src;
+  });
+
+/** Render the boat lineup straight onto a 2× canvas and export it as a PNG.
+ *  We draw with the Canvas 2D API (not an SVG <foreignObject>) on purpose:
+ *  WebKit/Safari taints — and then refuses to export — any canvas that has had a
+ *  foreignObject-bearing SVG drawn onto it, so that approach silently fails on
+ *  Mac/iOS. Drawing primitives + data-URL icons keeps the canvas exportable
+ *  everywhere, with no dependencies. */
+const FONT_STACK = '-apple-system, "Segoe UI", Roboto, sans-serif';
+
+const lineupToPngBlob = async (
+  boat: Boat,
+  eventTitle: string,
+  dayLabel: string,
+  bench: string[],
+  iconUrls: { boat?: string; paddle?: string },
+): Promise<Blob | null> => {
+  const presetLabel = CREW_PRESETS.find((p) => p.id === (boat.preset ?? 'open'))?.label ?? 'Open';
+  const crewLine = boat.name === presetLabel ? presetLabel : `${boat.name} · ${presetLabel}`;
+
+  const SCALE = 2;
+  const W = 440;
+  const PAD = 28;
+  const innerW = W - PAD * 2;
+  const ROW_H = 30;
+
+  const [boatImg, paddleImg] = await Promise.all([
+    iconUrls.boat ? loadImage(iconUrls.boat).catch(() => null) : Promise.resolve(null),
+    iconUrls.paddle ? loadImage(iconUrls.paddle).catch(() => null) : Promise.resolve(null),
+  ]);
+
+  // Measuring pass — wrap the bench line so we can size the canvas before drawing
+  // (setting canvas height resets the 2D context, so height must be known first).
+  const meas = document.createElement('canvas').getContext('2d');
+  if (!meas) return null;
+  meas.font = `13px ${FONT_STACK}`;
+  const benchLines: string[] = [];
+  if (bench.length) {
+    const words = `Not seated: ${bench.join(', ')}`.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (meas.measureText(test).width > innerW && line) { benchLines.push(line); line = word; }
+      else line = test;
+    }
+    if (line) benchLines.push(line);
+  }
+
+  const titleH = 28;
+  const metaH = 17;
+  let total = PAD + titleH + 2;
+  if (eventTitle) total += metaH;
+  if (dayLabel) total += metaH;
+  total += 16 + 20 + 10; // subtitle (margin-top, height, margin-bottom)
+  total += (ROWS + 3) * ROW_H; // drummer + header + rows + steers
+  if (benchLines.length) total += 14 + benchLines.length * 18;
+  total += PAD;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W * SCALE;
+  canvas.height = Math.ceil(total) * SCALE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.scale(SCALE, SCALE);
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, total);
+
+  /** Truncate with an ellipsis so long names never spill out of their cell. */
+  const fit = (s: string, maxW: number): string => {
+    if (ctx.measureText(s).width <= maxW) return s;
+    let t = s;
+    while (t.length > 1 && ctx.measureText(`${t}…`).width > maxW) t = t.slice(0, -1);
+    return `${t}…`;
+  };
+
+  let y = PAD;
+
+  // Title (dragonboat icon + name).
+  let x = PAD;
+  if (boatImg) { ctx.drawImage(boatImg, x, y, 28, 28); x += 37; }
+  ctx.fillStyle = '#111';
+  ctx.font = `700 20px ${FONT_STACK}`;
+  ctx.textAlign = 'left';
+  ctx.fillText('ALPAS PINAS — Boat Lineup', x, y + 21);
+  y += titleH + 2;
+
+  // Meta lines.
+  ctx.font = `13px ${FONT_STACK}`;
+  ctx.fillStyle = '#555';
+  if (eventTitle) { ctx.fillText(eventTitle, PAD, y + 12); y += metaH; }
+  if (dayLabel) { ctx.fillText(dayLabel, PAD, y + 12); y += metaH; }
+
+  // Subtitle (paddle icon + crew line).
+  y += 16;
+  x = PAD;
+  if (paddleImg) { ctx.drawImage(paddleImg, x, y, 20, 20); x += 27; }
+  ctx.fillStyle = '#111';
+  ctx.font = `700 16px ${FONT_STACK}`;
+  ctx.fillText(fit(crewLine, x - PAD > 0 ? innerW - (x - PAD) : innerW), x, y + 16);
+  y += 30;
+
+  // Table.
+  const numW = 36;
+  const sideW = (innerW - numW) / 2;
+  const cols = [
+    { x: PAD, w: numW },
+    { x: PAD + numW, w: sideW },
+    { x: PAD + numW + sideW, w: sideW },
+  ];
+  const border = (cx: number, cw: number) => {
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx + 0.5, y + 0.5, cw, ROW_H);
+  };
+  const midY = () => y + ROW_H / 2 + 4;
+
+  const fullRow = (label: string) => {
+    ctx.fillStyle = '#ecfdf5';
+    ctx.fillRect(PAD, y, innerW, ROW_H);
+    border(PAD, innerW);
+    ctx.fillStyle = '#111';
+    ctx.font = `700 13px ${FONT_STACK}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(fit(label, innerW - 20), PAD + 10, midY());
+    y += ROW_H;
+  };
+
+  fullRow(`Drummer — ${boat.seats['DRUMMER'] ?? '—'}`);
+
+  // Header.
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(PAD, y, innerW, ROW_H);
+  cols.forEach((col) => border(col.x, col.w));
+  ctx.fillStyle = '#475569';
+  ctx.font = `700 11px ${FONT_STACK}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('#', cols[0].x + cols[0].w / 2, midY());
+  ctx.fillText('LEFT', cols[1].x + cols[1].w / 2, midY());
+  ctx.fillText('RIGHT', cols[2].x + cols[2].w / 2, midY());
+  y += ROW_H;
+
+  // Rows.
+  for (let i = 1; i <= ROWS; i++) {
+    cols.forEach((col) => border(col.x, col.w));
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `700 13px ${FONT_STACK}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(String(i), cols[0].x + cols[0].w / 2, midY());
+
+    ctx.textAlign = 'left';
+    ctx.font = `13px ${FONT_STACK}`;
+    const l = boat.seats[`${i}L`];
+    const r = boat.seats[`${i}R`];
+    ctx.fillStyle = l ? '#111' : '#cbd5e1';
+    ctx.fillText(fit(l ?? '—', sideW - 18), cols[1].x + 10, midY());
+    ctx.fillStyle = r ? '#111' : '#cbd5e1';
+    ctx.fillText(fit(r ?? '—', sideW - 18), cols[2].x + 10, midY());
+    y += ROW_H;
+  }
+
+  fullRow(`Steers — ${boat.seats['STEERS'] ?? '—'}`);
+
+  // Bench.
+  if (benchLines.length) {
+    y += 14;
+    ctx.fillStyle = '#334155';
+    ctx.font = `13px ${FONT_STACK}`;
+    ctx.textAlign = 'left';
+    for (const line of benchLines) { ctx.fillText(line, PAD, y + 12); y += 18; }
+  }
+
+  return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+};
+
+/** The printable boat sheet as React — a white "paper" card (fixed light colors,
+ *  system fonts) so it reads the same in the preview, the copied image, and the
+ *  printout, regardless of the app's dark/light theme. */
+const LineupSheet = React.forwardRef<
+  HTMLDivElement,
+  { boat: Boat; eventTitle: string; dayLabel: string; bench: string[]; boatIcon?: string; paddleIcon?: string }
+>(({ boat, eventTitle, dayLabel, bench, boatIcon, paddleIcon }, ref) => {
+  const presetLabel = CREW_PRESETS.find((p) => p.id === (boat.preset ?? 'open'))?.label ?? 'Open';
+  const cell: React.CSSProperties = { border: '1px solid #cbd5e1', padding: '7px 10px', fontSize: 13, textAlign: 'center' };
+  const th: React.CSSProperties = { ...cell, background: '#f1f5f9', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#475569' };
+  const full: React.CSSProperties = { ...cell, textAlign: 'left', background: '#ecfdf5', fontWeight: 700 };
+  const seat = (name?: string): React.CSSProperties => ({ ...cell, textAlign: 'left', color: name ? '#111' : '#cbd5e1' });
+
+  return (
+    <div
+      ref={ref}
+      style={{ width: 440, boxSizing: 'border-box', padding: 28, background: '#fff', color: '#111', fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 20, fontWeight: 700, letterSpacing: '0.04em', margin: '0 0 2px' }}>
+        {boatIcon ? <img src={boatIcon} alt="" width={28} height={28} style={{ display: 'block' }} /> : <span>🐉</span>}
+        <span>ALPAS PINAS — Boat Lineup</span>
+      </div>
+      {eventTitle && <div style={{ color: '#555', fontSize: 13, margin: '0 0 2px' }}>{eventTitle}</div>}
+      {dayLabel && <div style={{ color: '#555', fontSize: 13, margin: '0 0 2px' }}>{dayLabel}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 16, fontWeight: 700, margin: '16px 0 10px' }}>
+        {paddleIcon ? <img src={paddleIcon} alt="" width={20} height={20} style={{ display: 'block' }} /> : <span>⛵</span>}
+        <span>{boat.name === presetLabel ? presetLabel : `${boat.name} · ${presetLabel}`}</span>
+      </div>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <tbody>
+          <tr><td colSpan={3} style={full}>Drummer — {boat.seats['DRUMMER'] ?? '—'}</td></tr>
+          <tr><th style={{ ...th, width: 32 }}>#</th><th style={th}>Left</th><th style={th}>Right</th></tr>
+          {Array.from({ length: ROWS }, (_, i) => {
+            const n = i + 1;
+            const l = boat.seats[`${n}L`];
+            const r = boat.seats[`${n}R`];
+            return (
+              <tr key={n}>
+                <td style={{ ...cell, width: 32, color: '#94a3b8', fontWeight: 700 }}>{n}</td>
+                <td style={seat(l)}>{l ?? '—'}</td>
+                <td style={seat(r)}>{r ?? '—'}</td>
+              </tr>
+            );
+          })}
+          <tr><td colSpan={3} style={full}>Steers — {boat.seats['STEERS'] ?? '—'}</td></tr>
+        </tbody>
+      </table>
+      {bench.length > 0 && (
+        <p style={{ fontSize: 13, color: '#334155', margin: '14px 0 0' }}>
+          <strong>Not seated:</strong> {bench.join(', ')}
+        </p>
+      )}
+    </div>
+  );
+});
+LineupSheet.displayName = 'LineupSheet';
+
+const escapeHtml = (s: string): string =>
+  s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]!));
+
+/** Open a print-friendly window with the boat laid out as a grid and print it. */
+const printLineup = (
+  boat: Boat,
+  eventTitle: string,
+  dayLabel: string,
+  bench: string[],
+): void => {
+  const presetLabel = CREW_PRESETS.find((p) => p.id === (boat.preset ?? 'open'))?.label ?? 'Open';
+  const origin = window.location.origin;
+  const cell = (name?: string) =>
+    name
+      ? `<td class="seat">${escapeHtml(name)}</td>`
+      : `<td class="seat empty">—</td>`;
+
+  const rows = Array.from({ length: ROWS }, (_, i) => {
+    const n = i + 1;
+    return `<tr><td class="num">${n}</td>${cell(boat.seats[`${n}L`])}${cell(boat.seats[`${n}R`])}</tr>`;
+  }).join('');
+
+  const benchHtml = bench.length
+    ? `<p class="bench"><strong>Not seated:</strong> ${escapeHtml(bench.join(', '))}</p>`
+    : '';
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(boat.name)} — Lineup</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #111; margin: 32px; }
+  h1 { font-size: 20px; margin: 0 0 2px; letter-spacing: 0.04em; display: flex; align-items: center; gap: 9px; }
+  .meta { color: #555; font-size: 13px; margin: 0 0 2px; }
+  h2 { font-size: 16px; margin: 16px 0 10px; display: flex; align-items: center; gap: 7px; }
+  h1 img { width: 28px; height: 28px; }
+  h2 img { width: 20px; height: 20px; }
+  table { border-collapse: collapse; width: 100%; max-width: 460px; }
+  td, th { border: 1px solid #cbd5e1; padding: 7px 10px; font-size: 13px; text-align: center; }
+  th { background: #f1f5f9; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; }
+  .num { width: 32px; color: #94a3b8; font-weight: 700; }
+  .seat { text-align: left; }
+  .seat.empty { color: #cbd5e1; }
+  .full { background: #ecfdf5; font-weight: 700; text-align: left; }
+  .bench { font-size: 13px; color: #334155; margin-top: 14px; max-width: 460px; }
+  @page { margin: 16mm; }
+</style></head><body>
+  <h1><img src="${origin}${SHEET_ICONS.boat}" alt="">ALPAS PINAS — Boat Lineup</h1>
+  ${eventTitle ? `<p class="meta">${escapeHtml(eventTitle)}</p>` : ''}
+  ${dayLabel ? `<p class="meta">${escapeHtml(dayLabel)}</p>` : ''}
+  <h2><img src="${origin}${SHEET_ICONS.paddle}" alt="">${escapeHtml(boat.name === presetLabel ? presetLabel : `${boat.name} · ${presetLabel}`)}</h2>
+  <table>
+    <tr><td class="full" colspan="3">Drummer — ${escapeHtml(boat.seats['DRUMMER'] ?? '—')}</td></tr>
+    <tr><th>#</th><th>Left</th><th>Right</th></tr>
+    ${rows}
+    <tr><td class="full" colspan="3">Steers — ${escapeHtml(boat.seats['STEERS'] ?? '—')}</td></tr>
+  </table>
+  ${benchHtml}
+  <script>window.onload = function () { window.print(); };</script>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=520,height=720');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+};
+
+const ExportSheet: React.FC<{
+  boat: Boat;
+  eventTitle: string;
+  dayLabel: string;
+  bench: string[];
+  c: ColorPalette;
+  isMobile: boolean;
+  showToast: ShowToast;
+  onClose: () => void;
+}> = ({ boat, eventTitle, dayLabel, bench, c, isMobile, showToast, onClose }) => {
+  const [copied, setCopied] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  // The sheet renders at a fixed 440px (so the copied image is always crisp and
+  // consistent); scale it DOWN to fit the modal for display only. offsetWidth/
+  // Height — and therefore the PNG capture — are unaffected by the CSS transform.
+  const SHEET_W = 440;
+  const [scale, setScale] = useState(1);
+  const [sheetH, setSheetH] = useState(0);
+  const [icons, setIcons] = useState<{ boat?: string; paddle?: string }>({});
+
+  // Inline the brand icons so they survive the copy-image serialization.
+  useEffect(() => {
+    let alive = true;
+    Promise.all([loadDataUrl(SHEET_ICONS.boat), loadDataUrl(SHEET_ICONS.paddle)])
+      .then(([boat, paddle]) => { if (alive) setIcons({ boat, paddle }); })
+      .catch(() => { /* fall back to emoji */ });
+    return () => { alive = false; };
+  }, []);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (sheetRef.current) setSheetH(sheetRef.current.offsetHeight);
+      const el = previewRef.current;
+      if (el) {
+        const cs = getComputedStyle(el);
+        const avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        setScale(Math.min(1, avail / SHEET_W));
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (previewRef.current) ro.observe(previewRef.current);
+    return () => ro.disconnect();
+  }, [boat, eventTitle, dayLabel, bench, icons]);
+
+  const copyImage = async () => {
+    try {
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
+        throw new Error('clipboard image not supported');
+      }
+      // Pass a Promise<Blob> so Safari keeps the write inside the user gesture
+      // while the PNG renders asynchronously.
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': lineupToPngBlob(boat, eventTitle, dayLabel, bench, icons).then((b) => {
+            if (!b) throw new Error('render failed');
+            return b;
+          }),
+        }),
+      ]);
+      setCopied(true);
+      showToast('Lineup image copied — paste it into your chat.');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast('Could not copy image. Use Print / Save as PDF instead.', 'error');
+    }
+  };
+
+  const panelStyle: React.CSSProperties = isMobile
+    ? {
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 401,
+        maxHeight: '82vh',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: c.surface,
+        borderTop: `1px solid ${c.border}`,
+        borderTopLeftRadius: '1rem',
+        borderTopRightRadius: '1rem',
+        boxShadow: '0 -12px 32px rgba(0,0,0,0.35)',
+        animation: 'alpas-sheet-up 220ms cubic-bezier(0.22,1,0.36,1)',
+      }
+    : {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 401,
+        width: 'min(480px, calc(100vw - 3rem))',
+        maxHeight: '85vh',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: c.surface,
+        border: `1px solid ${c.border}`,
+        borderRadius: '1rem',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+        animation: 'alpas-modal-in 180ms cubic-bezier(0.22,1,0.36,1)',
+      };
+
+  return (
+    <>
+      <style>{`
+        @keyframes alpas-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes alpas-modal-in { from { opacity: 0; transform: translate(-50%, -46%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+      `}</style>
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, zIndex: 400, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+      />
+      <div style={panelStyle}>
+        {isMobile && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0 0.25rem' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: c.border }} />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: `${isMobile ? '0.5rem' : '1.1rem'} 1.25rem 0.75rem` }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: c.text }}>Share / Export</div>
+            <div style={{ fontSize: '0.78rem', color: c.textSecondary }}>{boat.name} lineup</div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{ background: 'transparent', border: `1px solid ${c.border}`, color: c.textSecondary, width: 30, height: 30, borderRadius: 999, cursor: 'pointer', fontSize: '1rem', fontFamily: 'inherit', flexShrink: 0 }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div ref={previewRef} style={{ overflow: 'auto', padding: '0.6rem 0.75rem 0.85rem', display: 'flex', justifyContent: 'center', backgroundColor: c.background }}>
+          {/* Placeholder sized to the SCALED sheet so it lays out tightly; the inner
+              wrapper holds the full-size sheet and shrinks it via transform. */}
+          <div style={{ width: SHEET_W * scale, height: sheetH ? sheetH * scale : undefined, flexShrink: 0 }}>
+            <div style={{ width: SHEET_W, transform: `scale(${scale})`, transformOrigin: 'top left', boxShadow: '0 2px 12px rgba(0,0,0,0.25)' }}>
+              <LineupSheet ref={sheetRef} boat={boat} eventTitle={eventTitle} dayLabel={dayLabel} bench={bench} boatIcon={icons.boat} paddleIcon={icons.paddle} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.6rem', padding: '0.75rem 1.25rem 1.25rem', borderTop: `1px solid ${c.border}`, marginTop: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={copyImage}
+            style={{
+              flex: 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              padding: '0.7rem 1rem',
+              borderRadius: '0.55rem',
+              border: 'none',
+              background: c.primary,
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {copied ? <Check size={16} /> : <ImageIcon size={16} />} {copied ? 'Copied' : 'Copy image'}
+          </button>
+          <button
+            type="button"
+            onClick={() => printLineup(boat, eventTitle, dayLabel, bench)}
+            style={{
+              flex: 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              padding: '0.7rem 1rem',
+              borderRadius: '0.55rem',
+              border: `1px solid ${c.border}`,
+              background: 'transparent',
+              color: c.text,
+              fontWeight: 600,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Printer size={16} /> Print
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+/* ------------------------------------------------------------------ */
 
 const BoatGrid: React.FC<{
   boat: Boat;
@@ -978,7 +1608,8 @@ const BoatGrid: React.FC<{
   onSeatDragLeave: () => void;
   onSeatDragStart: (e: React.DragEvent, name: string, fromSeat: SeatId) => void;
   c: ColorPalette;
-}> = ({ boat, selected, selectedSide, infoByName, dragOverSeat, onSeatClick, onSeatDrop, onSeatDragOver, onSeatDragLeave, onSeatDragStart, c }) => {
+  fluid?: boolean;
+}> = ({ boat, selected, selectedSide, infoByName, dragOverSeat, onSeatClick, onSeatDrop, onSeatDragOver, onSeatDragLeave, onSeatDragStart, c, fluid }) => {
   const seatProps = (id: SeatId) => {
     const occupant = boat.seats[id];
     return {
@@ -987,6 +1618,7 @@ const BoatGrid: React.FC<{
       selected,
       selectedSide,
       occupantSide: infoByName.get(occupant)?.side,
+      occupantWeight: infoByName.get(occupant)?.weight,
       occupantOffPreset: !!occupant && !fitsPreset(boat.preset, infoByName.get(occupant)),
       isDragOver: dragOverSeat === id,
       onClick: onSeatClick,
@@ -995,19 +1627,23 @@ const BoatGrid: React.FC<{
       onDragLeave: onSeatDragLeave,
       onSeatDragStart,
       c,
+      fluid,
     };
   };
 
   return (
     <div
       style={{
-        display: 'inline-flex',
+        display: fluid ? 'flex' : 'inline-flex',
         flexDirection: 'column',
         gap: '0.35rem',
         padding: '1rem',
         backgroundColor: c.surface,
         border: `1px solid ${c.border}`,
         borderRadius: '0.85rem',
+        // Fluid (mobile): fill the column and never exceed it, so the boat
+        // scales down instead of forcing a horizontal scroll.
+        ...(fluid ? { width: '100%', maxWidth: '100%', boxSizing: 'border-box' as const } : {}),
       }}
     >
       <div style={{ fontSize: '0.65rem', textAlign: 'center', color: c.textSecondary, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
@@ -1019,7 +1655,7 @@ const BoatGrid: React.FC<{
       {/* Port / Starboard column headers */}
       <div style={{ display: 'flex', gap: '0.35rem', margin: '0.15rem 0' }}>
         {(['Port', 'Starboard'] as const).map((side) => (
-          <div key={side} style={{ width: '96px', textAlign: 'center', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.textSecondary }}>
+          <div key={side} style={{ ...(fluid ? { flex: 1, minWidth: 0 } : { width: '96px' }), textAlign: 'center', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.textSecondary }}>
             {side}
           </div>
         ))}
@@ -1048,6 +1684,7 @@ const SeatBox: React.FC<{
   selected: string | null;
   selectedSide?: SideRole;
   occupantSide?: SideRole;
+  occupantWeight?: number;
   occupantOffPreset?: boolean;
   isDragOver: boolean;
   onClick: (id: SeatId) => void;
@@ -1057,7 +1694,8 @@ const SeatBox: React.FC<{
   onSeatDragStart: (e: React.DragEvent, name: string, fromSeat: SeatId) => void;
   c: ColorPalette;
   full?: boolean;
-}> = ({ id, label, boat, selected, selectedSide, occupantSide, occupantOffPreset, isDragOver, onClick, onDrop, onDragOver, onDragLeave, onSeatDragStart, c, full }) => {
+  fluid?: boolean;
+}> = ({ id, label, boat, selected, selectedSide, occupantSide, occupantWeight, occupantOffPreset, isDragOver, onClick, onDrop, onDragOver, onDragLeave, onSeatDragStart, c, full, fluid }) => {
   const occupant = boat.seats[id];
   const isEmpty = !occupant;
   const canPlace = !!selected && isEmpty;
@@ -1109,7 +1747,13 @@ const SeatBox: React.FC<{
       title={title}
       style={{
         position: 'relative',
-        width: full ? '100%' : '96px',
+        // Paddler seats: fixed 96px on desktop; on mobile flex to split the
+        // row evenly so the grid fits the viewport without horizontal scroll.
+        ...(full
+          ? { width: '100%' }
+          : fluid
+          ? { flex: 1, minWidth: 0 }
+          : { width: '96px' }),
         minHeight: '46px',
         padding: '0.3rem 0.45rem',
         borderRadius: '0.45rem',
@@ -1134,7 +1778,9 @@ const SeatBox: React.FC<{
       )}
       {occupant ? (
         <>
-          <div style={{ fontSize: '0.65rem', color: c.textSecondary, marginBottom: '0.1rem' }}>{label}</div>
+          <div style={{ fontSize: '0.65rem', color: c.textSecondary, marginBottom: '0.1rem' }}>
+            {label}{occupantWeight != null ? ` (${occupantWeight}kg)` : ''}
+          </div>
           <div style={{ fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.2, wordBreak: 'break-word' }}>
             {occupant.split(' ')[0]}
           </div>
@@ -1270,7 +1916,7 @@ const SaveIndicator: React.FC<{ status: SaveStatus; c: ColorPalette }> = ({ stat
     error: { text: 'Saved locally only', color: '#f59e0b' },
   } as const;
   const { text, color } = map[status];
-  return <span style={{ fontSize: '0.78rem', color, fontWeight: 600 }}>{text}</span>;
+  return <span style={{ fontSize: '0.78rem', color, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{text}</span>;
 };
 
 /* ------------------------------------------------------------------ */

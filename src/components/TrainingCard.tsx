@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { colors, emeraldGradient } from '../styles/colors';
 import {
   takenForDay,
@@ -38,6 +39,7 @@ type Props = {
 export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBooked = false }) => {
   const { theme } = useTheme();
   const c = colors[theme];
+  const isMobile = useIsMobile();
 
   const dayStats = event.days.map((d) => {
     const taken = takenForDay(counts, event.id, d.key);
@@ -64,7 +66,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
         style={{
           position: 'relative',
           width: '100%',
-          aspectRatio: '16 / 9',
+          aspectRatio: isMobile ? '5 / 2' : '21 / 9',
           backgroundColor: c.surfaceAlt,
           overflow: 'hidden',
           flexShrink: 0,
@@ -120,10 +122,10 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
       {/* Body */}
       <div
         style={{
-          padding: '1.4rem 1.4rem 1.5rem',
+          padding: isMobile ? '1.15rem 1.15rem 1.25rem' : '1.4rem 1.4rem 1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
+          gap: isMobile ? '0.85rem' : '1rem',
           flex: 1,
         }}
       >
@@ -132,7 +134,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
         <h3
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.7rem',
+            fontSize: isMobile ? '1.45rem' : '1.7rem',
             margin: 0,
             color: c.text,
             letterSpacing: '0.02em',

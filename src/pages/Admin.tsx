@@ -400,8 +400,11 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           <span style={{ fontWeight: 600, fontSize: '0.95rem', color: c.text }}>{currentLabel}</span>
         </header>
 
-        {/* Section content */}
-        <main style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Section content. overflowX is pinned to hidden because setting only
+            overflowY:auto makes the X axis compute to auto too (CSS spec), which
+            turned this into a sideways scroll container on mobile. minWidth:0
+            lets it shrink below its content's intrinsic width inside the flex. */}
+        <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden' }}>
           <SectionContent active={active} showToast={showToast} c={c} theme={theme} />
         </main>
       </div>

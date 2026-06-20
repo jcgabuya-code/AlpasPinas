@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { colors, emeraldGradient, type ColorPalette } from '../styles/colors';
 import type { TrainingEvent } from './TrainingCard';
 import {
@@ -34,6 +35,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   const { theme } = useTheme();
   const c = colors[theme];
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   // Form state — name defaults to the logged-in user and is locked to them.
   const [name, setName] = useState(user?.name ?? '');
@@ -192,15 +194,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-end' : 'center',
         justifyContent: 'center',
-        padding: '1.5rem',
+        padding: isMobile ? 0 : '1.5rem',
         animation: 'alpas-fade-in 160ms ease-out',
       }}
     >
       <style>{`
         @keyframes alpas-fade-in { from { opacity: 0 } to { opacity: 1 } }
         @keyframes alpas-pop-in { from { opacity: 0; transform: scale(0.96) } to { opacity: 1; transform: scale(1) } }
+        @keyframes alpas-slide-up { from { opacity: 0; transform: translateY(100%) } to { opacity: 1; transform: translateY(0) } }
       `}</style>
 
       <div
@@ -208,15 +211,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '560px',
-          maxHeight: 'calc(100vh - 3rem)',
+          maxWidth: isMobile ? '100%' : '560px',
+          maxHeight: isMobile ? '92vh' : 'calc(100vh - 3rem)',
           overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           backgroundColor: c.surface,
           color: c.text,
-          borderRadius: '0.95rem',
+          borderRadius: isMobile ? '1.1rem 1.1rem 0 0' : '0.95rem',
           border: `1px solid ${c.border}`,
           boxShadow: `0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px ${c.primary}22`,
-          animation: 'alpas-pop-in 200ms ease-out',
+          animation: isMobile ? 'alpas-slide-up 240ms ease-out' : 'alpas-pop-in 200ms ease-out',
         }}
       >
         <button
@@ -249,7 +253,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
         ) : confirmed ? (
           <WaitingView event={event} attending={effectiveAttending} name={name} onClose={onClose} />
         ) : (
-          <form onSubmit={handleSubmit} style={{ padding: '1.75rem' }}>
+          <form onSubmit={handleSubmit} style={{ padding: isMobile ? '1.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom))' : '1.75rem' }}>
             <div style={{ marginBottom: '1.25rem' }}>
               <div
                 style={{
@@ -312,7 +316,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 placeholder="Brendz Reyes"
                 readOnly={!!user}
                 style={{
-                  ...inputStyle(c),
+                  ...inputStyle(c, isMobile),
                   ...(user ? { opacity: 0.7, cursor: 'not-allowed' } : null),
                 }}
               />
@@ -333,7 +337,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 value={birthday}
                 onChange={(e) => setBirthday(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
-                style={inputStyle(c)}
+                style={inputStyle(c, isMobile)}
               />
               <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
                 Used for age-based crews (e.g. Masters 40+) — kept private.
@@ -353,7 +357,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 placeholder="72"
                 min={30}
                 max={200}
-                style={inputStyle(c)}
+                style={inputStyle(c, isMobile)}
               />
               <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
                 Used to balance the boat — kept private.
@@ -452,7 +456,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 lineHeight: 1.5,
               }}
             >
-              Your sign-up is saved to the team's Google Sheet.
+              Your sign-up is saved to your team account.
             </p>
           </form>
         )}
@@ -714,14 +718,15 @@ const AttendingChip: React.FC<{
   </button>
 );
 
-const inputStyle = (c: ColorPalette): React.CSSProperties => ({
+// 16px font on mobile keeps iOS from zooming in when an input gains focus.
+const inputStyle = (c: ColorPalette, isMobile = false): React.CSSProperties => ({
   width: '100%',
   padding: '0.7rem 0.85rem',
   borderRadius: '0.55rem',
   border: `1px solid ${c.border}`,
   backgroundColor: c.background,
   color: c.text,
-  fontSize: '0.95rem',
+  fontSize: isMobile ? '16px' : '0.95rem',
   fontFamily: 'inherit',
   outline: 'none',
   boxSizing: 'border-box',

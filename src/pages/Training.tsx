@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { colors } from '../styles/colors';
 import { TrainingCard, type TrainingEvent } from '../components/TrainingCard';
 import { getTrainingEvents, subscribeTrainingEvents } from '../utils/adminTrainingEvents';
@@ -45,6 +46,7 @@ export const Training: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const c = colors[theme];
+  const isMobile = useIsMobile();
 
   const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
   const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
@@ -157,7 +159,7 @@ export const Training: React.FC = () => {
       </section>
 
       {/* Page header */}
-      <section style={{ padding: '2.5rem 1.5rem 1.5rem', backgroundColor: c.background }}>
+      <section style={{ padding: isMobile ? '1.75rem 1.15rem 1.25rem' : '2.5rem 1.5rem 1.5rem', backgroundColor: c.background }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <Link
             to="/"
@@ -228,7 +230,7 @@ export const Training: React.FC = () => {
       )}
 
       {/* Events grid */}
-      <section style={{ padding: '1rem 1.5rem 5rem', backgroundColor: c.background }}>
+      <section style={{ padding: isMobile ? '0.75rem 1.15rem 4rem' : '1rem 1.5rem 5rem', backgroundColor: c.background }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <h2
             style={{

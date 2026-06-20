@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { colors } from '../styles/colors';
 import { attendingLabel, formatShortDate, type Booking } from '../utils/bookings';
 import type { TrainingEvent } from './TrainingCard';
@@ -17,10 +18,11 @@ export const MyBookingsPanel: React.FC<{
 }> = ({ bookings, eventById, onCancel }) => {
   const { theme } = useTheme();
   const c = colors[theme];
+  const isMobile = useIsMobile();
   const [pendingCancel, setPendingCancel] = useState<string | null>(null);
 
   return (
-    <section style={{ padding: '0 1.5rem 1rem', backgroundColor: c.background }}>
+    <section style={{ padding: isMobile ? '0 1.15rem 1rem' : '0 1.5rem 1rem', backgroundColor: c.background }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         <div
           style={{
@@ -160,7 +162,16 @@ export const MyBookingsPanel: React.FC<{
                     </div>
                   </div>
                   {confirming ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        flexShrink: 0,
+                        flexWrap: 'wrap',
+                        width: isMobile ? '100%' : 'auto',
+                      }}
+                    >
                       <span style={{ fontSize: '0.78rem', color: c.textSecondary, whiteSpace: 'nowrap' }}>
                         Remove sign-up?
                       </span>
@@ -174,12 +185,13 @@ export const MyBookingsPanel: React.FC<{
                           background: '#ef4444',
                           border: 'none',
                           color: '#fff',
-                          padding: '0.4rem 0.85rem',
+                          padding: '0.55rem 0.85rem',
                           borderRadius: '999px',
                           fontSize: '0.8rem',
                           fontWeight: 600,
                           cursor: 'pointer',
                           fontFamily: 'inherit',
+                          flex: isMobile ? 1 : 'none',
                         }}
                       >
                         Yes, remove
@@ -191,11 +203,12 @@ export const MyBookingsPanel: React.FC<{
                           background: 'transparent',
                           border: `1px solid ${c.border}`,
                           color: c.textSecondary,
-                          padding: '0.4rem 0.85rem',
+                          padding: '0.55rem 0.85rem',
                           borderRadius: '999px',
                           fontSize: '0.8rem',
                           cursor: 'pointer',
                           fontFamily: 'inherit',
+                          flex: isMobile ? 1 : 'none',
                         }}
                       >
                         Keep
@@ -209,11 +222,12 @@ export const MyBookingsPanel: React.FC<{
                         background: 'transparent',
                         border: `1px solid ${c.border}`,
                         color: c.textSecondary,
-                        padding: '0.4rem 0.85rem',
+                        padding: '0.55rem 0.85rem',
                         borderRadius: '999px',
                         fontSize: '0.8rem',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
+                        width: isMobile ? '100%' : 'auto',
                       }}
                     >
                       Cancel
