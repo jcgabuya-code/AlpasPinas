@@ -4,55 +4,103 @@
     "role": "Team Captain",
     "side": "Right",
     "joined": 2021,
-    "photo": null
+    "photo": null,
+    "races": 24,
+    "ratings": [
+      { "label": "PWR", "value": 88 },
+      { "label": "SYN", "value": 92 },
+      { "label": "STA", "value": 84 }
+    ]
   },
   {
     "name": "Liza Mendoza",
     "role": "Head Coach",
     "side": "—",
     "joined": 2020,
-    "photo": null
+    "photo": null,
+    "races": 31,
+    "ratings": [
+      { "label": "PWR", "value": 79 },
+      { "label": "SYN", "value": 90 },
+      { "label": "STA", "value": 86 }
+    ]
   },
   {
     "name": "Joaquin Tan",
     "role": "Stroke",
     "side": "Left",
     "joined": 2022,
-    "photo": null
+    "photo": null,
+    "races": 18,
+    "ratings": [
+      { "label": "PWR", "value": 82 },
+      { "label": "SYN", "value": 95 },
+      { "label": "STA", "value": 80 }
+    ]
   },
   {
     "name": "Camille Bautista",
     "role": "Drummer",
     "side": "—",
     "joined": 2023,
-    "photo": null
+    "photo": null,
+    "races": 12,
+    "ratings": [
+      { "label": "PWR", "value": 70 },
+      { "label": "SYN", "value": 96 },
+      { "label": "STA", "value": 78 }
+    ]
   },
   {
     "name": "Diego Cruz",
     "role": "Steersperson",
     "side": "—",
     "joined": 2021,
-    "photo": null
+    "photo": null,
+    "races": 22,
+    "ratings": [
+      { "label": "PWR", "value": 76 },
+      { "label": "SYN", "value": 88 },
+      { "label": "STA", "value": 83 }
+    ]
   },
   {
     "name": "Andrea Lim",
     "role": "Senior Paddler",
     "side": "Right",
     "joined": 2022,
-    "photo": null
+    "photo": null,
+    "races": 17,
+    "ratings": [
+      { "label": "PWR", "value": 84 },
+      { "label": "SYN", "value": 81 },
+      { "label": "STA", "value": 88 }
+    ]
   },
   {
     "name": "Rafa Domingo",
     "role": "Paddler",
     "side": "Left",
     "joined": 2024,
-    "photo": null
+    "photo": null,
+    "races": 6,
+    "ratings": [
+      { "label": "PWR", "value": 80 },
+      { "label": "SYN", "value": 72 },
+      { "label": "STA", "value": 85 }
+    ]
   },
   {
     "name": "Tala Villanueva",
     "role": "Paddler",
     "side": "Right",
     "joined": 2024,
-    "photo": null
+    "photo": null,
+    "races": 7,
+    "ratings": [
+      { "label": "PWR", "value": 78 },
+      { "label": "SYN", "value": 76 },
+      { "label": "STA", "value": 82 }
+    ]
   }
 ]

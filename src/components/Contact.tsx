@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colors } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { SectionHeader } from './SectionHeader';
+import { sectionShell, cadenceAccentUri } from '../styles/tokens';
 
-// Line-art glyphs (handmade) to match the site's icon system — replace the old emoji.
-const IconBase: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+// Line-art glyphs (handmade) to match the site's icon system.
+const IconBase: React.FC<{ children: React.ReactNode; size?: number }> = ({ children, size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {children}
   </svg>
 );
@@ -28,14 +30,55 @@ const InstagramIcon = () => (
     <circle cx="16.7" cy="7.3" r="0.7" fill="currentColor" stroke="none" />
   </IconBase>
 );
+const SeatIcon = ({ size = 22 }: { size?: number }) => (
+  <IconBase size={size}>
+    <rect x="6" y="11" width="12" height="3.6" rx="1" />
+    <path d="M7.5 11V8.2A2.2 2.2 0 0 1 9.7 6h4.6a2.2 2.2 0 0 1 2.2 2.2V11" />
+    <path d="M8 14.6V18M16 14.6V18" />
+  </IconBase>
+);
+const CheckIcon = ({ size = 24 }: { size?: number }) => (
+  <IconBase size={size}>
+    <path d="M4 12.5l5 5 11-11" />
+  </IconBase>
+);
+
+type Values = { name: string; email: string; exp: string; message: string };
+type Errors = { name?: string; email?: string };
 
 export const Contact: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
-  const [focused, setFocused] = useState<string | null>(null);
+  const accent = theme === 'dark' ? c.primaryLight : c.primary;
 
-  const inputBase: React.CSSProperties = {
+  const [values, setValues] = useState<Values>({ name: '', email: '', exp: 'any', message: '' });
+  const [errors, setErrors] = useState<Errors>({});
+  const [focused, setFocused] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const set = (k: keyof Values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setValues((v) => ({ ...v, [k]: e.target.value }));
+
+  const validate = (): Errors => {
+    const next: Errors = {};
+    if (!values.name.trim()) next.name = 'Tell us your name';
+    if (!values.email.trim()) next.email = 'We need an email to reach you';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) next.email = 'That email looks off';
+    return next;
+  };
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const next = validate();
+    setErrors(next);
+    if (Object.keys(next).length === 0) {
+      // TODO: wire to backend (Supabase applications / email relay). Client-confirm for now.
+      setSubmitted(true);
+    }
+  };
+
+  const inputStyle = (id: keyof Errors | 'exp' | 'message', hasError?: boolean): React.CSSProperties => ({
     width: '100%',
     padding: '0.85rem 1rem',
     borderRadius: '0.55rem',
@@ -45,81 +88,50 @@ export const Contact: React.FC = () => {
     fontSize: '0.95rem',
     fontFamily: 'inherit',
     outline: 'none',
+    border: `1px solid ${hasError ? '#ef4444' : focused === id ? c.primary : c.border}`,
     transition: 'border-color 0.15s ease',
-  };
-
-  const inputStyle = (id: string): React.CSSProperties => ({
-    ...inputBase,
-    border: `1px solid ${focused === id ? c.primary : c.border}`,
   });
 
   return (
-    <section
-      id="contact"
-      style={{
-        backgroundColor: c.sand,
-        padding: isMobile ? '3rem 1rem' : '6rem 1.5rem',
-        borderTop: `1px solid ${c.border}`,
-      }}
-    >
+    <section id="contact" style={{ backgroundColor: c.sand, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
       <div
         style={{
           maxWidth: '1080px',
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1.2fr)',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1.15fr)',
           gap: isMobile ? '2rem' : '3rem',
           alignItems: 'start',
         }}
       >
-        {/* Left: copy + meta */}
+        {/* Left: the invitation */}
         <div>
-          <span
+          <SectionHeader eyebrow="The Open Seat" style={{ marginBottom: '0' }}>
+            CLAIM YOUR <span style={{ color: c.primary }}>SEAT</span>
+          </SectionHeader>
+
+          {/* Cadence meter — same motif as the hero readout */}
+          <div
+            aria-hidden="true"
             style={{
-              padding: '0.35rem 0.85rem',
-              borderRadius: '999px',
-              border: `1px solid ${c.primary}55`,
-              backgroundColor: `${c.primary}15`,
-              color: c.primary,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              marginBottom: '1rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
+              height: '16px',
+              width: '100%',
+              maxWidth: '300px',
+              backgroundImage: cadenceAccentUri(c.sun),
+              backgroundRepeat: 'repeat-x',
+              backgroundSize: '80px 16px',
+              backgroundPosition: 'left center',
+              opacity: 0.9,
+              WebkitMaskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
+              maskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
+              margin: '0.85rem 0 1.4rem',
             }}
-          >
-            <span
-              aria-hidden="true"
-              style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun }}
-            />
-            Get in Touch
-          </span>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.25rem, 6vw, 3.5rem)',
-              color: c.text,
-              margin: '0 0 1rem 0',
-              letterSpacing: '0.02em',
-              lineHeight: 1,
-            }}
-          >
-            JOIN THE <span style={{ color: c.primary }}>CREW</span>
-          </h2>
-          <p
-            style={{
-              color: c.textSecondary,
-              fontSize: '1rem',
-              lineHeight: 1.6,
-              marginBottom: '2rem',
-              maxWidth: '380px',
-            }}
-          >
-            Curious about training, races, or just want to come try a session?
-            Drop us a note and we'll get back within a day or two.
+          />
+
+          <p style={{ color: c.textSecondary, fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem', maxWidth: '400px' }}>
+            There's a seat in the boat with your name on it. Come try a session —
+            no experience needed, all gear provided. We'll get you on the water
+            within a week or two.
           </p>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
@@ -129,92 +141,152 @@ export const Contact: React.FC = () => {
           </ul>
         </div>
 
-        {/* Right: form */}
-        <form
-          onSubmit={(e) => e.preventDefault()}
+        {/* Right: the seat ticket — form, or the confirmation once claimed */}
+        <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.1rem',
-            padding: '2rem',
             backgroundColor: c.surface,
             borderRadius: '1rem',
             border: `1px solid ${c.border}`,
+            overflow: 'hidden',
           }}
         >
-          <Field label="Name" color={c.text}>
-            <input
-              id="name"
-              type="text"
-              placeholder="Your name"
-              onFocus={() => setFocused('name')}
-              onBlur={() => setFocused(null)}
-              style={inputStyle('name')}
-            />
-          </Field>
-
-          <Field label="Email" color={c.text}>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@email.com"
-              onFocus={() => setFocused('email')}
-              onBlur={() => setFocused(null)}
-              style={inputStyle('email')}
-            />
-          </Field>
-
-          <Field label="Experience" color={c.text}>
-            <select
-              id="exp"
-              onFocus={() => setFocused('exp')}
-              onBlur={() => setFocused(null)}
-              style={inputStyle('exp')}
-              defaultValue="any"
+          {/* Card header — the open seat */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1.25rem 2rem', borderBottom: `1px solid ${c.border}`, background: `${c.primary}0d` }}>
+            <span
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                flexShrink: 0,
+                border: `2px dashed ${c.primary}aa`,
+                color: accent,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <option value="any">Pick one…</option>
-              <option value="none">Never paddled before</option>
-              <option value="some">A bit — kayak / outrigger / etc.</option>
-              <option value="dragon">Done dragon boat before</option>
-            </select>
-          </Field>
+              <SeatIcon />
+            </span>
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: accent }}>The open seat</div>
+              <div style={{ fontSize: '0.85rem', color: c.textSecondary, marginTop: '0.1rem' }}>One spot in the boat is yours.</div>
+            </div>
+          </div>
 
-          <Field label="Message" color={c.text}>
-            <textarea
-              id="msg"
-              placeholder="Tell us a bit about yourself…"
-              rows={4}
-              onFocus={() => setFocused('msg')}
-              onBlur={() => setFocused(null)}
-              style={{ ...inputStyle('msg'), resize: 'vertical', minHeight: '110px' }}
-            />
-          </Field>
+          {submitted ? (
+            <div style={{ padding: '2.75rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+              <span
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: brandGradient(brand, theme),
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '0.4rem',
+                  boxShadow: `0 10px 30px ${c.primary}44`,
+                }}
+              >
+                <CheckIcon size={28} />
+              </span>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', letterSpacing: '0.02em', color: c.text, margin: 0 }}>
+                Seat saved.
+              </h3>
+              <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: 0, maxWidth: '320px' }}>
+                Thanks{values.name.trim() ? `, ${values.name.trim().split(/\s+/)[0]}` : ''}! We'll be in touch within a day or two about your first session.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setValues({ name: '', email: '', exp: 'any', message: '' });
+                  setErrors({});
+                  setSubmitted(false);
+                }}
+                style={{ marginTop: '0.6rem', background: 'none', border: 'none', color: c.primary, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Send another →
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', padding: '1.75rem 2rem 2rem' }}>
+              <Field label="Name" htmlFor="name" color={c.text} error={errors.name}>
+                <input
+                  id="name"
+                  type="text"
+                  placeholder="Your name"
+                  value={values.name}
+                  onChange={set('name')}
+                  onFocus={() => setFocused('name')}
+                  onBlur={() => setFocused(null)}
+                  style={inputStyle('name', Boolean(errors.name))}
+                />
+              </Field>
 
-          <button
-            type="submit"
-            style={{
-              backgroundColor: c.primary,
-              color: '#fff',
-              border: 'none',
-              padding: '0.95rem 1.25rem',
-              borderRadius: '0.55rem',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              letterSpacing: '0.02em',
-              boxShadow: `0 8px 24px ${c.primary}33`,
-            }}
-          >
-            Send Message →
-          </button>
-        </form>
+              <Field label="Email" htmlFor="email" color={c.text} error={errors.email}>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="you@email.com"
+                  value={values.email}
+                  onChange={set('email')}
+                  onFocus={() => setFocused('email')}
+                  onBlur={() => setFocused(null)}
+                  style={inputStyle('email', Boolean(errors.email))}
+                />
+              </Field>
+
+              <Field label="Paddling experience" htmlFor="exp" color={c.text}>
+                <select id="exp" value={values.exp} onChange={set('exp')} onFocus={() => setFocused('exp')} onBlur={() => setFocused(null)} style={inputStyle('exp')}>
+                  <option value="any">Pick one…</option>
+                  <option value="none">Never paddled before</option>
+                  <option value="some">A bit — kayak / outrigger / etc.</option>
+                  <option value="dragon">Done dragon boat before</option>
+                </select>
+              </Field>
+
+              <Field label="Message" htmlFor="msg" color={c.text}>
+                <textarea
+                  id="msg"
+                  placeholder="Tell us a bit about yourself…"
+                  rows={4}
+                  value={values.message}
+                  onChange={set('message')}
+                  onFocus={() => setFocused('message')}
+                  onBlur={() => setFocused(null)}
+                  style={{ ...inputStyle('message'), resize: 'vertical', minHeight: '110px' }}
+                />
+              </Field>
+
+              <button
+                type="submit"
+                style={{
+                  background: brandGradient(brand, theme),
+                  color: '#fff',
+                  border: 'none',
+                  padding: '1rem 1.25rem',
+                  borderRadius: '0.55rem',
+                  fontSize: '0.98rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                  fontFamily: 'inherit',
+                  boxShadow: `0 10px 28px ${c.primary}44`,
+                }}
+              >
+                Claim my seat →
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </section>
   );
 };
 
-const Field: React.FC<{ label: string; color: string; children: React.ReactNode }> = ({ label, color, children }) => (
-  <label style={{ display: 'block' }}>
+const Field: React.FC<{ label: string; htmlFor: string; color: string; error?: string; children: React.ReactNode }> = ({ label, htmlFor, color, error, children }) => (
+  <label htmlFor={htmlFor} style={{ display: 'block' }}>
     <span
       style={{
         display: 'block',
@@ -229,6 +301,9 @@ const Field: React.FC<{ label: string; color: string; children: React.ReactNode 
       {label}
     </span>
     {children}
+    {error && (
+      <span style={{ display: 'block', color: '#ef4444', fontSize: '0.78rem', marginTop: '0.35rem' }}>{error}</span>
+    )}
   </label>
 );
 

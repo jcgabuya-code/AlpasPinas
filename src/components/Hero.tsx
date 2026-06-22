@@ -1,16 +1,44 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colors, brandGradient } from '../styles/colors';
+import { colors, brandGradient, type ColorPalette } from '../styles/colors';
 import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { cadenceAccentUri } from '../styles/tokens';
 
+// Split so the numeric part can count up on load while the prefix/suffix stay put
+// — "#3" keeps its hash, "5 YRS" keeps its unit, "12+" keeps its plus.
 const STATS = [
-  { value: '12+', label: 'Paddlers' },
-  { value: '5 YRS', label: 'Racing' },
-  { value: '#3', label: 'Regional Rank' },
+  { prefix: '', value: 12, suffix: '+', label: 'Paddlers' },
+  { prefix: '', value: 5, suffix: ' YRS', label: 'Racing' },
+  { prefix: '#', value: 3, suffix: '', label: 'Regional Rank' },
 ];
+
+// Count a number up from 0 to target with an easeOutCubic curve. Honors
+// prefers-reduced-motion by jumping straight to the final value.
+const useCountUp = (target: number, durationMs = 1100): number => {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setN(target);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setN(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return n;
+};
+
+const CountUp: React.FC<{ target: number }> = ({ target }) => <>{useCountUp(target)}</>;
 
 // Keyword tagline — echoes the team's identity, separated by emerald marks.
 const KEYWORDS = ['SPEED', 'SYNC', 'STRENGTH'];
@@ -54,10 +82,142 @@ const PlayGlyph: React.FC<{ size?: number }> = ({ size = 12 }) => (
 const GRAIN_URI =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
+
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   month: 'long',
   day: 'numeric',
   year: 'numeric',
+};
+
+const ArrowGlyph: React.FC<{ size?: number }> = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
+// Next-race badge styled as a tear-off race ticket: a tinted icon "stub", a dashed
+// perforation, then the event details — the whole thing a link to the join section.
+// Shared by the wide Hero (over the right photo) and mobile HeroPhoto (full-width).
+const NextRaceTicket: React.FC<{
+  event: RaceEvent;
+  c: ColorPalette;
+  isDark: boolean;
+  compact?: boolean;
+}> = ({ event, c, isDark, compact = false }) => {
+  const [hover, setHover] = useState(false);
+  const glassBg = isDark ? 'rgba(8,11,10,0.46)' : 'rgba(255,255,255,0.58)';
+  const glassBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)';
+  const stubBg = isDark ? `${c.primary}3a` : `${c.primary}24`;
+  const accent = isDark ? c.primaryLight : c.primary;
+  const perfColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.18)';
+
+  // Punched tear-line notches: a fixed-width stub means the perforation sits at a
+  // known x, so two radial-gradient mask circles cut real half-holes (top + bottom)
+  // straight through the frosted glass — the photo shows through, like a torn ticket.
+  const stubW = compact ? 42 : 48;
+  const notchR = compact ? 4 : 5;
+  const notch = (y: string) =>
+    `radial-gradient(circle ${notchR}px at ${stubW}px ${y}, transparent ${notchR}px, #000 ${notchR + 0.5}px)`;
+  const maskImage = `${notch('0')}, ${notch('100%')}`;
+
+  return (
+    <a
+      href="#contact"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: compact ? 'flex' : 'inline-flex',
+        alignItems: 'stretch',
+        textDecoration: 'none',
+        maxWidth: compact ? '100%' : '480px',
+        background: glassBg,
+        backdropFilter: 'blur(20px) saturate(135%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(135%)',
+        border: `1px solid ${glassBorder}`,
+        borderRadius: compact ? '0.8rem' : '0.95rem',
+        overflow: 'hidden',
+        boxShadow: hover ? '0 14px 40px rgba(0,0,0,0.30)' : '0 8px 28px rgba(0,0,0,0.20)',
+        transform: hover ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        WebkitMaskImage: maskImage,
+        maskImage,
+        WebkitMaskComposite: 'source-in',
+        maskComposite: 'intersect',
+      }}
+    >
+      {/* Stub — tinted icon zone, the tear-off end of the ticket. Fixed width so the
+          perforation + punched notches align to its right edge. */}
+      <span
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: stubW,
+          background: stubBg,
+          color: accent,
+          flexShrink: 0,
+        }}
+      >
+        <TrophyGlyph size={compact ? 20 : 24} />
+      </span>
+
+      {/* Perforation — dashed tear line */}
+      <span
+        aria-hidden="true"
+        style={{ width: 0, borderLeft: `1.5px dashed ${perfColor}`, alignSelf: 'stretch', margin: '0.4rem 0' }}
+      />
+
+      {/* Body — eyebrow + race name + date/location */}
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: '0.1rem',
+          padding: compact ? '0.5rem 0.85rem' : '0.55rem 1.05rem',
+        }}
+      >
+        <span style={{ fontSize: compact ? '0.56rem' : '0.6rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: accent }}>
+          Next Race
+        </span>
+        <span
+          style={{
+            fontSize: compact ? '0.84rem' : '0.92rem',
+            fontWeight: 600,
+            color: c.text,
+            lineHeight: 1.2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {event.name}
+        </span>
+        <span style={{ fontSize: compact ? '0.68rem' : '0.74rem', color: c.textSecondary, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {parseEventDate(event.date).toLocaleDateString(undefined, DATE_FORMAT)} · {event.location}
+        </span>
+      </span>
+
+      {/* Arrow affordance — nudges right on hover */}
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          paddingRight: compact ? '0.7rem' : '0.95rem',
+          paddingLeft: '0.15rem',
+          color: accent,
+          flexShrink: 0,
+          transform: hover ? 'translateX(3px)' : 'translateX(0)',
+          transition: 'transform 0.2s ease',
+        }}
+      >
+        <ArrowGlyph size={compact ? 15 : 16} />
+      </span>
+    </a>
+  );
 };
 
 // Photos for the mobile HeroPhoto slider. Add more entries here to extend the carousel.
@@ -112,88 +272,58 @@ export const Hero: React.FC = () => {
         backgroundColor: panel,
       }}
     >
-      {/* Wide: team photo covers the right 55%, feathered into the panel at its left edge */}
+      {/* Wide: team photo covers the right 55%. All photo treatment is scoped to this
+          frame so it never bleeds onto the text panel. The left edge feathers into the
+          panel over a wide, gentle ramp (seamless blend); a subtle dark vignette at
+          top/bottom seats the nav + race ticket — matching the mobile HeroPhoto, and
+          avoiding the flat panel-color bars the old full-width fade produced. */}
       {!isMobile && (
-        <img
-          src="/team.jpg"
-          alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
+        <div
+          aria-hidden="true"
           style={{
             position: 'absolute',
             top: 0,
             bottom: 0,
             right: 0,
             width: '55%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
+            overflow: 'hidden',
             WebkitMaskImage:
-              'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 2%, rgba(0,0,0,0.8) 4%, #000 6%)',
+              'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.08) 6%, rgba(0,0,0,0.45) 14%, #000 24%)',
             maskImage:
-              'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 2%, rgba(0,0,0,0.8) 4%, #000 6%)',
-          }}
-        />
-      )}
-
-      {/* Wide: top+bottom fade only — the left seam is feathered by the image's own mask */}
-      {!isMobile && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: `linear-gradient(180deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},0) 6%, rgba(${panelRgb},0) 94%, rgba(${panelRgb},1) 100%)`,
-          }}
-        />
-      )}
-
-      {/* Next-race badge — overlaid on the photo (wide screens), frosted + seamless */}
-      {!isMobile && nextEvent && (
-        <div
-          style={{
-            position: 'absolute',
-            zIndex: 2,
-            bottom: '1.75rem',
-            // Centered horizontally over the image (the right 55%): 45% + 55%/2
-            left: '72.5%',
-            right: 'auto',
-            transform: 'translateX(-50%)',
-            maxWidth: '520px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.95rem',
-            background: isDark ? 'rgba(8,11,10,0.42)' : 'rgba(255,255,255,0.55)',
-            backdropFilter: 'blur(20px) saturate(135%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(135%)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)'}`,
-            borderRadius: '0.95rem',
-            padding: '0.7rem 1.5rem 0.7rem 0.85rem',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.20)',
+              'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.08) 6%, rgba(0,0,0,0.45) 14%, #000 24%)',
           }}
         >
-          <span
-            aria-hidden="true"
+          <img
+            src="/team.jpg"
+            alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '999px',
-              backgroundColor: isDark ? `${c.primary}26` : `${c.primary}1f`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: isDark ? c.primaryLight : c.primary,
-              flexShrink: 0,
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
             }}
-          >
-            <TrophyGlyph size={24} />
-          </span>
-          <div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 600, color: c.text, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-              Next race: {nextEvent.name}
-            </div>
-            <div style={{ fontSize: '0.74rem', color: c.textSecondary, marginTop: '0.15rem', whiteSpace: 'nowrap' }}>
-              {parseEventDate(nextEvent.date).toLocaleDateString(undefined, DATE_FORMAT)} · {nextEvent.location}
-            </div>
-          </div>
+          />
+          {/* Soft top + bottom darkening — for nav contrast and to seat the ticket */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background:
+                'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 66%, rgba(0,0,0,0.32) 100%)',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Next-race ticket — overlaid on the photo (wide screens), centered over the
+          right 55%: 45% + 55%/2 = 72.5% */}
+      {!isMobile && nextEvent && (
+        <div style={{ position: 'absolute', zIndex: 2, bottom: '1.75rem', left: '72.5%', transform: 'translateX(-50%)', maxWidth: 'min(480px, 50vw)' }}>
+          <NextRaceTicket event={nextEvent} c={c} isDark={isDark} />
         </div>
       )}
 
@@ -299,47 +429,59 @@ export const Hero: React.FC = () => {
             </span>
           </h1>
 
-          {/* Keyword tagline */}
+          {/* Cadence readout — the stroke count, visualized. A stroke-rate meter (sound-
+              wave bars) with the SPEED·SYNC·STRENGTH beats pulsing beneath it like a
+              drummer's count. */}
           <div
             className={isMobile ? 'hero-rise' : undefined}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.65rem',
-              marginTop: isMobile ? '1.1rem' : '0.7rem',
-              animationDelay: '0.30s',
-            }}
+            style={{ marginTop: isMobile ? '1.1rem' : '0.7rem', animationDelay: '0.30s' }}
           >
-            {KEYWORDS.map((word, i) => (
-              <React.Fragment key={word}>
-                {/* Cadence beat-tick — amber dot that pulses in sequence like a
-                    dragon-boat drummer's stroke count. Leads each word + repeats. */}
-                <span
-                  aria-hidden="true"
-                  className="cadence-beat"
-                  style={{
-                    width: isMobile ? '6px' : '7px',
-                    height: isMobile ? '6px' : '7px',
-                    borderRadius: '999px',
-                    backgroundColor: c.sun,
-                    flexShrink: 0,
-                    animationDelay: `${i * 0.18}s`,
-                  }}
-                />
-                <span
-                  style={{
-                    color: heroText,
-                    fontSize: isMobile ? '0.8rem' : '0.95rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.18em',
-                    textShadow: heroTextShadow,
-                  }}
-                >
-                  {word}
+            <div
+              aria-hidden="true"
+              style={{
+                height: '16px',
+                width: '100%',
+                maxWidth: '340px',
+                backgroundImage: cadenceAccentUri(c.sun),
+                backgroundRepeat: 'repeat-x',
+                backgroundSize: '80px 16px',
+                backgroundPosition: 'left center',
+                opacity: 0.9,
+                WebkitMaskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
+                maskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
+              }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem 1.3rem', marginTop: '0.55rem' }}>
+              {KEYWORDS.map((word, i) => (
+                <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Cadence beat-tick — amber dot that pulses in sequence like a
+                      dragon-boat drummer's stroke count. */}
+                  <span
+                    aria-hidden="true"
+                    className="cadence-beat"
+                    style={{
+                      width: isMobile ? '6px' : '7px',
+                      height: isMobile ? '6px' : '7px',
+                      borderRadius: '999px',
+                      backgroundColor: c.sun,
+                      flexShrink: 0,
+                      animationDelay: `${i * 0.18}s`,
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: heroText,
+                      fontSize: isMobile ? '0.8rem' : '0.95rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.18em',
+                      textShadow: heroTextShadow,
+                    }}
+                  >
+                    {word}
+                  </span>
                 </span>
-              </React.Fragment>
-            ))}
+              ))}
+            </div>
           </div>
 
           <p
@@ -449,9 +591,10 @@ export const Hero: React.FC = () => {
                     color: heroText,
                     letterSpacing: '0.02em',
                     lineHeight: 1,
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {s.value}
+                  {s.prefix}<CountUp target={s.value} />{s.suffix}
                 </div>
                 <div
                   style={{
@@ -469,6 +612,29 @@ export const Hero: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Scroll cue — only on the wide hero (mobile flows straight into the photo
+          band). Outer div positions/centers; inner div carries the bob animation so
+          its transform doesn't fight the centering translate. */}
+      {!isMobile && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            bottom: '1.4rem',
+            left: '22.5%',
+            transform: 'translateX(-50%)',
+            zIndex: 2,
+            color: heroSub,
+          }}
+        >
+          <span className="hero-scroll-cue" style={{ display: 'block' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </span>
+        </div>
+      )}
 
       <VideoModal
         open={videoOpen}
@@ -630,51 +796,10 @@ export const HeroPhoto: React.FC = () => {
         ))}
       </div>
 
-      {/* Next-race badge — sits just above the dots */}
+      {/* Next-race ticket — sits just above the dots */}
       {nextEvent && (
-        <div
-          style={{
-            position: 'absolute',
-            zIndex: 2,
-            left: '1.25rem',
-            right: '1.25rem',
-            bottom: '3.4rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.7rem',
-            background: isDark ? 'rgba(8,11,10,0.5)' : 'rgba(255,255,255,0.6)',
-            backdropFilter: 'blur(18px) saturate(135%)',
-            WebkitBackdropFilter: 'blur(18px) saturate(135%)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)'}`,
-            borderRadius: '0.85rem',
-            padding: '0.55rem 1rem 0.55rem 0.6rem',
-            boxShadow: '0 8px 26px rgba(0,0,0,0.22)',
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '999px',
-              backgroundColor: isDark ? `${c.primary}26` : `${c.primary}1f`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: isDark ? c.primaryLight : c.primary,
-              flexShrink: 0,
-            }}
-          >
-            <TrophyGlyph size={20} />
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: c.text, lineHeight: 1.2 }}>
-              Next race: {nextEvent.name}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: c.textSecondary, marginTop: '0.1rem' }}>
-              {parseEventDate(nextEvent.date).toLocaleDateString(undefined, DATE_FORMAT)} · {nextEvent.location}
-            </div>
-          </div>
+        <div style={{ position: 'absolute', zIndex: 2, left: '1.25rem', right: '1.25rem', bottom: '3.4rem' }}>
+          <NextRaceTicket event={nextEvent} c={c} isDark={isDark} compact />
         </div>
       )}
     </section>

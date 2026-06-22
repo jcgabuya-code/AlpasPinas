@@ -45,6 +45,10 @@ button {
   65%       { transform: translateY(-3px); }
 }
 
+.wave-float {
+  animation: waveFloat 2.6s ease-in-out infinite;
+}
+
 /* Wave + edge layers scroll via transform (compositor-only) instead of
    background-position. Animating background-position repaints the whole layer
    every frame; on high-DPR mobile those large wave textures thrash the GPU and
@@ -82,6 +86,39 @@ button {
   opacity: 0;
   animation: heroRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* Scroll-reveal: elements start hidden and rise + fade in once their container
+   enters the viewport (toggled by an IntersectionObserver adding .is-visible).
+   Per-element stagger comes from an inline animation-delay. */
+@keyframes revealRise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+}
+
+.reveal.is-visible {
+  animation: revealRise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stroke-cycle connector: a bright "current" sheen travels along the axis line
+   (a moving gradient over a faint base), echoing the hero's wake signature.
+   Horizontal on desktop, vertical on the mobile timeline. */
+@keyframes strokeFlowX { to { background-position-x: 220px; } }
+@keyframes strokeFlowY { to { background-position-y: 80px; } }
+
+.stroke-flow-x { animation: strokeFlowX 2.6s linear infinite; }
+.stroke-flow-y { animation: strokeFlowY 2.6s linear infinite; }
+
+/* Mobile drawer nav items slide + fade in when the drawer opens; per-item stagger
+   set inline. `both` holds the from-state during the delay so there's no flash. */
+@keyframes drawerItemIn {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.drawer-item-in { animation: drawerItemIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* Ken Burns: slow continuous zoom + pan so slider stills "breathe". Alternates
    forever so there's no reset jump when slides change; runs on every slide. */
@@ -150,6 +187,22 @@ button {
     animation: none;
   }
   .ken-burns {
+    animation: none;
+  }
+  .wave-float {
+    animation: none;
+  }
+  .reveal {
+    opacity: 1;
+  }
+  .reveal.is-visible {
+    animation: none;
+  }
+  .stroke-flow-x,
+  .stroke-flow-y {
+    animation: none;
+  }
+  .drawer-item-in {
     animation: none;
   }
 }

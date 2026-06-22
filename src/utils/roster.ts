@@ -21,6 +21,9 @@ const CHANGE_EVENT = 'alpas-roster-changed';
 
 export type MemberStatus = 'active' | 'inactive';
 
+// Optional per-paddler stat bar (0–100), e.g. { label: 'PWR', value: 82 }.
+export type Rating = { label: string; value: number };
+
 export type Member = {
   name: string;
   role: string;
@@ -28,6 +31,11 @@ export type Member = {
   joined: number;
   photo: string | null;
   status?: MemberStatus;
+  // Optional profile stats — surfaced on the Crew Cards when present. Wire these
+  // up from the Sheet/Supabase; cards degrade gracefully when they're absent.
+  position?: string; // explicit boat position; falls back to `role`
+  races?: number; // races completed
+  ratings?: Rating[]; // up to ~3 rating bars
 };
 
 /* ----------------------------- cache -------------------------------- */

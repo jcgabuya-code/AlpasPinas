@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import sponsorsData from '../data/sponsors.json';
@@ -17,10 +17,10 @@ const SPONSORS = sponsorsData as Sponsor[];
 
 const WaveIcon: React.FC<{ delay: number }> = ({ delay }) => (
   <span
+    className="wave-float"
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      animation: `waveFloat 2.6s ease-in-out infinite`,
       animationDelay: `${delay}s`,
     }}
   >
@@ -125,6 +125,8 @@ const Separator: React.FC<{ delay: number }> = ({ delay }) => (
 // sponsor on a white pill (so logos stay legible against the emerald band).
 const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
   const [hasLogo, setHasLogo] = useState(Boolean(sponsor.logo));
+  const [hover, setHover] = useState(false);
+  const isLink = Boolean(sponsor.url);
 
   const chip = (
     <span
@@ -135,7 +137,9 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
         backgroundColor: '#fff',
         borderRadius: '999px',
         padding: hasLogo ? '0.4rem 1rem 0.4rem 0.5rem' : '0.45rem 1rem',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+        boxShadow: hover && isLink ? '0 6px 18px rgba(0,0,0,0.28)' : '0 1px 4px rgba(0,0,0,0.15)',
+        transform: hover && isLink ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       }}
     >
       {hasLogo && (
@@ -172,8 +176,15 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
       >
         Sponsored by
       </span>
-      {sponsor.url ? (
-        <a href={sponsor.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+      {isLink ? (
+        <a
+          href={sponsor.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          style={{ textDecoration: 'none', cursor: 'pointer' }}
+        >
           {chip}
         </a>
       ) : (
@@ -183,7 +194,7 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
   );
 };
 
-const Inner: React.FC = () => (
+const Inner: React.FC<{ accent: string }> = ({ accent }) => (
   <span
     style={{
       display: 'inline-flex',
@@ -194,16 +205,23 @@ const Inner: React.FC = () => (
     }}
   >
     {ITEMS.flatMap((item, i) => [
-      <span
-        key={`item-${i}`}
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '1rem',
-          letterSpacing: '0.18em',
-          color: '#fff',
-        }}
-      >
-        {item}
+      // Each phrase leads with an amber cadence beat — the same drummer's-count
+      // signature the hero uses — tying the marquee into the page's rhythm.
+      <span key={`item-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.7rem' }}>
+        <span
+          aria-hidden="true"
+          style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: accent, flexShrink: 0 }}
+        />
+        <span
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '1rem',
+            letterSpacing: '0.18em',
+            color: '#fff',
+          }}
+        >
+          {item}
+        </span>
       </span>,
       <Separator key={`sep-${i}`} delay={i * 0.25} />,
     ])}
@@ -285,6 +303,45 @@ export const Marquee: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
 
+  // Honor prefers-reduced-motion — a perpetually scrolling band is a classic
+  // vestibular trigger, so freeze the scroll + wave + edge animations for it.
+  const [reduced, setReduced] = useState(false);
+  // Pause the content scroll on hover so visitors can read + click sponsor links.
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq) return;
+    setReduced(mq.matches);
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const anim = (value: string) => (reduced ? 'none' : value);
+
+  // Two scrolling copies — memoized so hover (pause) re-renders don't rebuild the
+  // sponsor/item trees (each SponsorItem does canvas work on mount).
+  const track = useMemo(
+    () => (
+      <>
+        <Inner accent={c.sun} />
+        <Inner accent={c.sun} />
+      </>
+    ),
+    [c.sun]
+  );
+
+  // Band-colored fade at each end so items dissolve in/out instead of hard-cutting.
+  const fadeBase: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 'clamp(28px, 8vw, 80px)',
+    zIndex: 1,
+    pointerEvents: 'none',
+  };
+
   const edgeBase: React.CSSProperties = {
     position: 'absolute',
     // Extend one period past both edges so the transform scroll (which runs in
@@ -300,6 +357,8 @@ export const Marquee: React.FC = () => {
 
   return (
     <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
       style={{
         position: 'relative',
         backgroundColor: c.primary,
@@ -309,9 +368,9 @@ export const Marquee: React.FC = () => {
       }}
     >
       {/* Wave layer 1 — primary scroll (transform-driven, compositor-only) */}
-      <div style={{ ...waveLayerBase, animation: 'waveScroll 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite' }} />
+      <div style={{ ...waveLayerBase, animation: anim('waveScroll 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite') }} />
       {/* Wave layer 2 — offset for depth, scroll + swell combined into one transform */}
-      <div style={{ ...waveLayerBase, backgroundSize: `${WAVE_TILE_W}px 80%`, opacity: 0.7, animation: 'waveScrollSwell 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) -1.25s infinite' }} />
+      <div style={{ ...waveLayerBase, backgroundSize: `${WAVE_TILE_W}px 80%`, opacity: 0.7, animation: anim('waveScrollSwell 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) -1.25s infinite') }} />
 
       {/* Wavy top edge */}
       <div
@@ -319,7 +378,7 @@ export const Marquee: React.FC = () => {
           ...edgeBase,
           top: 0,
           backgroundImage: edgeUrl(c.background, false),
-          animation: 'edgeScroll 5s linear infinite',
+          animation: anim('edgeScroll 5s linear infinite'),
         }}
       />
       {/* Wavy bottom edge */}
@@ -328,7 +387,7 @@ export const Marquee: React.FC = () => {
           ...edgeBase,
           bottom: 0,
           backgroundImage: edgeUrl(c.background, true),
-          animation: 'edgeScroll 5s linear infinite reverse',
+          animation: anim('edgeScroll 5s linear infinite reverse'),
         }}
       />
 
@@ -338,13 +397,17 @@ export const Marquee: React.FC = () => {
           position: 'relative',
           zIndex: 1,
           display: 'inline-flex',
-          animation: 'marquee 28s linear infinite',
+          animation: anim('marquee 28s linear infinite'),
+          animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
         }}
       >
-        <Inner />
-        <Inner />
+        {track}
       </div>
+
+      {/* Edge fades — band-colored, so items dissolve in/out at both ends */}
+      <div style={{ ...fadeBase, left: 0, background: `linear-gradient(90deg, ${c.primary} 0%, ${c.primary}00 100%)` }} />
+      <div style={{ ...fadeBase, right: 0, background: `linear-gradient(270deg, ${c.primary} 0%, ${c.primary}00 100%)` }} />
     </div>
   );
 };

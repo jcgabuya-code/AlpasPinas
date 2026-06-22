@@ -3,13 +3,20 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import { fetchRoster, getAllRoster, subscribeRoster, type Member } from '../utils/roster';
-import { MemberCard } from './MemberCard';
+import { CrewCard } from './CrewCard';
+import { SectionHeader } from './SectionHeader';
+import { sectionShell, contentMaxWidth } from '../styles/tokens';
+import { useInView } from '../hooks/useInView';
 
-const TEASER_COUNT = 4;
+// How many cards the teaser shows before the closing "join" card.
+const TEASER_COUNT = 7;
 
 export const Team: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const isDark = theme === 'dark';
+  const [gridRef, inView] = useInView<HTMLDivElement>();
+  const [joinHover, setJoinHover] = useState(false);
   const [allMembers, setAllMembers] = useState<Member[]>(() => getAllRoster());
 
   useEffect(() => {
@@ -19,94 +26,97 @@ export const Team: React.FC = () => {
 
   const members = allMembers.slice(0, TEASER_COUNT);
   const remaining = allMembers.length - members.length;
+  const accent = isDark ? c.primaryLight : c.primary;
 
   return (
-    <section
-      id="team"
-      style={{
-        backgroundColor: c.surface,
-        padding: '6rem 1.5rem',
-        borderTop: `1px solid ${c.border}`,
-      }}
-    >
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        {/* Section header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            marginBottom: '2.5rem',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}
+    <section id="team" style={{ backgroundColor: c.surface, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
+      <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
+        <SectionHeader
+          eyebrow="The Crew"
+          style={{ marginBottom: '2.5rem' }}
+          trailing={
+            <div style={{ color: c.textSecondary, fontSize: '0.9rem' }}>
+              {allMembers.length} paddlers ·{' '}
+              <Link to="/roster" style={{ color: c.primary, textDecoration: 'none' }}>
+                See full roster →
+              </Link>
+            </div>
+          }
         >
-          <div>
-            <span
-              style={{
-                padding: '0.35rem 0.85rem',
-                borderRadius: '999px',
-                border: `1px solid ${c.primary}55`,
-                backgroundColor: `${c.primary}15`,
-                color: c.primary,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                marginBottom: '0.85rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun }}
-              />
-              The Roster
-            </span>
-            <h2
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(2.25rem, 6vw, 3.5rem)',
-                color: c.text,
-                margin: 0,
-                letterSpacing: '0.02em',
-                lineHeight: 1,
-              }}
-            >
-              MEET THE <span style={{ color: c.primary }}>CREW</span>
-            </h2>
-          </div>
+          MEET THE <span style={{ color: c.primary }}>CREW</span>
+        </SectionHeader>
 
-          <div style={{ color: c.textSecondary, fontSize: '0.9rem' }}>
-            {allMembers.length} active members ·{' '}
-            <Link to="/roster" style={{ color: c.primary, textDecoration: 'none' }}>
-              See full roster →
-            </Link>
-          </div>
-        </div>
-
-        {/* Roster grid (teaser) */}
+        {/* Crew cards — photo + profile stats, with a closing "join" card */}
         <div
+          ref={gridRef}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
             gap: '1.25rem',
           }}
         >
-          {members.map((m) => (
-            <MemberCard key={m.name} member={m} />
+          {members.map((m, i) => (
+            <div key={m.name} className={`reveal${inView ? ' is-visible' : ''}`} style={{ animationDelay: `${i * 0.07}s` }}>
+              <CrewCard member={m} />
+            </div>
           ))}
+
+          {/* Join card — the open roster spot, as the conversion hook */}
+          <a
+            href="#contact"
+            onMouseEnter={() => setJoinHover(true)}
+            onMouseLeave={() => setJoinHover(false)}
+            className={`reveal${inView ? ' is-visible' : ''}`}
+            style={{
+              animationDelay: `${members.length * 0.07}s`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.85rem',
+              textAlign: 'center',
+              textDecoration: 'none',
+              padding: '1.5rem',
+              borderRadius: '0.9rem',
+              border: `1.5px dashed ${joinHover ? c.primary : `${c.primary}80`}`,
+              backgroundColor: joinHover ? `${c.primary}14` : `${c.primary}08`,
+              color: accent,
+              transform: joinHover ? 'translateY(-4px)' : 'translateY(0)',
+              transition: 'transform 0.25s ease, background-color 0.2s ease, border-color 0.2s ease',
+            }}
+          >
+            <span
+              style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                border: `2px dashed ${c.primary}aa`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M12 6v12M6 12h12" />
+              </svg>
+            </span>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', letterSpacing: '0.02em', color: c.text, lineHeight: 1 }}>
+                Your card here?
+              </div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.45rem' }}>
+                Join the crew →
+              </div>
+            </div>
+          </a>
         </div>
 
         {/* Bottom CTA: view full roster */}
-        <div style={{ textAlign: 'center', marginTop: '2.25rem' }}>
+        <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
           <Link
             to="/roster"
             style={{
               display: 'inline-block',
-              backgroundColor: 'transparent',
               color: c.text,
               padding: '0.85rem 1.5rem',
               borderRadius: '999px',
@@ -116,7 +126,7 @@ export const Team: React.FC = () => {
               border: `1px solid ${c.border}`,
             }}
           >
-            View all {allMembers.length} members
+            View all {allMembers.length} paddlers
             {remaining > 0 ? ` (+${remaining} more)` : ''} →
           </Link>
         </div>

@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { cadenceAccentUri } from '../styles/tokens';
 
 const ShieldIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg
@@ -623,7 +624,7 @@ export const Navigation: React.FC = () => {
               right: 0,
               height: '100dvh',
               width: 'min(85vw, 360px)',
-              backgroundColor: theme === 'dark' ? '#0b0c10' : '#ffffff',
+              backgroundColor: c.background,
               boxShadow: menuOpen ? '-12px 0 40px rgba(0,0,0,0.35)' : 'none',
               transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
               transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -696,6 +697,24 @@ export const Navigation: React.FC = () => {
               <div style={{ fontSize: '0.88rem', opacity: 0.85, marginTop: '0.35rem' }}>
                 {user ? 'Ready to hit the water?' : 'Join the AlpasPinas crew'}
               </div>
+
+              {/* Cadence meter — the page's signature stroke-beat, along the header's base */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: '14px',
+                  backgroundImage: cadenceAccentUri('rgba(255,255,255,0.55)'),
+                  backgroundRepeat: 'repeat-x',
+                  backgroundSize: '80px 14px',
+                  backgroundPosition: 'left center',
+                  WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%)',
+                  maskImage: 'linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%)',
+                }}
+              />
             </div>
 
             {/* Scrollable nav list */}
@@ -709,7 +728,7 @@ export const Navigation: React.FC = () => {
                 gap: '0.2rem',
               }}
             >
-          {visibleItems.map((item) => {
+          {visibleItems.map((item, i) => {
             const key = `${item.to}${item.hash ?? ''}`;
             const Icon = NAV_ICONS[item.label];
             return (
@@ -718,6 +737,7 @@ export const Navigation: React.FC = () => {
                 to={{ pathname: item.to, hash: item.hash ?? '' }}
                 end={item.end}
                 onClick={closeMenu}
+                className={menuOpen ? 'drawer-item-in' : undefined}
                 style={({ isActive }) => {
                   const active = isActive && !item.hash;
                   return {
@@ -732,6 +752,7 @@ export const Navigation: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.7rem',
+                    animationDelay: `${i * 0.04}s`,
                     transition: 'background-color 0.15s ease, color 0.15s ease',
                   };
                 }}
@@ -754,6 +775,12 @@ export const Navigation: React.FC = () => {
                         {Icon ? <Icon /> : null}
                       </span>
                       <span style={{ flex: 1 }}>{item.label}</span>
+                      {active && (
+                        <span
+                          aria-hidden="true"
+                          style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
+                        />
+                      )}
                     </>
                   );
                 }}
@@ -765,6 +792,7 @@ export const Navigation: React.FC = () => {
             <NavLink
               to="/admin"
               onClick={closeMenu}
+              className={menuOpen ? 'drawer-item-in' : undefined}
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
@@ -777,6 +805,7 @@ export const Navigation: React.FC = () => {
                 letterSpacing: '0.01em',
                 padding: '0.5rem 0.7rem',
                 borderRadius: '0.7rem',
+                animationDelay: `${visibleItems.length * 0.04}s`,
                 transition: 'background-color 0.15s ease, color 0.15s ease',
               })}
             >
@@ -796,6 +825,12 @@ export const Navigation: React.FC = () => {
                     <ShieldIcon size={20} />
                   </span>
                   <span style={{ flex: 1 }}>Admin</span>
+                  {isActive && (
+                    <span
+                      aria-hidden="true"
+                      style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
+                    />
+                  )}
                 </>
               )}
             </NavLink>
