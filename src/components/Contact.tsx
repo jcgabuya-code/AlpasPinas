@@ -30,8 +30,8 @@ const InstagramIcon = () => (
 );
 
 export const Contact: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isMobile = useIsMobile();
   const [focused, setFocused] = useState<string | null>(null);
 
@@ -76,7 +76,6 @@ export const Contact: React.FC = () => {
         <div>
           <span
             style={{
-              display: 'inline-block',
               padding: '0.35rem 0.85rem',
               borderRadius: '999px',
               border: `1px solid ${c.primary}55`,
@@ -87,9 +86,16 @@ export const Contact: React.FC = () => {
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               marginBottom: '1rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
-            ✦ Get in Touch
+            <span
+              aria-hidden="true"
+              style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun }}
+            />
+            Get in Touch
           </span>
           <h2
             style={{

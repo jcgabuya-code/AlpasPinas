@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { colors, emeraldGradient, type ColorPalette } from '../styles/colors';
+import { colors, brandGradient, type ColorPalette } from '../styles/colors';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -87,7 +87,8 @@ const AdminGate: React.FC<{
   message: string;
   onHome?: () => void;
 }> = ({ theme, title, message, onHome }) => {
-  const c = colors[theme];
+  const { brand } = useTheme();
+  const c = colors[brand][theme];
 
   return (
     <div
@@ -110,7 +111,7 @@ const AdminGate: React.FC<{
           boxShadow: theme === 'dark' ? '0 24px 64px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.1)',
         }}
       >
-        <div style={{ height: '3px', background: emeraldGradient(theme) }} />
+        <div style={{ height: '3px', background: brandGradient(brand, theme) }} />
         <div style={{ padding: '2rem 1.75rem', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
             <ShieldCheck size={32} color={c.primary} />
@@ -142,7 +143,7 @@ const AdminGate: React.FC<{
                 padding: '0.8rem',
                 borderRadius: '0.6rem',
                 border: 'none',
-                background: emeraldGradient(theme),
+                background: brandGradient(brand, theme),
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '0.92rem',
@@ -164,9 +165,9 @@ const AdminGate: React.FC<{
 type ToastState = { msg: string; type: ToastType } | null;
 
 const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const { theme } = useTheme();
+  const { theme, brand } = useTheme();
   const navigate = useNavigate();
-  const c = colors[theme];
+  const c = colors[brand][theme];
   const [active, setActive] = useState<AdminSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);

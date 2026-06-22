@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { colors, emeraldGradient } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 const LINKS: { label: string; to: string; hash?: string }[] = [
@@ -14,8 +14,8 @@ const LINKS: { label: string; to: string; hash?: string }[] = [
 ];
 
 export const Footer: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isMobile = useIsMobile();
 
   return (
@@ -85,7 +85,7 @@ export const Footer: React.FC = () => {
             to="/join-team"
             style={{
               flexShrink: 0,
-              background: emeraldGradient(theme),
+              background: brandGradient(brand, theme),
               color: '#fff',
               padding: '0.9rem 1.6rem',
               borderRadius: '999px',

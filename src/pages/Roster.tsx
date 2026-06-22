@@ -8,8 +8,8 @@ import { fetchRoster, getAllRoster, subscribeRoster, type Member } from '../util
 type SortKey = 'name' | 'joined';
 
 export const Roster: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const [all, setAll] = useState<Member[]>(() => getAllRoster());
   const [roleFilter, setRoleFilter] = useState('All');
   const [sideFilter, setSideFilter] = useState('All');

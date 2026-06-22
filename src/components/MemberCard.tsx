@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colors } from '../styles/colors';
+import { colors, type Brand } from '../styles/colors';
 export type { Member } from '../utils/roster';
 import type { Member } from '../utils/roster';
 
@@ -20,16 +20,18 @@ export const initials = (name: string) =>
  * Deterministic emerald-toned background color for the initials avatar based
  * on the name, so each member gets a stable, distinct color.
  */
-export const avatarColor = (name: string) => {
-  const palette = ['#10b981', '#047857', '#34d399', '#059669', '#6ee7b7', '#065f46'];
+export const avatarColor = (name: string, brand: Brand = 'emerald') => {
+  const palette = brand === 'ocean'
+    ? ['#0ea5e9', '#0369a1', '#38bdf8', '#0284c7', '#7dd3fc', '#8b5cf6']
+    : ['#10b981', '#047857', '#34d399', '#059669', '#6ee7b7', '#065f46'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];
 };
 
 export const MemberCard: React.FC<{ member: Member }> = ({ member: m }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
 
   return (
     <article
@@ -48,8 +50,9 @@ export const MemberCard: React.FC<{ member: Member }> = ({ member: m }) => {
           aspectRatio: '1 / 1',
           background: m.photo
             ? `center / cover no-repeat url(${m.photo})`
-            : `linear-gradient(135deg, ${avatarColor(m.name)} 0%, ${avatarColor(
+            : `linear-gradient(135deg, ${avatarColor(m.name, brand)} 0%, ${avatarColor(
                 m.name,
+                brand,
               )}cc 100%)`,
           display: 'flex',
           alignItems: 'center',

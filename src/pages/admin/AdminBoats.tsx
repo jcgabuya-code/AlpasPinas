@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Trash2, AlertTriangle, Scale, Wand2, ChevronDown, ChevronRight, Eraser, Share2, Printer, Check, Image as ImageIcon } from 'lucide-react';
-import { emeraldGradient, type ColorPalette } from '../../styles/colors';
+import { brandGradient, type ColorPalette } from '../../styles/colors';
+import { useTheme } from '../../context/ThemeContext';
 import { type ShowToast } from '../Admin';
 import { fetchBookings, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
 import { getTrainingEvents } from '../../utils/adminTrainingEvents';
@@ -92,6 +93,7 @@ type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
+  const { brand } = useTheme();
   const isMobile = useIsMobile();
   const events = getTrainingEvents();
   const [eventId, setEventId] = useState(events[0]?.id ?? '');
@@ -689,7 +691,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                       padding: '0.5rem 0.8rem',
                       borderRadius: '0.5rem',
                       border: 'none',
-                      background: emeraldGradient(theme),
+                      background: brandGradient(brand, theme),
                       color: '#fff',
                       fontWeight: 700,
                       fontSize: '0.84rem',

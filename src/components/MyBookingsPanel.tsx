@@ -16,8 +16,8 @@ export const MyBookingsPanel: React.FC<{
   eventById: Map<string, TrainingEvent>;
   onCancel: (b: Booking) => void;
 }> = ({ bookings, eventById, onCancel }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isMobile = useIsMobile();
   const [pendingCancel, setPendingCancel] = useState<string | null>(null);
 
@@ -104,9 +104,9 @@ export const MyBookingsPanel: React.FC<{
                             fontWeight: 700,
                             letterSpacing: '0.06em',
                             textTransform: 'uppercase' as const,
-                            backgroundColor: '#16a34a20',
-                            color: '#16a34a',
-                            border: '1px solid #16a34a44',
+                            backgroundColor: `${c.primary}20`,
+                            color: c.primary,
+                            border: `1px solid ${c.primary}44`,
                           }}
                         >
                           <span style={{ fontSize: '0.6rem' }}>✓</span> Confirmed

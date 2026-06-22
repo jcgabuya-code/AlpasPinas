@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { colors, emeraldGradient } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import {
   takenForDay,
   formatShortDate,
@@ -37,8 +37,8 @@ type Props = {
 };
 
 export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBooked = false }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isMobile = useIsMobile();
 
   const dayStats = event.days.map((d) => {
@@ -84,7 +84,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
             style={{
               width: '100%',
               height: '100%',
-              background: emeraldGradient(theme),
+              background: brandGradient(brand, theme),
             }}
           />
         )}
@@ -227,7 +227,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
                   style={{
                     width: `${pct}%`,
                     height: '100%',
-                    background: full ? '#ef4444' : emeraldGradient(theme),
+                    background: full ? '#ef4444' : brandGradient(brand, theme),
                     transition: 'width 0.3s ease',
                   }}
                 />
@@ -246,7 +246,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
           padding: '0.8rem 1rem',
           borderRadius: '999px',
           border: alreadyBooked ? `1px solid ${c.primary}66` : 'none',
-          background: alreadyBooked ? `${c.primary}18` : !anyOpen || !stillUpcoming ? c.border : emeraldGradient(theme),
+          background: alreadyBooked ? `${c.primary}18` : !anyOpen || !stillUpcoming ? c.border : brandGradient(brand, theme),
           color: alreadyBooked ? c.primaryLight : '#fff',
           fontWeight: 700,
           fontSize: '0.92rem',

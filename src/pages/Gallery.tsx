@@ -18,8 +18,8 @@ type Photo = {
 const CATEGORIES: Category[] = ['Training', 'Races', 'Off-water'];
 
 export const Gallery: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const all = galleryData as Photo[];
 
   const [filter, setFilter] = useState<'All' | Category>('All');

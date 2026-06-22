@@ -8,8 +8,8 @@ import { MemberCard } from './MemberCard';
 const TEASER_COUNT = 4;
 
 export const Team: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const [allMembers, setAllMembers] = useState<Member[]>(() => getAllRoster());
 
   useEffect(() => {
@@ -44,7 +44,6 @@ export const Team: React.FC = () => {
           <div>
             <span
               style={{
-                display: 'inline-block',
                 padding: '0.35rem 0.85rem',
                 borderRadius: '999px',
                 border: `1px solid ${c.primary}55`,
@@ -55,9 +54,16 @@ export const Team: React.FC = () => {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 marginBottom: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
               }}
             >
-              ✦ The Roster
+              <span
+                aria-hidden="true"
+                style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun }}
+              />
+              The Roster
             </span>
             <h2
               style={{

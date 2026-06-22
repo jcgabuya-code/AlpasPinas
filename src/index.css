@@ -105,8 +105,42 @@ button {
   animation: heroScrollCue 1.9s ease-in-out infinite;
 }
 
+/* Signature: stroke cadence. The amber beat-ticks brighten in sequence, left to
+   right, like a dragon-boat drummer setting the stroke — then the cycle repeats.
+   Each tick gets its own animation-delay inline so the beat travels down the row. */
+@keyframes cadenceBeat {
+  0%, 70%, 100% { opacity: 0.35; transform: scale(0.8); }
+  12%           { opacity: 1;    transform: scale(1.25); }
+}
+
+.cadence-beat {
+  animation: cadenceBeat 2.4s ease-in-out infinite;
+}
+
+/* Signature: wake underline. A thin line under "WATER" that fills left→right and
+   resets, echoing the trailing wake a hull leaves on the water. */
+@keyframes wakeTrace {
+  0%        { transform: scaleX(0);   transform-origin: left;  opacity: 0.9; }
+  55%       { transform: scaleX(1);   transform-origin: left;  opacity: 1; }
+  56%       { transform-origin: right; }
+  100%      { transform: scaleX(0);   transform-origin: right; opacity: 0.9; }
+}
+
+.wake-underline {
+  animation: wakeTrace 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 /* Respect users who ask for less motion — show everything, animate nothing. */
 @media (prefers-reduced-motion: reduce) {
+  .cadence-beat {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .wake-underline {
+    animation: none;
+    transform: scaleX(1);
+  }
   .hero-rise {
     animation: none;
     opacity: 1;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colors, emeraldGradient } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
@@ -67,8 +67,8 @@ const HERO_PHOTOS = [
 ];
 
 export const Hero: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
   const [videoOpen, setVideoOpen] = useState(false);
@@ -280,8 +280,22 @@ export const Hero: React.FC = () => {
             RULERS OF
             <br />
             THE{' '}
-            <span style={{ color: heroAccent }}>
+            {/* Signature: "WATER" carries a wake-line that traces left→right under it */}
+            <span style={{ position: 'relative', display: 'inline-block', color: heroAccent }}>
               WATER
+              <span
+                aria-hidden="true"
+                className="wake-underline"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: '0.04em',
+                  height: '0.07em',
+                  borderRadius: '999px',
+                  background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                }}
+              />
             </span>
           </h1>
 
@@ -299,11 +313,20 @@ export const Hero: React.FC = () => {
           >
             {KEYWORDS.map((word, i) => (
               <React.Fragment key={word}>
-                {i > 0 && (
-                  <span aria-hidden="true" style={{ color: heroAccent, fontSize: '0.9rem' }}>
-                    ✦
-                  </span>
-                )}
+                {/* Cadence beat-tick — amber dot that pulses in sequence like a
+                    dragon-boat drummer's stroke count. Leads each word + repeats. */}
+                <span
+                  aria-hidden="true"
+                  className="cadence-beat"
+                  style={{
+                    width: isMobile ? '6px' : '7px',
+                    height: isMobile ? '6px' : '7px',
+                    borderRadius: '999px',
+                    backgroundColor: c.sun,
+                    flexShrink: 0,
+                    animationDelay: `${i * 0.18}s`,
+                  }}
+                />
                 <span
                   style={{
                     color: heroText,
@@ -343,7 +366,7 @@ export const Hero: React.FC = () => {
             <a
               href="#contact"
               style={{
-                background: emeraldGradient(theme),
+                background: brandGradient(brand, theme),
                 color: '#fff',
                 padding: isMobile ? '0.9rem 1.4rem' : '1rem 1.9rem',
                 borderRadius: '999px',
@@ -388,7 +411,7 @@ export const Hero: React.FC = () => {
                   width: '1.5rem',
                   height: '1.5rem',
                   borderRadius: '999px',
-                  background: emeraldGradient(theme),
+                  background: brandGradient(brand, theme),
                   color: '#fff',
                   paddingLeft: '1px',
                 }}
@@ -461,8 +484,8 @@ export const Hero: React.FC = () => {
 // Full-screen team photo section — on mobile this renders after the Hero + Marquee
 // (its own scroll "page"), with the next-race badge frosted-overlaid on the photo.
 export const HeroPhoto: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isDark = theme === 'dark';
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
 

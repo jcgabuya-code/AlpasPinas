@@ -14,8 +14,8 @@ export const ConfirmedNotification: React.FC<{
   eventById: Map<string, TrainingEvent>;
   onClose: () => void;
 }> = ({ bookings, eventById, onClose }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
 
   return (
     <>
@@ -45,15 +45,15 @@ export const ConfirmedNotification: React.FC<{
         style={{
           width: 'min(480px, calc(100vw - 2rem))',
           backgroundColor: c.surface,
-          border: `1px solid #16a34a55`,
+          border: `1px solid ${c.primary}55`,
           borderRadius: '1rem',
-          boxShadow: `0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px #16a34a22`,
+          boxShadow: `0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px ${c.primary}22`,
           animation: 'alpas-confirmed-pop 220ms cubic-bezier(0.34,1.56,0.64,1)',
           overflow: 'hidden',
         }}
       >
         {/* Green top accent bar */}
-        <div style={{ height: '4px', background: 'linear-gradient(90deg, #16a34a, #22c55e)' }} />
+        <div style={{ height: '4px', background: `linear-gradient(90deg, ${c.primary}, ${c.accent})` }} />
 
         <div style={{ padding: '1.25rem 1.5rem 1.5rem' }}>
           {/* Header row */}
@@ -64,13 +64,13 @@ export const ConfirmedNotification: React.FC<{
                   width: '40px',
                   height: '40px',
                   borderRadius: '999px',
-                  background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+                  background: `linear-gradient(135deg, ${c.primary}, ${c.accent})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '1.1rem',
                   flexShrink: 0,
-                  boxShadow: '0 4px 12px #16a34a40',
+                  boxShadow: `0 4px 12px ${c.primary}40`,
                 }}
               >
                 ✓
@@ -87,7 +87,7 @@ export const ConfirmedNotification: React.FC<{
                 >
                   YOU'RE CONFIRMED!
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600, marginTop: '0.2rem' }}>
+                <div style={{ fontSize: '0.78rem', color: c.primary, fontWeight: 600, marginTop: '0.2rem' }}>
                   {bookings.length === 1 ? 'Your spot is locked in' : `${bookings.length} bookings confirmed`}
                 </div>
               </div>
@@ -126,8 +126,8 @@ export const ConfirmedNotification: React.FC<{
                   style={{
                     padding: '0.65rem 0.85rem',
                     borderRadius: '0.6rem',
-                    backgroundColor: '#16a34a10',
-                    border: '1px solid #16a34a30',
+                    backgroundColor: `${c.primary}10`,
+                    border: `1px solid ${c.primary}30`,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -149,9 +149,9 @@ export const ConfirmedNotification: React.FC<{
                       fontWeight: 700,
                       letterSpacing: '0.06em',
                       textTransform: 'uppercase' as const,
-                      backgroundColor: '#16a34a20',
-                      color: '#16a34a',
-                      border: '1px solid #16a34a44',
+                      backgroundColor: `${c.primary}20`,
+                      color: c.primary,
+                      border: `1px solid ${c.primary}44`,
                     }}
                   >
                     ✓ Confirmed
@@ -182,13 +182,13 @@ export const ConfirmedNotification: React.FC<{
               padding: '0.75rem',
               borderRadius: '0.6rem',
               border: 'none',
-              background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+              background: `linear-gradient(135deg, ${c.primary}, ${c.accent})`,
               color: '#fff',
               fontWeight: 700,
               fontSize: '0.9rem',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              boxShadow: '0 4px 16px #16a34a33',
+              boxShadow: `0 4px 16px ${c.primary}33`,
             }}
           >
             Got it, see you there!

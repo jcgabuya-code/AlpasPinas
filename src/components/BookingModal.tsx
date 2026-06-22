@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { colors, emeraldGradient, type ColorPalette } from '../styles/colors';
+import { colors, brandGradient, type ColorPalette } from '../styles/colors';
 import type { TrainingEvent } from './TrainingCard';
 import {
   addBooking,
@@ -32,8 +32,8 @@ const SIDES: SideRole[] = ['Left', 'Right', 'Coxswain', 'Coach'];
 const YES_NO: YesNo[] = ['Yes', 'No'];
 
 export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -432,7 +432,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 padding: '0.85rem 1rem',
                 borderRadius: '0.6rem',
                 border: 'none',
-                background: bothFull ? c.border : emeraldGradient(theme),
+                background: bothFull ? c.border : brandGradient(brand, theme),
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '0.95rem',
@@ -466,6 +466,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
 };
 
 const LoginPrompt: React.FC<{ c: ColorPalette; theme: 'light' | 'dark'; onClose: () => void }> = ({ c, theme, onClose }) => {
+  const { brand } = useTheme();
   const navigate = useNavigate();
   return (
     <div style={{ padding: '2.25rem 1.75rem', textAlign: 'center' }}>
@@ -492,7 +493,7 @@ const LoginPrompt: React.FC<{ c: ColorPalette; theme: 'light' | 'dark'; onClose:
             padding: '0.75rem 1.5rem',
             borderRadius: '0.6rem',
             border: 'none',
-            background: emeraldGradient(theme),
+            background: brandGradient(brand, theme),
             color: '#fff',
             fontWeight: 700,
             fontSize: '0.9rem',
@@ -531,8 +532,8 @@ const WaitingView: React.FC<{
   name: string;
   onClose: () => void;
 }> = ({ event, attending, name, onClose }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const joined =
     attending === 'both'
       ? event.days.map((d) => `${d.label} (${formatShortDate(d.date)})`).join(' + ')

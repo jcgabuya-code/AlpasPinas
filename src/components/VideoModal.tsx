@@ -21,8 +21,8 @@ export const VideoModal: React.FC<VideoModalProps> = ({
   poster,
   title = 'Highlight reel',
 }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // ESC to close + body scroll lock

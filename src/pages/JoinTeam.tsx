@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { colors, brandGradient } from '../styles/colors';
 import { submitApplication } from '../utils/users';
 
 const COUNTRY_CODES = [
@@ -14,7 +15,7 @@ const COUNTRY_CODES = [
 ];
 
 export const JoinTeam: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, brand } = useTheme();
   const navigate = useNavigate();
 
   const [countryCode, setCountryCode] = useState('+60');
@@ -25,16 +26,7 @@ export const JoinTeam: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const c = {
-    background: theme === 'dark' ? '#0b1014' : '#f7faf8',
-    surface: theme === 'dark' ? '#121820' : '#ffffff',
-    text: theme === 'dark' ? '#f5f7f5' : '#0b1014',
-    textSecondary: theme === 'dark' ? '#9aa8a0' : '#5b6863',
-    primary: '#10b981',
-    primaryDark: '#047857',
-    primaryLight: '#6ee7b7',
-    border: theme === 'dark' ? '#243240' : '#dde6e0',
-  };
+  const c = colors[brand][theme];
 
   const labelStyle: React.CSSProperties = {
     fontSize: '0.72rem',
@@ -88,7 +80,7 @@ export const JoinTeam: React.FC = () => {
   };
 
   const gradientStyle: React.CSSProperties = {
-    background: 'linear-gradient(135deg, #047857 0%, #10b981 55%, #6ee7b7 100%)',
+    background: brandGradient(brand, theme),
   };
 
   if (success) {

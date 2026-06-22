@@ -10,8 +10,8 @@ import { colors } from '../styles/colors';
  * active route via <Outlet />, and Footer at the bottom.
  */
 export const Layout: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
 
   return (
     <div

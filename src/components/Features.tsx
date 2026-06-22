@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colors, emeraldGradient } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 const IconPaddle = () => (
@@ -52,8 +52,8 @@ const IconGear = () => (
 );
 
 export const Features: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<number | null>(null);
@@ -79,7 +79,6 @@ export const Features: React.FC = () => {
         <div style={{ marginBottom: isMobile ? '2rem' : '3rem' }}>
           <span
             style={{
-              display: 'inline-block',
               padding: '0.3rem 0.8rem',
               borderRadius: '999px',
               border: `1px solid ${c.primary}55`,
@@ -90,9 +89,16 @@ export const Features: React.FC = () => {
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               marginBottom: '0.85rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
-            ✦ Why AlpasPinas
+            <span
+              aria-hidden="true"
+              style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun }}
+            />
+            Why AlpasPinas
           </span>
           <h2
             style={{
@@ -107,7 +113,7 @@ export const Features: React.FC = () => {
             BUILT FOR{' '}
             <span
               style={{
-                background: emeraldGradient(theme),
+                background: brandGradient(brand, theme),
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -315,7 +321,7 @@ export const Features: React.FC = () => {
                 width: '56px',
                 height: '56px',
                 borderRadius: '0.75rem',
-                background: emeraldGradient(theme),
+                background: brandGradient(brand, theme),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

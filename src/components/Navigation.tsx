@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { colors, emeraldGradient } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 const ShieldIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
@@ -197,9 +197,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export const Navigation: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, brand, toggleBrand } = useTheme();
   const { user, logout } = useAuth();
-  const c = colors[theme];
+  const c = colors[brand][theme];
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -334,6 +334,32 @@ export const Navigation: React.FC = () => {
             </ul>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <button
+                onClick={toggleBrand}
+                aria-label={`Switch color theme (currently ${brand})`}
+                title={`Color: ${brand} — click to switch`}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${c.border}`,
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    width: '1.1rem',
+                    height: '1.1rem',
+                    borderRadius: '999px',
+                    background: brandGradient(brand, theme),
+                  }}
+                />
+              </button>
               <button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
@@ -474,7 +500,7 @@ export const Navigation: React.FC = () => {
                   <Link
                     to="/join-team"
                     style={{
-                      background: emeraldGradient(theme),
+                      background: brandGradient(brand, theme),
                       color: '#fff',
                       border: 'none',
                       padding: '0.5rem 1rem',
@@ -497,6 +523,32 @@ export const Navigation: React.FC = () => {
         {/* Mobile: theme toggle + hamburger */}
         {isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <button
+              onClick={toggleBrand}
+              aria-label={`Switch color theme (currently ${brand})`}
+              title={`Color: ${brand} — click to switch`}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${c.border}`,
+                width: '2.25rem',
+                height: '2.25rem',
+                borderRadius: '999px',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <span
+                style={{
+                  width: '1.1rem',
+                  height: '1.1rem',
+                  borderRadius: '999px',
+                  background: brandGradient(brand, theme),
+                }}
+              />
+            </button>
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
@@ -586,7 +638,7 @@ export const Navigation: React.FC = () => {
             {/* Gradient header block */}
             <div
               style={{
-                background: emeraldGradient(theme),
+                background: brandGradient(brand, theme),
                 color: '#fff',
                 padding: '1.4rem 1.25rem 1.5rem',
                 position: 'relative',
@@ -816,7 +868,7 @@ export const Navigation: React.FC = () => {
                     style={{
                       display: 'block',
                       textAlign: 'center',
-                      background: emeraldGradient(theme),
+                      background: brandGradient(brand, theme),
                       color: '#fff',
                       padding: '0.8rem 1.25rem',
                       borderRadius: '0.6rem',

@@ -11,8 +11,8 @@ import {
 } from '../components/EventCard';
 
 export const Events: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
   const all = eventsData as RaceEvent[];
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [typeFilter, setTypeFilter] = useState('All');

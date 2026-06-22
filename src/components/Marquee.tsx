@@ -282,8 +282,8 @@ const edgeUrl = (fill: string, flip: boolean) => {
 };
 
 export const Marquee: React.FC = () => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
 
   const edgeBase: React.CSSProperties = {
     position: 'absolute',

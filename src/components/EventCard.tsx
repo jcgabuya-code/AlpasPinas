@@ -52,8 +52,8 @@ const medalLabel = (rank: number) => {
 };
 
 export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
-  const { theme } = useTheme();
-  const c = colors[theme];
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
 
   const d = parseEventDate(e.date);
   const day = d.getDate();

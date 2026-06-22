@@ -43,9 +43,9 @@ const saveSeenStatuses = (bookings: Booking[]) => {
 const isEventUpcoming = (ev: TrainingEvent) => ev.days.some((d) => isUpcomingDate(d.date));
 
 export const Training: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, brand } = useTheme();
   const { user } = useAuth();
-  const c = colors[theme];
+  const c = colors[brand][theme];
   const isMobile = useIsMobile();
 
   const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
