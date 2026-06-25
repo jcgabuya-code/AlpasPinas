@@ -42,9 +42,26 @@ const CheckIcon = ({ size = 24 }: { size?: number }) => (
     <path d="M4 12.5l5 5 11-11" />
   </IconBase>
 );
+const AlertIcon = ({ size = 18 }: { size?: number }) => (
+  <IconBase size={size}>
+    <path d="M12 4 19.5 18.5 H4.5 Z" />
+    <path d="M12 9.5v4" />
+    <path d="M12 16.5h.01" />
+  </IconBase>
+);
 
 type Values = { name: string; email: string; exp: string; message: string };
 type Errors = { name?: string; email?: string };
+type Status = 'idle' | 'submitting' | 'success' | 'error';
+
+// INTEGRATION POINT — swap this stub for the real submission: a Supabase
+// `applications` insert or an email relay. Resolve on success, throw on failure,
+// and the loading/error states below stay wired with no further changes. The
+// simulated delay only exists so the "submitting" state is visible until then.
+async function submitApplication(_values: Values): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 900));
+  // throw new Error('not wired'); // ← uncomment to preview the error state
+}
 
 export const Contact: React.FC = () => {
   const { theme, brand } = useTheme();
@@ -55,7 +72,7 @@ export const Contact: React.FC = () => {
   const [values, setValues] = useState<Values>({ name: '', email: '', exp: 'any', message: '' });
   const [errors, setErrors] = useState<Errors>({});
   const [focused, setFocused] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<Status>('idle');
 
   const set = (k: keyof Values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
@@ -68,13 +85,18 @@ export const Contact: React.FC = () => {
     return next;
   };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (status === 'submitting') return;
     const next = validate();
     setErrors(next);
-    if (Object.keys(next).length === 0) {
-      // TODO: wire to backend (Supabase applications / email relay). Client-confirm for now.
-      setSubmitted(true);
+    if (Object.keys(next).length > 0) return;
+    setStatus('submitting');
+    try {
+      await submitApplication(values);
+      setStatus('success');
+    } catch {
+      setStatus('error');
     }
   };
 
@@ -173,8 +195,8 @@ export const Contact: React.FC = () => {
             </div>
           </div>
 
-          {submitted ? (
-            <div style={{ padding: '2.75rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+          {status === 'success' ? (
+            <div role="status" style={{ padding: '2.75rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
               <span
                 style={{
                   width: '60px',
@@ -202,7 +224,7 @@ export const Contact: React.FC = () => {
                 onClick={() => {
                   setValues({ name: '', email: '', exp: 'any', message: '' });
                   setErrors({});
-                  setSubmitted(false);
+                  setStatus('idle');
                 }}
                 style={{ marginTop: '0.6rem', background: 'none', border: 'none', color: c.primary, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit' }}
               >
@@ -211,6 +233,32 @@ export const Contact: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', padding: '1.75rem 2rem 2rem' }}>
+              {status === 'error' && (
+                <div
+                  role="alert"
+                  style={{
+                    display: 'flex',
+                    gap: '0.6rem',
+                    alignItems: 'flex-start',
+                    padding: '0.85rem 1rem',
+                    borderRadius: '0.55rem',
+                    backgroundColor: '#ef44441a',
+                    border: '1px solid #ef444455',
+                    color: c.text,
+                    fontSize: '0.85rem',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <span aria-hidden="true" style={{ color: '#ef4444', flexShrink: 0, display: 'inline-flex', marginTop: '1px' }}>
+                    <AlertIcon size={18} />
+                  </span>
+                  <span>
+                    We couldn't send that just now. Please try again — if it keeps happening, email{' '}
+                    <a href="mailto:admin@alpaspinas.com" style={{ color: accent, fontWeight: 600 }}>admin@alpaspinas.com</a>.
+                  </span>
+                </div>
+              )}
+
               <Field label="Name" htmlFor="name" color={c.text} error={errors.name}>
                 <input
                   id="name"
@@ -261,6 +309,8 @@ export const Contact: React.FC = () => {
 
               <button
                 type="submit"
+                disabled={status === 'submitting'}
+                aria-busy={status === 'submitting'}
                 style={{
                   background: brandGradient(brand, theme),
                   color: '#fff',
@@ -269,13 +319,37 @@ export const Contact: React.FC = () => {
                   borderRadius: '0.55rem',
                   fontSize: '0.98rem',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: status === 'submitting' ? 'progress' : 'pointer',
                   letterSpacing: '0.02em',
                   fontFamily: 'inherit',
                   boxShadow: `0 10px 28px ${c.primary}44`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.6rem',
+                  opacity: status === 'submitting' ? 0.9 : 1,
+                  transition: 'opacity 0.2s ease',
                 }}
               >
-                Claim my seat →
+                {status === 'submitting' ? (
+                  <>
+                    <span
+                      className="btn-spinner"
+                      aria-hidden="true"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        border: '2px solid rgba(255,255,255,0.45)',
+                        borderTopColor: '#fff',
+                        display: 'inline-block',
+                      }}
+                    />
+                    Claiming your seat…
+                  </>
+                ) : (
+                  'Claim my seat →'
+                )}
               </button>
             </form>
           )}

@@ -118,22 +118,12 @@ export const Features: React.FC = () => {
   );
 
   return (
-    <section id="about" style={{ backgroundColor: c.sand, ...sectionShell }}>
+    <section id="about" style={{ backgroundColor: c.sand, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
       <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
 
         {/* Section header — introduces the stroke-cycle framing */}
         <SectionHeader eyebrow="The Stroke" size="lg" style={{ marginBottom: '0.9rem' }}>
-          BUILT FOR{' '}
-          <span
-            style={{
-              background: brandGradient(brand, theme),
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            THE WATER
-          </span>
+          WHY WE <span style={{ color: accent }}>PADDLE</span>
         </SectionHeader>
         <p style={{ color: c.textSecondary, fontSize: '1rem', lineHeight: 1.6, maxWidth: '540px', margin: `0 0 ${isMobile ? '2.5rem' : '3.5rem'}` }}>
           Four reasons to join — one for each phase of the stroke that drives the boat.

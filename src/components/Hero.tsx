@@ -5,14 +5,13 @@ import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { cadenceAccentUri } from '../styles/tokens';
 
 // Split so the numeric part can count up on load while the prefix/suffix stay put
 // — "#3" keeps its hash, "5 YRS" keeps its unit, "12+" keeps its plus.
 const STATS = [
-  { prefix: '', value: 12, suffix: '+', label: 'Paddlers' },
-  { prefix: '', value: 5, suffix: ' YRS', label: 'Racing' },
-  { prefix: '#', value: 3, suffix: '', label: 'Regional Rank' },
+  { prefix: '', value: 12, suffix: '+', label: 'Crew Members' },
+  { prefix: '', value: 5, suffix: ' YRS', label: 'Years Racing' },
+  { prefix: '#', value: 3, suffix: '', label: 'Regional Ranking' },
 ];
 
 // Count a number up from 0 to target with an easeOutCubic curve. Honors
@@ -110,6 +109,7 @@ const NextRaceTicket: React.FC<{
   const stubBg = isDark ? `${c.primary}3a` : `${c.primary}24`;
   const accent = isDark ? c.primaryLight : c.primary;
   const perfColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.18)';
+  const actionLabel = compact ? 'Reserve spot' : 'Reserve your seat';
 
   // Punched tear-line notches: a fixed-width stub means the perforation sits at a
   // known x, so two radial-gradient mask circles cut real half-holes (top + bottom)
@@ -123,6 +123,8 @@ const NextRaceTicket: React.FC<{
   return (
     <a
       href="#contact"
+      aria-label={`${actionLabel} for ${event.name}`}
+      title={`${actionLabel} for ${event.name}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -180,22 +182,25 @@ const NextRaceTicket: React.FC<{
         }}
       >
         <span style={{ fontSize: compact ? '0.56rem' : '0.6rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: accent }}>
-          Next Race
+          Next Race · Join Us
         </span>
         <span
           style={{
-            fontSize: compact ? '0.84rem' : '0.92rem',
+            fontSize: compact ? '0.8rem' : '0.92rem',
             fontWeight: 600,
             color: c.text,
             lineHeight: 1.2,
-            whiteSpace: 'nowrap',
+            whiteSpace: compact ? 'normal' : 'nowrap',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            textOverflow: compact ? 'clip' : 'ellipsis',
+            display: compact ? '-webkit-box' : 'block',
+            WebkitLineClamp: compact ? 2 : 'unset',
+            WebkitBoxOrient: compact ? 'vertical' : 'initial',
           }}
         >
           {event.name}
         </span>
-        <span style={{ fontSize: compact ? '0.68rem' : '0.74rem', color: c.textSecondary, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ fontSize: compact ? '0.64rem' : '0.74rem', color: c.textSecondary, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {parseEventDate(event.date).toLocaleDateString(undefined, DATE_FORMAT)} · {event.location}
         </span>
       </span>
@@ -205,15 +210,31 @@ const NextRaceTicket: React.FC<{
         aria-hidden="true"
         style={{
           display: 'flex',
-          alignItems: 'center',
-          paddingRight: compact ? '0.7rem' : '0.95rem',
-          paddingLeft: '0.15rem',
+          flexDirection: 'column',
+          alignItems: compact ? 'center' : 'flex-end',
+          justifyContent: 'center',
+          gap: '0.18rem',
+          paddingRight: compact ? '0.55rem' : '0.95rem',
+          paddingLeft: compact ? '0.1rem' : '0.35rem',
           color: accent,
           flexShrink: 0,
           transform: hover ? 'translateX(3px)' : 'translateX(0)',
           transition: 'transform 0.2s ease',
         }}
       >
+        {!compact && (
+          <span
+            style={{
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Reserve Seat
+          </span>
+        )}
         <ArrowGlyph size={compact ? 15 : 16} />
       </span>
     </a>
@@ -335,14 +356,14 @@ export const Hero: React.FC = () => {
           width: '100%',
           maxWidth: isMobile ? '100%' : '45%',
           marginRight: 'auto',
-          padding: isMobile ? '2.75rem 1.25rem 2.75rem' : '1.5rem 2.5rem 1.5rem 3rem',
+          padding: isMobile ? '2.15rem 1.25rem 2.1rem' : '1.5rem 2.5rem 1.5rem 3rem',
           display: 'flex',
           flexDirection: 'column',
           // Mobile: natural top-down stack on the panel below the photo band.
           // Wide: cluster the whole group and center it so extra height becomes even
           // top/bottom margins instead of a dead gap.
           justifyContent: isMobile ? 'flex-start' : 'center',
-          gap: isMobile ? '1.5rem' : 'clamp(1.5rem, 4vh, 3rem)',
+          gap: isMobile ? '1.2rem' : 'clamp(1.5rem, 4vh, 3rem)',
         }}
       >
         {/* Top row: identity badge. On mobile the logo lives in the merged-in nav above,
@@ -380,7 +401,7 @@ export const Hero: React.FC = () => {
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
               color: heroText,
-              fontSize: isMobile ? '0.62rem' : '0.72rem',
+              fontSize: isMobile ? '0.58rem' : '0.72rem',
               fontWeight: 600,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
@@ -397,7 +418,7 @@ export const Hero: React.FC = () => {
             className={isMobile ? 'hero-rise' : undefined}
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? 'clamp(3.25rem, 17vw, 5rem)' : 'clamp(2.5rem, 3.4vw + 1.4vh, 4.5rem)',
+              fontSize: isMobile ? 'clamp(2.9rem, 16vw, 4.45rem)' : 'clamp(2.5rem, 3.4vw + 1.4vh, 4.5rem)',
               fontWeight: 400,
               color: heroText,
               margin: 0,
@@ -429,29 +450,14 @@ export const Hero: React.FC = () => {
             </span>
           </h1>
 
-          {/* Cadence readout — the stroke count, visualized. A stroke-rate meter (sound-
-              wave bars) with the SPEED·SYNC·STRENGTH beats pulsing beneath it like a
-              drummer's count. */}
+          {/* Cadence readout — the SPEED·SYNC·STRENGTH beats pulsing in sequence like a
+              drummer's count. (The soundwave meter that used to sit above this lives on
+              in the Contact section; stacking both here over-said one idea.) */}
           <div
             className={isMobile ? 'hero-rise' : undefined}
-            style={{ marginTop: isMobile ? '1.1rem' : '0.7rem', animationDelay: '0.30s' }}
+            style={{ marginTop: isMobile ? '0.85rem' : '0.7rem', animationDelay: '0.30s' }}
           >
-            <div
-              aria-hidden="true"
-              style={{
-                height: '16px',
-                width: '100%',
-                maxWidth: '340px',
-                backgroundImage: cadenceAccentUri(c.sun),
-                backgroundRepeat: 'repeat-x',
-                backgroundSize: '80px 16px',
-                backgroundPosition: 'left center',
-                opacity: 0.9,
-                WebkitMaskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
-                maskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
-              }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem 1.3rem', marginTop: '0.55rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem 1rem' }}>
               {KEYWORDS.map((word, i) => (
                 <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                   {/* Cadence beat-tick — amber dot that pulses in sequence like a
@@ -489,59 +495,69 @@ export const Hero: React.FC = () => {
             style={{
               fontSize: isMobile ? '0.95rem' : '1.05rem',
               color: heroSub,
-              margin: isMobile ? '1.1rem 0 1.6rem 0' : '0.7rem 0 1rem 0',
+              margin: isMobile ? '0.9rem 0 1.25rem 0' : '0.7rem 0 1rem 0',
               maxWidth: '440px',
-              lineHeight: 1.5,
+              lineHeight: 1.42,
               textShadow: heroTextShadow,
               animationDelay: '0.38s',
             }}
           >
-            One stroke. One team. A community of paddlers chasing speed, sync, and
-            the thrill of the finish line.
+            Start with a weekend session. No experience needed, all gear provided,
+            and a crew that will get you on the water fast.
           </p>
 
-          {/* CTAs */}
+          {/* CTAs — both sit on a single row at every width: trimmed labels + tighter
+              sizing keep them on one line. Mobile fills the row (flex:1); desktop keeps
+              them at natural width so they don't stretch across the text panel. */}
           <div
             className={isMobile ? 'hero-rise' : undefined}
-            style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: isMobile ? '2rem' : '1rem', animationDelay: '0.46s' }}
+            style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.6rem', flexWrap: 'nowrap', marginBottom: isMobile ? '1.45rem' : '1rem', animationDelay: '0.46s' }}
           >
             <a
               href="#contact"
+              aria-label="Book your first session"
               style={{
                 background: brandGradient(brand, theme),
                 color: '#fff',
-                padding: isMobile ? '0.9rem 1.4rem' : '1rem 1.9rem',
+                padding: isMobile ? '0.9rem 0.7rem' : '0.92rem 1.5rem',
                 borderRadius: '999px',
                 fontWeight: 600,
                 textDecoration: 'none',
-                fontSize: isMobile ? '0.92rem' : '0.98rem',
+                fontSize: isMobile ? '0.82rem' : '0.92rem',
                 letterSpacing: '0.02em',
                 boxShadow: `0 10px 30px ${c.primary}55`,
                 whiteSpace: 'nowrap',
+                flex: isMobile ? '1 1 0' : '0 0 auto',
+                minWidth: 0,
+                textAlign: 'center',
               }}
             >
-              Contact Us →
+              Book a Session →
             </a>
             <button
               type="button"
               onClick={() => setVideoOpen(true)}
+              aria-label="Watch race highlights"
               style={{
                 backgroundColor: heroChipBg,
                 color: heroText,
-                padding: isMobile ? '0.9rem 1.25rem' : '1rem 1.7rem',
+                padding: isMobile ? '0.9rem 0.7rem' : '0.92rem 1.4rem',
                 borderRadius: '999px',
                 fontWeight: 600,
-                fontSize: isMobile ? '0.92rem' : '0.98rem',
+                fontSize: isMobile ? '0.82rem' : '0.92rem',
                 border: `1px solid ${heroChipBorder}`,
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.55rem',
+                gap: isMobile ? '0.4rem' : '0.55rem',
                 fontFamily: 'inherit',
                 letterSpacing: '0.02em',
                 whiteSpace: 'nowrap',
+                flex: isMobile ? '1 1 0' : '0 0 auto',
+                minWidth: 0,
+                justifyContent: 'center',
               }}
             >
               <span
@@ -550,17 +566,18 @@ export const Hero: React.FC = () => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '1.5rem',
-                  height: '1.5rem',
+                  width: isMobile ? '1.3rem' : '1.5rem',
+                  height: isMobile ? '1.3rem' : '1.5rem',
                   borderRadius: '999px',
                   background: brandGradient(brand, theme),
                   color: '#fff',
                   paddingLeft: '1px',
+                  flexShrink: 0,
                 }}
               >
-                <PlayGlyph size={11} />
+                <PlayGlyph size={isMobile ? 10 : 11} />
               </span>
-              Watch Us Race
+              Watch Race
             </button>
           </div>
 
@@ -571,7 +588,7 @@ export const Hero: React.FC = () => {
               display: 'flex',
               alignItems: 'stretch',
               borderTop: `1px solid ${heroHairline}`,
-              paddingTop: isMobile ? '1.25rem' : '0.9rem',
+              paddingTop: isMobile ? '1rem' : '0.9rem',
               animationDelay: '0.54s',
             }}
           >
@@ -587,8 +604,11 @@ export const Hero: React.FC = () => {
                 <div
                   style={{
                     fontFamily: 'var(--font-display)',
-                    fontSize: isMobile ? '1.5rem' : '1.75rem',
-                    color: heroText,
+                    fontSize: isMobile ? '1.38rem' : '1.75rem',
+                    // Brand accent on the numerals (light end on dark, dark end on light
+                    // so both stay AA) — gives the otherwise-flat stats strip a 2-tone
+                    // hierarchy and reads as deliberate rather than placeholder.
+                    color: isDark ? c.primaryLight : c.primaryDark,
                     letterSpacing: '0.02em',
                     lineHeight: 1,
                     fontVariantNumeric: 'tabular-nums',
@@ -598,11 +618,12 @@ export const Hero: React.FC = () => {
                 </div>
                 <div
                   style={{
-                    fontSize: isMobile ? '0.6rem' : '0.7rem',
+                    fontSize: isMobile ? '0.64rem' : '0.7rem',
                     color: heroSub,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    marginTop: '0.4rem',
+                    letterSpacing: '0.08em',
+                    marginTop: '0.34rem',
+                    lineHeight: 1.25,
                   }}
                 >
                   {s.label}
@@ -782,7 +803,7 @@ export const HeroPhoto: React.FC = () => {
             aria-current={i === index}
             onClick={() => go(i)}
             style={{
-              width: i === index ? '22px' : '8px',
+              width: '22px',
               height: '8px',
               padding: 0,
               border: 'none',
@@ -790,7 +811,9 @@ export const HeroPhoto: React.FC = () => {
               cursor: 'pointer',
               background: i === index ? '#fff' : 'rgba(255,255,255,0.55)',
               boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-              transition: 'width 0.3s ease, background 0.3s ease',
+              transform: i === index ? 'scaleX(1)' : 'scaleX(0.36)',
+              transformOrigin: 'center',
+              transition: 'transform 0.3s ease, background 0.3s ease',
             }}
           />
         ))}

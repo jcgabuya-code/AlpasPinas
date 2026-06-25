@@ -32,7 +32,6 @@ export const Team: React.FC = () => {
     <section id="team" style={{ backgroundColor: c.surface, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
       <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
         <SectionHeader
-          eyebrow="The Crew"
           style={{ marginBottom: '2.5rem' }}
           trailing={
             <div style={{ color: c.textSecondary, fontSize: '0.9rem' }}>
@@ -51,7 +50,10 @@ export const Team: React.FC = () => {
           ref={gridRef}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            // min(47%, 200px) floor → two-up on phones (a player-card collection reads
+            // better than a tall single column), while desktop keeps the 200px min and
+            // its usual column count.
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(47%, 200px), 1fr))',
             gap: '1.25rem',
           }}
         >

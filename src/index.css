@@ -206,3 +206,11 @@ button {
     animation: none;
   }
 }
+
+/* Button loading spinner. Kept animating even under reduced-motion: the spin *is*
+   the "in progress" status signal (and it's always paired with a text label), so
+   it's essential feedback rather than decorative motion. */
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-spinner {
+  animation: spin 0.7s linear infinite;
+}

@@ -35,7 +35,7 @@ export const Eyebrow: React.FC<{ children: React.ReactNode; style?: React.CSSPro
 // header-row content (e.g. a count + "see all" link). The headline is passed as
 // children so each section keeps control of its own accent word.
 export const SectionHeader: React.FC<{
-  eyebrow: React.ReactNode;
+  eyebrow?: React.ReactNode;
   size?: DisplaySize;
   trailing?: React.ReactNode;
   children: React.ReactNode;
@@ -44,9 +44,12 @@ export const SectionHeader: React.FC<{
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
 
+  // The branded eyebrow is an anchor cue, not section grammar — only sections that
+  // open a story carry it (see Features / Contact). Index sections with a trailing
+  // link omit it and let the headline + link stand alone.
   const heading = (
     <div>
-      <Eyebrow>{eyebrow}</Eyebrow>
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <h2 style={{ ...displayStyle(size), color: c.text }}>{children}</h2>
     </div>
   );
