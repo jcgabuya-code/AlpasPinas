@@ -13,6 +13,8 @@ import {
   X,
   ShieldCheck,
   Home,
+  ShoppingBag,
+  Package,
 } from 'lucide-react';
 
 // Section components — lazy-loaded inline after the shell
@@ -22,10 +24,12 @@ import { AdminBoats } from './admin/AdminBoats';
 import { AdminEvents } from './admin/AdminEvents';
 import { AdminRoster } from './admin/AdminRoster';
 import { AdminApplications } from './admin/AdminApplications';
+import { AdminProducts } from './admin/AdminProducts';
+import { AdminOrders } from './admin/AdminOrders';
 
 /* ------------------------------------------------------------------ */
 
-export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster' | 'applications';
+export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster' | 'applications' | 'products' | 'orders';
 export type ToastType = 'success' | 'error' | 'info';
 export type ShowToast = (msg: string, type?: ToastType) => void;
 
@@ -36,6 +40,8 @@ const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] =
   { id: 'boats',     label: 'Boat Assignments',  icon: Anchor         },
   { id: 'events',    label: 'Events',            icon: CalendarDays   },
   { id: 'roster',    label: 'Roster',            icon: Users          },
+  { id: 'products',  label: 'Shop Products',     icon: Package        },
+  { id: 'orders',    label: 'Shop Orders',       icon: ShoppingBag    },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -439,6 +445,8 @@ const SectionContent: React.FC<{
     case 'boats':     return <AdminBoats     showToast={showToast} c={c} theme={theme} />;
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;
     case 'roster':    return <AdminRoster    showToast={showToast} c={c} theme={theme} />;
+    case 'products':  return <AdminProducts  showToast={showToast} c={c} />;
+    case 'orders':    return <AdminOrders    showToast={showToast} c={c} />;
     default:          return null;
   }
 };

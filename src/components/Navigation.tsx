@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { cadenceAccentUri } from '../styles/tokens';
@@ -103,6 +104,21 @@ const GalleryIcon = () => (
     <path d="M4 16.5 q2.5 -1.8 5 0 t5 0 t4 0" />
   </Glyph>
 );
+// Tag — shop / gear.
+const ShopIcon = () => (
+  <Glyph>
+    <path d="M20.5 13.3 13.3 20.5a1.8 1.8 0 0 1-2.55 0l-7.2-7.2A1.8 1.8 0 0 1 3 12V4.5a1.5 1.5 0 0 1 1.5-1.5H12c.48 0 .94.19 1.28.53l7.22 7.22a1.8 1.8 0 0 1 0 2.55z" />
+    <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
+  </Glyph>
+);
+// Cart — header action.
+const CartIcon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="9" cy="20" r="1.3" />
+    <circle cx="18" cy="20" r="1.3" />
+    <path d="M2.5 3.5h2.2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.47-1.18L21 7.5H6" />
+  </svg>
+);
 // Life ring — contact.
 const ContactIcon = () => (
   <Glyph>
@@ -122,6 +138,7 @@ const NAV_ICONS: Record<string, React.FC> = {
   Events: EventsIcon,
   Training: TrainingIcon,
   Gallery: GalleryIcon,
+  Shop: ShopIcon,
   Contact: ContactIcon,
 };
 
@@ -180,6 +197,59 @@ const UserIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
+// Cart link with a live count badge. Used in both desktop + mobile bars.
+const CartBadge: React.FC<{ count: number; onClick?: () => void }> = ({ count, onClick }) => {
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
+  return (
+    <Link
+      to="/cart"
+      onClick={onClick}
+      aria-label={count > 0 ? `Cart, ${count} item${count === 1 ? '' : 's'}` : 'Cart'}
+      title="Cart"
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '2.25rem',
+        height: '2.25rem',
+        borderRadius: '999px',
+        border: `1px solid ${c.border}`,
+        color: c.text,
+        textDecoration: 'none',
+        flexShrink: 0,
+      }}
+    >
+      <CartIcon size={18} />
+      {count > 0 && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '-0.35rem',
+            right: '-0.35rem',
+            minWidth: '1.15rem',
+            height: '1.15rem',
+            padding: '0 0.3rem',
+            borderRadius: '999px',
+            backgroundColor: c.sun,
+            color: '#1a1205',
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1,
+          }}
+        >
+          {count > 9 ? '9+' : count}
+        </span>
+      )}
+    </Link>
+  );
+};
+
 type NavItem = {
   label: string;
   to: string;
@@ -194,12 +264,14 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Events', to: '/events' },
   { label: 'Training', to: '/training' },
   { label: 'Gallery', to: '/gallery' },
+  { label: 'Shop', to: '/shop' },
   { label: 'Contact', to: '/', hash: '#contact' },
 ];
 
 export const Navigation: React.FC = () => {
   const { theme, toggleTheme, brand, toggleBrand } = useTheme();
   const { user, logout } = useAuth();
+  const { count: cartCount } = useCart();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<string | null>(null);
@@ -247,6 +319,37 @@ export const Navigation: React.FC = () => {
         zIndex: 100,
       }}
     >
+      <a
+        href="#home"
+        style={{
+          position: 'absolute',
+          left: '1rem',
+          top: 'calc(100% + 0.5rem)',
+          transform: 'translateY(-0.35rem) scale(0.98)',
+          padding: '0.7rem 1rem',
+          borderRadius: '999px',
+          background: brandGradient(brand, theme),
+          color: '#fff',
+          fontWeight: 700,
+          textDecoration: 'none',
+          zIndex: 101,
+          opacity: 0,
+          pointerEvents: 'none',
+          transition: 'opacity 0.18s ease, transform 0.18s ease',
+        }}
+        onFocus={(event) => {
+          event.currentTarget.style.transform = 'translateY(0) scale(1)';
+          event.currentTarget.style.opacity = '1';
+          event.currentTarget.style.pointerEvents = 'auto';
+        }}
+        onBlur={(event) => {
+          event.currentTarget.style.transform = 'translateY(-0.35rem) scale(0.98)';
+          event.currentTarget.style.opacity = '0';
+          event.currentTarget.style.pointerEvents = 'none';
+        }}
+      >
+        Skip to home content
+      </a>
       <div
         style={{
           maxWidth: '1280px',
@@ -267,6 +370,7 @@ export const Navigation: React.FC = () => {
             gap: '0.6rem',
             textDecoration: 'none',
             color: c.text,
+            flexShrink: 0,
           }}
         >
           <div style={{ width: '56px', height: '56px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0 }}>
@@ -298,7 +402,7 @@ export const Navigation: React.FC = () => {
 
         {/* Desktop nav links */}
         {!isMobile && (
-          <div style={{ display: 'flex', gap: '2.25rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginLeft: '2.25rem', minWidth: 0 }}>
             <ul
               style={{
                 display: 'flex',
@@ -381,6 +485,8 @@ export const Navigation: React.FC = () => {
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
 
+              <CartBadge count={cartCount} />
+
               {canSeeAdmin && (
                 <Link
                   to="/admin"
@@ -457,6 +563,24 @@ export const Navigation: React.FC = () => {
                             {user.mobile}
                           </div>
                         )}
+                        <Link
+                          to="/orders"
+                          onClick={() => setUserMenuOpen(false)}
+                          style={{
+                            display: 'block',
+                            textAlign: 'center',
+                            color: c.text,
+                            border: `1px solid ${c.border}`,
+                            borderRadius: '0.4rem',
+                            padding: '0.5rem',
+                            marginBottom: '0.5rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          My Orders
+                        </Link>
                         <button
                           onClick={() => {
                             logout();
@@ -569,6 +693,7 @@ export const Navigation: React.FC = () => {
             >
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </button>
+            <CartBadge count={cartCount} onClick={closeMenu} />
             <button
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -840,6 +965,28 @@ export const Navigation: React.FC = () => {
             {/* Bottom block: sign-out (logged in) or auth CTAs (logged out) */}
             <div style={{ borderTop: `1px solid ${c.border}`, padding: '0.85rem 1rem 1rem' }}>
               {user ? (
+                <>
+                <Link
+                  to="/orders"
+                  onClick={closeMenu}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.7rem',
+                    color: c.text,
+                    textDecoration: 'none',
+                    padding: '0.65rem 0.85rem',
+                    fontSize: '0.92rem',
+                    fontWeight: 600,
+                    borderRadius: '0.7rem',
+                    marginBottom: '0.3rem',
+                  }}
+                >
+                  <span aria-hidden="true" style={{ display: 'flex', width: '1.6rem', justifyContent: 'center', color: c.textSecondary }}>
+                    <CartIcon size={18} />
+                  </span>
+                  <span style={{ flex: 1 }}>My Orders</span>
+                </Link>
                 <button
                   onClick={() => {
                     logout();
@@ -877,6 +1024,7 @@ export const Navigation: React.FC = () => {
                   </span>
                   <span style={{ flex: 1 }}>Sign Out</span>
                 </button>
+                </>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   <Link

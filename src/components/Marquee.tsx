@@ -2,14 +2,22 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import sponsorsData from '../data/sponsors.json';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const ITEMS = [
-  'ALPASPINAS',
-  'DRAGON BOAT',
-  'MALAYSIA',
-  'ONE STROKE. ONE TEAM',
-  'RULERS OF THE WATER',
-  'FILIPINO PRIDE',
+  'BEGINNER FRIENDLY',
+  'WEEKEND WATER SESSIONS',
+  'ALL GEAR PROVIDED',
+  'PUTRAJAYA + SUBANG PARC',
+  'RACE DAYS + CREW SOCIALS',
+  'FILIPINO CREW IN MALAYSIA',
+];
+
+const MOBILE_ITEMS = [
+  'BEGINNER FRIENDLY',
+  'ALL GEAR PROVIDED',
+  'WEEKEND WATER SESSIONS',
+  'PUTRAJAYA + SUBANG PARC',
 ];
 
 type Sponsor = { name: string; logo: string; url: string };
@@ -94,9 +102,9 @@ const DragonboatIcon: React.FC = () => {
       for (let i = 0; i < d.length; i += 4) {
         const brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
         if (brightness > 180) {
-          d[i + 3] = 0;            // light pixel → transparent
+          d[i + 3] = 0;
         } else {
-          d[i] = d[i + 1] = d[i + 2] = 255; // dark pixel → white
+          d[i] = d[i + 1] = d[i + 2] = 255;
         }
       }
       ctx.putImageData(imageData, 0, 0);
@@ -113,8 +121,8 @@ const DragonboatIcon: React.FC = () => {
   );
 };
 
-const Separator: React.FC<{ delay: number }> = ({ delay }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+const Separator: React.FC<{ delay: number; compact?: boolean }> = ({ delay, compact = false }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? '0.35rem' : '0.5rem' }}>
     <WaveIcon delay={delay} />
     <DragonboatIcon />
     <WaveIcon delay={delay + 0.15} />
@@ -194,41 +202,47 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
   );
 };
 
-const Inner: React.FC<{ accent: string }> = ({ accent }) => (
+const Inner: React.FC<{
+  accent: string;
+  items: string[];
+  compact?: boolean;
+  showSponsors?: boolean;
+}> = ({ accent, items, compact = false, showSponsors = true }) => (
   <span
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '2rem',
-      paddingRight: '2rem',
+      gap: compact ? '1.25rem' : '2rem',
+      paddingRight: compact ? '1.25rem' : '2rem',
       whiteSpace: 'nowrap',
     }}
   >
-    {ITEMS.flatMap((item, i) => [
+    {items.flatMap((item, i) => [
       // Each phrase leads with an amber cadence beat — the same drummer's-count
       // signature the hero uses — tying the marquee into the page's rhythm.
-      <span key={`item-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.7rem' }}>
+      <span key={`item-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? '0.45rem' : '0.7rem' }}>
         <span
           aria-hidden="true"
-          style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: accent, flexShrink: 0 }}
+          style={{ width: compact ? '5px' : '6px', height: compact ? '5px' : '6px', borderRadius: '999px', backgroundColor: accent, flexShrink: 0 }}
         />
         <span
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1rem',
-            letterSpacing: '0.18em',
+            fontSize: compact ? '0.88rem' : '1rem',
+            letterSpacing: compact ? '0.14em' : '0.18em',
             color: '#fff',
           }}
         >
           {item}
         </span>
       </span>,
-      <Separator key={`sep-${i}`} delay={i * 0.25} />,
+      <Separator key={`sep-${i}`} delay={i * 0.25} compact={compact} />,
     ])}
-    {SPONSORS.flatMap((sponsor, i) => [
-      <SponsorItem key={`sponsor-${i}`} sponsor={sponsor} />,
-      <Separator key={`sponsor-sep-${i}`} delay={i * 0.25} />,
-    ])}
+    {showSponsors &&
+      SPONSORS.flatMap((sponsor, i) => [
+        <SponsorItem key={`sponsor-${i}`} sponsor={sponsor} />,
+        <Separator key={`sponsor-sep-${i}`} delay={i * 0.25} compact={compact} />,
+      ])}
   </span>
 );
 
@@ -302,6 +316,7 @@ const edgeUrl = (fill: string, flip: boolean) => {
 export const Marquee: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const isMobile = useIsMobile();
 
   // Honor prefers-reduced-motion — a perpetually scrolling band is a classic
   // vestibular trigger, so freeze the scroll + wave + edge animations for it.
@@ -325,11 +340,21 @@ export const Marquee: React.FC = () => {
   const track = useMemo(
     () => (
       <>
-        <Inner accent={c.sun} />
-        <Inner accent={c.sun} />
+        <Inner
+          accent={c.sun}
+          items={isMobile ? MOBILE_ITEMS : ITEMS}
+          compact={isMobile}
+          showSponsors={!isMobile}
+        />
+        <Inner
+          accent={c.sun}
+          items={isMobile ? MOBILE_ITEMS : ITEMS}
+          compact={isMobile}
+          showSponsors={!isMobile}
+        />
       </>
     ),
-    [c.sun]
+    [c.sun, isMobile]
   );
 
   // Band-colored fade at each end so items dissolve in/out instead of hard-cutting.
@@ -363,8 +388,8 @@ export const Marquee: React.FC = () => {
         position: 'relative',
         backgroundColor: c.primary,
         overflow: 'hidden',
-        padding: '1.35rem 0',
-        marginTop: '2.0rem',
+        padding: isMobile ? '1rem 0' : '1.35rem 0',
+        marginTop: isMobile ? '1.25rem' : '2rem',
       }}
     >
       {/* Wave layer 1 — primary scroll (transform-driven, compositor-only) */}
@@ -397,7 +422,7 @@ export const Marquee: React.FC = () => {
           position: 'relative',
           zIndex: 1,
           display: 'inline-flex',
-          animation: anim('marquee 28s linear infinite'),
+          animation: anim(`marquee ${isMobile ? 20 : 28}s linear infinite`),
           animationPlayState: paused ? 'paused' : 'running',
           willChange: 'transform',
         }}

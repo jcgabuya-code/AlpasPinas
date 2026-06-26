@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 // IntersectionObserver is unavailable, so content never gets stuck hidden.
 export const useInView = <T extends Element = HTMLDivElement>(
   threshold = 0.15
-): [React.RefObject<T>, boolean] => {
+): [React.RefObject<T | null>, boolean] => {
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
 

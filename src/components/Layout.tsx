@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navigation } from './Navigation';
+import { PromoBar } from './PromoBar';
 import { Footer } from './Footer';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
@@ -23,6 +24,7 @@ export const Layout: React.FC = () => {
         flexDirection: 'column',
       }}
     >
+      <PromoBar />
       <Navigation />
       <main style={{ flex: 1 }}>
         <Outlet />

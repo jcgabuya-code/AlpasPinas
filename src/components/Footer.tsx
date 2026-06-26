@@ -10,6 +10,7 @@ const LINKS: { label: string; to: string; hash?: string }[] = [
   { label: 'Events', to: '/events' },
   { label: 'Training', to: '/training' },
   { label: 'Gallery', to: '/gallery' },
+  { label: 'Shop', to: '/shop' },
   { label: 'Contact', to: '/', hash: '#contact' },
 ];
 

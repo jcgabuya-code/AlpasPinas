@@ -2,6 +2,7 @@ import React from 'react';
 import { Hero, HeroPhoto } from '../components/Hero';
 import { Marquee } from '../components/Marquee';
 import { Features } from '../components/Features';
+import { FeaturedGear } from '../components/FeaturedGear';
 import { Team } from '../components/Team';
 import { Contact } from '../components/Contact';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -15,6 +16,7 @@ export const Home: React.FC = () => {
       <Hero />
       <Marquee />
       {isMobile && <HeroPhoto />}
+      <FeaturedGear />
       <Features />
       <Team />
       <Contact />
