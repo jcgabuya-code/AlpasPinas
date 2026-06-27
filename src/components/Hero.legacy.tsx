@@ -1,7 +1,9 @@
+// ⚠️ BACKUP — the previous (split photo/text) hero, frozen for instant rollback.
+// To restore it, set USE_LEGACY_HERO = true in src/pages/Home.tsx. The live hero
+// is src/components/Hero.tsx. Safe to delete this file once the new hero is final.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { colors, brandGradient, type ColorPalette } from '../styles/colors';
-import { contentMaxWidth } from '../styles/tokens';
 import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
@@ -248,13 +250,6 @@ const HERO_PHOTOS = [
   { src: '/team-2.jpg', alt: 'AlpasPinas Dragonboat Team', objectPosition: 'center 30%' },
 ];
 
-// Stacked headline lines for the mobile hero — two paddle catches that stroke in a
-// beat apart. "AWAY" carries the accent + wake underline.
-const HEADLINE_LINES = [
-  { text: 'BREAK', accent: false },
-  { text: 'AWAY', accent: true },
-];
-
 export const Hero: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
@@ -262,18 +257,25 @@ export const Hero: React.FC = () => {
   const isMobile = useIsMobile();
   const [videoOpen, setVideoOpen] = useState(false);
 
-  // Theme-aware surface — the hero is dark-forward but honors light mode and the
-  // ocean/bandila brands by reading every color from the active palette. The panel
-  // intentionally matches Layout's c.background so the transparent merged nav above
-  // it blends seamlessly into this stage.
+  // Theme-aware panel — the text side + gradient blend to this so light/dark stay aligned.
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
   const panel = `rgb(${panelRgb})`;
-  const heroText = c.text;
-  const heroSub = isDark ? 'rgba(245, 247, 245, 0.82)' : c.textSecondary;
-  const heroAccent = isDark ? c.primaryLight : c.primary;
-  const hairline = isDark ? 'rgba(255, 255, 255, 0.14)' : c.border;
-  const chipBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.7)';
-  const chipBorder = isDark ? 'rgba(255, 255, 255, 0.16)' : c.border;
+  // Frosted chip surface that reads over both the panel and the photo, in both themes.
+  const chipBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.7)';
+  const chipBorder = isDark ? 'rgba(255,255,255,0.3)' : c.border;
+  const hairline = isDark ? 'rgba(255,255,255,0.18)' : c.border;
+
+  // Mobile now stacks a photo band above the text (like the wide split), so the
+  // headline/CTAs/stats sit on the solid panel and use theme colors — only the race
+  // pill overlaid on the photo needs over-image styling (handled inline).
+  const onPhoto = false;
+  const heroText = onPhoto ? '#fff' : c.text;
+  const heroSub = onPhoto ? 'rgba(255,255,255,0.84)' : c.textSecondary;
+  const heroAccent = onPhoto ? c.primaryLight : isDark ? c.primaryLight : c.primary;
+  const heroHairline = onPhoto ? 'rgba(255,255,255,0.24)' : hairline;
+  const heroChipBg = onPhoto ? 'rgba(255,255,255,0.14)' : chipBg;
+  const heroChipBorder = onPhoto ? 'rgba(255,255,255,0.34)' : chipBorder;
+  const heroTextShadow = onPhoto ? '0 1px 3px rgba(0,0,0,0.7), 0 2px 16px rgba(0,0,0,0.45)' : 'none';
 
   const nextEvent = useMemo(() => {
     const upcoming = (eventsData as RaceEvent[])
@@ -282,473 +284,381 @@ export const Hero: React.FC = () => {
     return upcoming[0] ?? null;
   }, []);
 
-  // ── Shared trailing blocks (identical on mobile + desktop; sizing keys off
-  //    isMobile). Kept as locals so both layouts stay in lockstep. ───────────────
-  const cadenceRow = (delay: string) => (
-    <div className="stroke-in" style={{ marginTop: isMobile ? '1.1rem' : '1.25rem', animationDelay: delay }}>
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem 1rem' }}>
-        {KEYWORDS.map((word, i) => (
-          <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            {/* Cadence beat-tick — amber dot pulsing in sequence like a drummer's count. */}
-            <span
-              aria-hidden="true"
-              className="cadence-beat"
-              style={{
-                width: isMobile ? '6px' : '7px',
-                height: isMobile ? '6px' : '7px',
-                borderRadius: '999px',
-                backgroundColor: c.sun,
-                flexShrink: 0,
-                animationDelay: `${i * 0.18}s`,
-              }}
-            />
-            <span
-              style={{
-                color: heroText,
-                fontSize: isMobile ? '0.8rem' : '0.95rem',
-                fontWeight: 700,
-                letterSpacing: '0.18em',
-              }}
-            >
-              {word}
-            </span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-
-  const paragraph = (delay: string) => (
-    <p
-      className="stroke-in"
-      style={{
-        fontSize: isMobile ? '0.95rem' : '1.05rem',
-        color: heroSub,
-        margin: isMobile ? '0.9rem 0 1.25rem' : '1rem 0 1.4rem',
-        maxWidth: '440px',
-        lineHeight: 1.42,
-        animationDelay: delay,
-      }}
-    >
-      Start with a weekend session. No experience needed, all gear provided,
-      and a crew that will get you on the water fast.
-    </p>
-  );
-
-  const ctaRow = (delay: string) => (
-    <div
-      className="stroke-in"
-      style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.6rem', flexWrap: 'nowrap', marginBottom: isMobile ? '1.45rem' : '1.4rem', animationDelay: delay }}
-    >
-      <a
-        href="#contact"
-        aria-label="Book your first session"
-        style={{
-          background: brandGradient(brand, theme),
-          color: '#fff',
-          padding: isMobile ? '0.9rem 0.7rem' : '0.92rem 1.5rem',
-          borderRadius: '999px',
-          fontWeight: 600,
-          textDecoration: 'none',
-          fontSize: isMobile ? '0.82rem' : '0.92rem',
-          letterSpacing: '0.02em',
-          boxShadow: `0 10px 30px ${c.primary}55`,
-          whiteSpace: 'nowrap',
-          flex: isMobile ? '1 1 0' : '0 0 auto',
-          minWidth: 0,
-          textAlign: 'center',
-        }}
-      >
-        Book a Session →
-      </a>
-      <button
-        type="button"
-        onClick={() => setVideoOpen(true)}
-        aria-label="Watch race highlights"
-        style={{
-          backgroundColor: chipBg,
-          color: heroText,
-          padding: isMobile ? '0.9rem 0.7rem' : '0.92rem 1.4rem',
-          borderRadius: '999px',
-          fontWeight: 600,
-          fontSize: isMobile ? '0.82rem' : '0.92rem',
-          border: `1px solid ${chipBorder}`,
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          cursor: 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: isMobile ? '0.4rem' : '0.55rem',
-          fontFamily: 'inherit',
-          letterSpacing: '0.02em',
-          whiteSpace: 'nowrap',
-          flex: isMobile ? '1 1 0' : '0 0 auto',
-          minWidth: 0,
-          justifyContent: 'center',
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: isMobile ? '1.3rem' : '1.5rem',
-            height: isMobile ? '1.3rem' : '1.5rem',
-            borderRadius: '999px',
-            background: brandGradient(brand, theme),
-            color: '#fff',
-            paddingLeft: '1px',
-            flexShrink: 0,
-          }}
-        >
-          <PlayGlyph size={isMobile ? 10 : 11} />
-        </span>
-        Watch Race
-      </button>
-    </div>
-  );
-
-  const statsRow = (delay: string) => (
-    <div
-      className="stroke-in"
-      style={{
-        display: 'flex',
-        alignItems: 'stretch',
-        borderTop: `1px solid ${hairline}`,
-        paddingTop: isMobile ? '1rem' : '0.9rem',
-        maxWidth: isMobile ? 'none' : '440px',
-        animationDelay: delay,
-      }}
-    >
-      {STATS.map((s, i) => (
-        <div
-          key={s.label}
-          style={{
-            flex: 1,
-            paddingLeft: i === 0 ? 0 : isMobile ? '0.9rem' : '1.75rem',
-            borderLeft: i === 0 ? 'none' : `1px solid ${hairline}`,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? '1.38rem' : '1.75rem',
-              color: isDark ? c.primaryLight : c.primaryDark,
-              letterSpacing: '0.02em',
-              lineHeight: 1,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {s.prefix}<CountUp target={s.value} />{s.suffix}
-          </div>
-          <div
-            style={{
-              fontSize: isMobile ? '0.64rem' : '0.7rem',
-              color: heroSub,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              marginTop: '0.34rem',
-              lineHeight: 1.25,
-            }}
-          >
-            {s.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  // ── Mobile: text-only kinetic stack (the standalone HeroPhoto carousel carries
-  //    the imagery below the marquee). The nav above keeps its compact logo, so no
-  //    wordmark is repeated here. ────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <section
-        id="home"
-        style={{
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          backgroundColor: panel,
-          padding: '2.15rem 1.25rem 2.1rem',
-        }}
-      >
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background: `radial-gradient(120% 95% at 86% 6%, ${c.primary}${isDark ? '24' : '14'}, transparent 58%)`,
-          }}
-        />
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: GRAIN_URI,
-            backgroundRepeat: 'repeat',
-            opacity: isDark ? 0.05 : 0.035,
-            mixBlendMode: isDark ? 'overlay' : 'multiply',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div className="stroke-in" style={{ marginBottom: '1.1rem', animationDelay: '0.04s' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '0.4rem 0.9rem',
-                borderRadius: '999px',
-                border: `1px solid ${chipBorder}`,
-                backgroundColor: chipBg,
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                color: heroText,
-                fontSize: '0.58rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Filipino Dragon Boat Team · Malaysia
-            </span>
-          </div>
-
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(4rem, 22vw, 6rem)',
-              fontWeight: 400,
-              color: heroText,
-              margin: 0,
-              lineHeight: 0.82,
-              letterSpacing: '0.005em',
-              textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : 'none',
-            }}
-          >
-            {HEADLINE_LINES.map((line, i) => (
-              <span
-                key={line.text}
-                className="stroke-in"
-                style={{
-                  display: 'block',
-                  position: 'relative',
-                  width: 'fit-content',
-                  color: line.accent ? heroAccent : heroText,
-                  animationDelay: `${0.16 + i * 0.26}s`,
-                }}
-              >
-                {line.text}
-                {line.accent && (
-                  <span
-                    aria-hidden="true"
-                    className="wake-underline"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      right: 0,
-                      bottom: '0.04em',
-                      height: '0.07em',
-                      borderRadius: '999px',
-                      background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
-                    }}
-                  />
-                )}
-              </span>
-            ))}
-          </h1>
-
-          <p
-            className="stroke-in"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.6rem',
-              fontWeight: 400,
-              color: heroAccent,
-              margin: '0.65rem 0 0',
-              letterSpacing: '0.02em',
-              lineHeight: 1,
-              animationDelay: '0.46s',
-            }}
-          >
-            on every stroke.
-          </p>
-
-          {cadenceRow('0.56s')}
-          {paragraph('0.64s')}
-          {ctaRow('0.72s')}
-          {statsRow('0.8s')}
-        </div>
-
-        <VideoModal
-          open={videoOpen}
-          onClose={() => setVideoOpen(false)}
-          src="/race-highlight.mp4"
-          poster="/race-poster.jpg"
-          title="AlpasPinas race highlight"
-        />
-      </section>
-    );
-  }
-
-  // ── Desktop: oversized ALPASPINAS wordmark masthead, fused with the transparent
-  //    nav above (Navigation drops its logo on Home-at-top). Dark left panel holds
-  //    the type; the crew photo bleeds in on the right, feathered into the panel and
-  //    faded to the panel colour at its top so it meets the nav seam-free. ─────────
   return (
     <section
       id="home"
       style={{
         position: 'relative',
-        minHeight: '82dvh',
+        minHeight: isMobile ? 'auto' : '68dvh',
         display: 'flex',
-        alignItems: 'center',
+        flexDirection: isMobile ? 'column' : 'row',
         overflow: 'hidden',
         backgroundColor: panel,
       }}
     >
-      {/* Right-side crew photo — feathered into the panel on the left, faded into the
-          panel colour at the top (nav merge) and darkened at the bottom (ticket). */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          right: 0,
-          width: '48%',
-          overflow: 'hidden',
-          WebkitMaskImage:
-            'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.08) 7%, rgba(0,0,0,0.5) 17%, #000 30%)',
-          maskImage:
-            'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.08) 7%, rgba(0,0,0,0.5) 17%, #000 30%)',
-        }}
-      >
-        <img
-          src="/team.jpg"
-          alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
-          className="ken-burns"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
-        />
+      {/* Wide: team photo covers the right 55%. All photo treatment is scoped to this
+          frame so it never bleeds onto the text panel. The left edge feathers into the
+          panel over a wide, gentle ramp (seamless blend); a subtle dark vignette at
+          top/bottom seats the nav + race ticket — matching the mobile HeroPhoto, and
+          avoiding the flat panel-color bars the old full-width fade produced. */}
+      {!isMobile && (
         <div
+          aria-hidden="true"
           style={{
             position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background: `linear-gradient(180deg, rgba(${panelRgb},1) 0%, rgba(${panelRgb},0) 16%, rgba(0,0,0,0) 58%, rgba(0,0,0,0.45) 100%)`,
+            top: 0,
+            bottom: 0,
+            right: 0,
+            width: '55%',
+            overflow: 'hidden',
+            WebkitMaskImage:
+              'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.08) 6%, rgba(0,0,0,0.45) 14%, #000 24%)',
+            maskImage:
+              'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.08) 6%, rgba(0,0,0,0.45) 14%, #000 24%)',
           }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: GRAIN_URI,
-            backgroundRepeat: 'repeat',
-            opacity: 0.06,
-            mixBlendMode: 'overlay',
-            pointerEvents: 'none',
-          }}
-        />
-      </div>
-
-      {/* Soft brand glow over the dark left panel */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          background: `radial-gradient(90% 90% at 12% 12%, ${c.primary}${isDark ? '1f' : '12'}, transparent 55%)`,
-        }}
-      />
-
-      {/* Next-race ticket — bottom-right, over the photo */}
-      {nextEvent && (
-        <div style={{ position: 'absolute', zIndex: 2, right: '2rem', bottom: '1.9rem', width: 'min(380px, 38vw)' }}>
-          <NextRaceTicket event={nextEvent} c={c} isDark={isDark} compact />
+        >
+          <img
+            src="/team.jpg"
+            alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+            }}
+          />
+          {/* Soft top + bottom darkening — for nav contrast and to seat the ticket */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background:
+                'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 66%, rgba(0,0,0,0.32) 100%)',
+            }}
+          />
         </div>
       )}
 
-      {/* Type column */}
+      {/* Next-race ticket — overlaid on the photo (wide screens), centered over the
+          right 55%: 45% + 55%/2 = 72.5% */}
+      {!isMobile && nextEvent && (
+        <div style={{ position: 'absolute', zIndex: 2, bottom: '1.75rem', left: '72.5%', transform: 'translateX(-50%)', maxWidth: 'min(480px, 50vw)' }}>
+          <NextRaceTicket event={nextEvent} c={c} isDark={isDark} />
+        </div>
+      )}
+
+      {/* Content — phone: full-width column; wide: the left 40% text side */}
       <div
         style={{
           position: 'relative',
           zIndex: 1,
           width: '100%',
-          maxWidth: contentMaxWidth,
-          margin: '0 auto',
-          padding: 'clamp(2.5rem, 6vh, 4.5rem) clamp(1.5rem, 4vw, 3rem)',
+          maxWidth: isMobile ? '100%' : '45%',
+          marginRight: 'auto',
+          padding: isMobile ? '2.15rem 1.25rem 2.1rem' : '1.5rem 2.5rem 1.5rem 3rem',
+          display: 'flex',
+          flexDirection: 'column',
+          // Mobile: natural top-down stack on the panel below the photo band.
+          // Wide: cluster the whole group and center it so extra height becomes even
+          // top/bottom margins instead of a dead gap.
+          justifyContent: isMobile ? 'flex-start' : 'center',
+          gap: isMobile ? '1.2rem' : 'clamp(1.5rem, 4vh, 3rem)',
         }}
       >
-        <div style={{ maxWidth: '600px' }}>
-          {/* Eyebrow label with a leading cadence beat */}
-          <div className="stroke-in" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.9rem', animationDelay: '0.04s' }}>
-            <span
-              aria-hidden="true"
-              className="cadence-beat"
-              style={{ width: '7px', height: '7px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
-            />
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: heroSub }}>
-              Filipino Dragon Boat Team · Malaysia
-            </span>
-          </div>
-
-          {/* Oversized wordmark masthead — the single brand mark for the page. The
-              wake gradient doubles as the rule beneath it. */}
-          <h1
-            className="stroke-in"
+        {/* Top row: identity badge. On mobile the logo lives in the merged-in nav above,
+            so it's omitted here to avoid duplicating it; on wide screens it stays. */}
+        <div
+          className={isMobile ? 'hero-rise' : undefined}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', animationDelay: '0.05s' }}
+        >
+          {!isMobile && (
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '999px',
+                overflow: 'hidden',
+                flexShrink: 0,
+                border: `2px solid ${isDark ? 'rgba(255,255,255,0.5)' : c.border}`,
+                boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
+              }}
+            >
+              <img
+                src="/logo.jpg"
+                alt="AlpasPinas logo"
+                style={{ width: '130%', height: '130%', marginLeft: '-15%', marginTop: '-15%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
+          )}
+          <span
             style={{
-              position: 'relative',
-              width: 'fit-content',
+              display: 'inline-block',
+              padding: '0.4rem 0.9rem',
+              borderRadius: '999px',
+              border: `1px solid ${heroChipBorder}`,
+              backgroundColor: heroChipBg,
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              color: heroText,
+              fontSize: isMobile ? '0.58rem' : '0.72rem',
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Filipino Dragon Boat Team · Malaysia
+          </span>
+        </div>
+
+        {/* Bottom: headline, tagline, CTAs, stats */}
+        <div>
+          {/* Headline */}
+          <h1
+            className={isMobile ? 'hero-rise' : undefined}
+            style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.6rem, 7.5vw, 6rem)',
+              fontSize: isMobile ? 'clamp(2.9rem, 16vw, 4.45rem)' : 'clamp(2.5rem, 3.4vw + 1.4vh, 4.5rem)',
               fontWeight: 400,
               color: heroText,
               margin: 0,
               lineHeight: 0.9,
-              letterSpacing: '0.03em',
-              animationDelay: '0.14s',
-              textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : 'none',
+              letterSpacing: '0.01em',
+              animationDelay: '0.18s',
+              textShadow: onPhoto ? '0 1px 3px rgba(0,0,0,0.6), 0 2px 24px rgba(0,0,0,0.5)' : isDark ? '0 2px 30px rgba(0,0,0,0.35)' : 'none',
             }}
           >
-            ALPAS<span style={{ color: heroAccent }}>PINAS</span>
-            <span
-              aria-hidden="true"
-              className="wake-underline"
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: '-0.14em',
-                height: '0.055em',
-                borderRadius: '999px',
-                background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
-              }}
-            />
+            RULERS OF
+            <br />
+            THE{' '}
+            {/* Signature: "WATER" carries a wake-line that traces left→right under it */}
+            <span style={{ position: 'relative', display: 'inline-block', color: heroAccent }}>
+              WATER
+              <span
+                aria-hidden="true"
+                className="wake-underline"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: '0.04em',
+                  height: '0.07em',
+                  borderRadius: '999px',
+                  background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                }}
+              />
+            </span>
           </h1>
 
-          {/* BREAK AWAY tagline — the kept signature line, now the kicker */}
+          {/* Cadence readout — the SPEED·SYNC·STRENGTH beats pulsing in sequence like a
+              drummer's count. (The soundwave meter that used to sit above this lives on
+              in the Contact section; stacking both here over-said one idea.) */}
           <div
-            className="stroke-in"
-            style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.2rem 0.7rem', marginTop: '1.5rem', animationDelay: '0.3s' }}
+            className={isMobile ? 'hero-rise' : undefined}
+            style={{ marginTop: isMobile ? '0.85rem' : '0.7rem', animationDelay: '0.30s' }}
           >
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 2.6vw, 2.1rem)', fontWeight: 400, letterSpacing: '0.04em', color: heroText }}>
-              BREAK <span style={{ color: heroAccent }}>AWAY</span>
-            </span>
-            <span style={{ fontSize: '1.02rem', color: heroSub }}>— on every stroke.</span>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem 1rem' }}>
+              {KEYWORDS.map((word, i) => (
+                <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Cadence beat-tick — amber dot that pulses in sequence like a
+                      dragon-boat drummer's stroke count. */}
+                  <span
+                    aria-hidden="true"
+                    className="cadence-beat"
+                    style={{
+                      width: isMobile ? '6px' : '7px',
+                      height: isMobile ? '6px' : '7px',
+                      borderRadius: '999px',
+                      backgroundColor: c.sun,
+                      flexShrink: 0,
+                      animationDelay: `${i * 0.18}s`,
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: heroText,
+                      fontSize: isMobile ? '0.8rem' : '0.95rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.18em',
+                      textShadow: heroTextShadow,
+                    }}
+                  >
+                    {word}
+                  </span>
+                </span>
+              ))}
+            </div>
           </div>
 
-          {cadenceRow('0.42s')}
-          {paragraph('0.5s')}
-          {ctaRow('0.58s')}
-          {statsRow('0.66s')}
+          <p
+            className={isMobile ? 'hero-rise' : undefined}
+            style={{
+              fontSize: isMobile ? '0.95rem' : '1.05rem',
+              color: heroSub,
+              margin: isMobile ? '0.9rem 0 1.25rem 0' : '0.7rem 0 1rem 0',
+              maxWidth: '440px',
+              lineHeight: 1.42,
+              textShadow: heroTextShadow,
+              animationDelay: '0.38s',
+            }}
+          >
+            Start with a weekend session. No experience needed, all gear provided,
+            and a crew that will get you on the water fast.
+          </p>
+
+          {/* CTAs — both sit on a single row at every width: trimmed labels + tighter
+              sizing keep them on one line. Mobile fills the row (flex:1); desktop keeps
+              them at natural width so they don't stretch across the text panel. */}
+          <div
+            className={isMobile ? 'hero-rise' : undefined}
+            style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.6rem', flexWrap: 'nowrap', marginBottom: isMobile ? '1.45rem' : '1rem', animationDelay: '0.46s' }}
+          >
+            <a
+              href="#contact"
+              aria-label="Book your first session"
+              style={{
+                background: brandGradient(brand, theme),
+                color: '#fff',
+                padding: isMobile ? '0.9rem 0.7rem' : '0.92rem 1.5rem',
+                borderRadius: '999px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                fontSize: isMobile ? '0.82rem' : '0.92rem',
+                letterSpacing: '0.02em',
+                boxShadow: `0 10px 30px ${c.primary}55`,
+                whiteSpace: 'nowrap',
+                flex: isMobile ? '1 1 0' : '0 0 auto',
+                minWidth: 0,
+                textAlign: 'center',
+              }}
+            >
+              Book a Session →
+            </a>
+            <button
+              type="button"
+              onClick={() => setVideoOpen(true)}
+              aria-label="Watch race highlights"
+              style={{
+                backgroundColor: heroChipBg,
+                color: heroText,
+                padding: isMobile ? '0.9rem 0.7rem' : '0.92rem 1.4rem',
+                borderRadius: '999px',
+                fontWeight: 600,
+                fontSize: isMobile ? '0.82rem' : '0.92rem',
+                border: `1px solid ${heroChipBorder}`,
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: isMobile ? '0.4rem' : '0.55rem',
+                fontFamily: 'inherit',
+                letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
+                flex: isMobile ? '1 1 0' : '0 0 auto',
+                minWidth: 0,
+                justifyContent: 'center',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: isMobile ? '1.3rem' : '1.5rem',
+                  height: isMobile ? '1.3rem' : '1.5rem',
+                  borderRadius: '999px',
+                  background: brandGradient(brand, theme),
+                  color: '#fff',
+                  paddingLeft: '1px',
+                  flexShrink: 0,
+                }}
+              >
+                <PlayGlyph size={isMobile ? 10 : 11} />
+              </span>
+              Watch Race
+            </button>
+          </div>
+
+          {/* Stats strip */}
+          <div
+            className={isMobile ? 'hero-rise' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'stretch',
+              borderTop: `1px solid ${heroHairline}`,
+              paddingTop: isMobile ? '1rem' : '0.9rem',
+              animationDelay: '0.54s',
+            }}
+          >
+            {STATS.map((s, i) => (
+              <div
+                key={s.label}
+                style={{
+                  flex: 1,
+                  paddingLeft: i === 0 ? 0 : isMobile ? '0.9rem' : '1.75rem',
+                  borderLeft: i === 0 ? 'none' : `1px solid ${heroHairline}`,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: isMobile ? '1.38rem' : '1.75rem',
+                    // Brand accent on the numerals (light end on dark, dark end on light
+                    // so both stay AA) — gives the otherwise-flat stats strip a 2-tone
+                    // hierarchy and reads as deliberate rather than placeholder.
+                    color: isDark ? c.primaryLight : c.primaryDark,
+                    letterSpacing: '0.02em',
+                    lineHeight: 1,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {s.prefix}<CountUp target={s.value} />{s.suffix}
+                </div>
+                <div
+                  style={{
+                    fontSize: isMobile ? '0.64rem' : '0.7rem',
+                    color: heroSub,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginTop: '0.34rem',
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Scroll cue — only on the wide hero (mobile flows straight into the photo
+          band). Outer div positions/centers; inner div carries the bob animation so
+          its transform doesn't fight the centering translate. */}
+      {!isMobile && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            bottom: '1.4rem',
+            left: '22.5%',
+            transform: 'translateX(-50%)',
+            zIndex: 2,
+            color: heroSub,
+          }}
+        >
+          <span className="hero-scroll-cue" style={{ display: 'block' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </span>
+        </div>
+      )}
 
       <VideoModal
         open={videoOpen}

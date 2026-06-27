@@ -167,8 +167,36 @@ button {
   animation: wakeTrace 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+/* Kinetic hero: each headline line + content group strokes in from the left like a
+   paddle catch, staggered on the beat (per-element animation-delay set inline).
+   Compositor-only (transform/opacity). */
+@keyframes strokeIn {
+  from { opacity: 0; transform: translate3d(-42px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.stroke-in {
+  opacity: 0;
+  animation: strokeIn 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Ambient wake streaks drifting across the kinetic hero background — slow, faint,
+   transform-only so it stays on the compositor and never competes with the type. */
+@keyframes wakeDrift {
+  from { transform: translate3d(-7%, 0, 0); }
+  to   { transform: translate3d(7%, 0, 0); }
+}
+.wake-drift { animation: wakeDrift 11s ease-in-out infinite alternate; }
+
 /* Respect users who ask for less motion — show everything, animate nothing. */
 @media (prefers-reduced-motion: reduce) {
+  .stroke-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .wake-drift {
+    animation: none;
+  }
   .cadence-beat {
     animation: none;
     opacity: 1;

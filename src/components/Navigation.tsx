@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { cadenceAccentUri } from '../styles/tokens';
+import { HOME_HERO } from '../config/homeHero';
 
 const ShieldIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg
@@ -277,8 +278,25 @@ export const Navigation: React.FC = () => {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
   const closeMenu = () => setMenuOpen(false);
+
+  // Merged masthead: on the Home page (wordmark hero only), the nav sits transparent
+  // over the hero — its logo is dropped because the hero shows the giant ALPASPINAS
+  // wordmark. Once the user scrolls past the top (or on any other page) it condenses
+  // back to the normal solid, logo-bearing bar. Desktop only — mobile keeps its bar.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const mergedHome = HOME_HERO === 'wordmark' && location.pathname === '/';
+  const overlay = mergedHome && !scrolled && !isMobile;
+  const hideLogo = overlay; // the hero's wordmark stands in for the nav logo
 
   // Lock body scroll while the slide-in drawer is open.
   useEffect(() => {
@@ -309,14 +327,19 @@ export const Navigation: React.FC = () => {
   return (
     <nav
       style={{
-        backgroundColor: theme === 'dark' ? 'rgba(11, 12, 16, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${c.border}`,
+        backgroundColor: overlay
+          ? 'transparent'
+          : theme === 'dark'
+          ? 'rgba(11, 12, 16, 0.95)'
+          : 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: overlay ? 'none' : 'blur(12px)',
+        WebkitBackdropFilter: overlay ? 'none' : 'blur(12px)',
+        borderBottom: `1px solid ${overlay ? 'transparent' : c.border}`,
         padding: '0.9rem 0',
         position: 'sticky',
         top: 0,
         zIndex: 100,
+        transition: 'background-color 0.3s ease, border-color 0.3s ease',
       }}
     >
       <a
@@ -360,7 +383,9 @@ export const Navigation: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        {/* Logo / wordmark */}
+        {/* Logo / wordmark — hidden on the merged home masthead, where the hero shows
+            the oversized ALPASPINAS instead (avoids a duplicate logo). */}
+        {!hideLogo && (
         <Link
           to="/"
           onClick={closeMenu}
@@ -399,10 +424,23 @@ export const Navigation: React.FC = () => {
             ALPAS<span style={{ color: c.primary }}>PINAS</span>
           </span>
         </Link>
+        )}
 
         {/* Desktop nav links */}
         {!isMobile && (
-          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginLeft: '2.25rem', minWidth: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '2rem',
+              alignItems: 'center',
+              marginLeft: hideLogo ? 0 : '2.25rem',
+              minWidth: 0,
+              // When the logo is hidden (merged masthead) the links group fills the bar
+              // so items sit at the left edge and actions stay pinned to the right.
+              flex: hideLogo ? 1 : undefined,
+              justifyContent: hideLogo ? 'space-between' : undefined,
+            }}
+          >
             <ul
               style={{
                 display: 'flex',
