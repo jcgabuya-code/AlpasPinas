@@ -35,7 +35,7 @@ export const CrewCard: React.FC<{ member: Member }> = ({ member: m }) => {
         position: 'relative',
         borderRadius: '0.9rem',
         overflow: 'hidden',
-        backgroundColor: isDark ? c.background : '#fff',
+        backgroundColor: isDark ? c.background : c.surface,
         border: `1px solid ${hover ? c.primary : c.border}`,
         display: 'flex',
         flexDirection: 'column',

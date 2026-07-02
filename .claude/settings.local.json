@@ -7,7 +7,32 @@
       "WebSearch",
       "WebFetch(domain:unused-css.com)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Skill(impeccable)",
+      "Skill(impeccable:*)",
+      "Bash(npm run *)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -P -n)",
+      "Bash(npx tsc *)",
+      "Bash(python3 scripts/search.py \"training schedule timeline dark mode sports club\" --domain ux -n 8)",
+      "Bash(node .claude/skills/impeccable/scripts/context.mjs)",
+      "Bash(git commit -m ' *)",
+      "Bash(node .tmp-shot.mjs light ocean / /private/tmp/claude-501/-Users-jc-mac-Workspace-AlpasPinas/5ae1cede-13c5-4216-87f5-f8894555bec0/scratchpad/claim-seat-2.png)"
     ]
-  }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/hook.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
+          }
+        ]
+      }
+    ]
+  },
+  "description": "Impeccable design detector: runs after Edit/Write/MultiEdit on UI files and surfaces findings as system reminders."
 }

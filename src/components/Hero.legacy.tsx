@@ -8,6 +8,7 @@ import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
+import hero4Image from '../../images/hero-4.png';
 
 // Split so the numeric part can count up on load while the prefix/suffix stay put
 // — "#3" keeps its hash, "5 YRS" keeps its unit, "12+" keeps its plus.
@@ -246,7 +247,7 @@ const NextRaceTicket: React.FC<{
 
 // Photos for the mobile HeroPhoto slider. Add more entries here to extend the carousel.
 const HERO_PHOTOS = [
-  { src: '/team.jpg', alt: 'AlpasPinas Dragonboat Team — paddlers with team flag at the beach', objectPosition: 'center' },
+  { src: hero4Image, alt: 'AlpasPinas Dragonboat Team — paddlers with team flag at the beach', objectPosition: '62% 34%' },
   { src: '/team-2.jpg', alt: 'AlpasPinas Dragonboat Team', objectPosition: 'center 30%' },
 ];
 
@@ -318,7 +319,7 @@ export const Hero: React.FC = () => {
           }}
         >
           <img
-            src="/team.jpg"
+            src={hero4Image}
             alt="AlpasPinas Dragonboat Team — paddlers with team flag at the beach"
             style={{
               position: 'absolute',
@@ -326,7 +327,7 @@ export const Hero: React.FC = () => {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: 'center',
+              objectPosition: '62% 34%',
               display: 'block',
             }}
           />

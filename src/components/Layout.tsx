@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Navigation } from './Navigation';
 import { PromoBar } from './PromoBar';
 import { Footer } from './Footer';
@@ -13,6 +13,8 @@ import { colors } from '../styles/colors';
 export const Layout: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const location = useLocation();
+  const isHome = location.pathname === '/';
 
   return (
     <div
@@ -24,8 +26,10 @@ export const Layout: React.FC = () => {
         flexDirection: 'column',
       }}
     >
-      <PromoBar />
-      <Navigation />
+      {!isHome && <PromoBar />}
+      <div style={{ position: 'relative', zIndex: 100 }}>
+        <Navigation integratedHome={isHome} />
+      </div>
       <main style={{ flex: 1 }}>
         <Outlet />
       </main>

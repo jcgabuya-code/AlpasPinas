@@ -22,6 +22,7 @@ const MOBILE_ITEMS = [
 
 type Sponsor = { name: string; logo: string; url: string };
 const SPONSORS = sponsorsData as Sponsor[];
+const MARQUEE_SCALE = 0.8;
 
 const WaveIcon: React.FC<{ delay: number }> = ({ delay }) => (
   <span
@@ -33,7 +34,7 @@ const WaveIcon: React.FC<{ delay: number }> = ({ delay }) => (
     }}
   >
     {/* Hand-traced from thenounproject.com/icon/ocean-wave-7473753 */}
-    <svg width="30" height="30" viewBox="0 0 40 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="19" height="19" viewBox="0 0 40 42" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Main wave arc — rises from bottom-left to the crest */}
       <path
         d="M3 26 C3 18, 5 10, 16 5"
@@ -116,18 +117,52 @@ const DragonboatIcon: React.FC = () => {
   if (!src) return null;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <img src={src} alt="" style={{ width: '104px', height: '60px', objectFit: 'contain', opacity: 0.85 }} />
+      <img src={src} alt="" style={{ width: '74px', height: '40px', objectFit: 'contain', opacity: 0.85 }} />
     </span>
   );
 };
 
 const Separator: React.FC<{ delay: number; compact?: boolean }> = ({ delay, compact = false }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? '0.35rem' : '0.5rem' }}>
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? `${0.35 * MARQUEE_SCALE}rem` : `${0.5 * MARQUEE_SCALE}rem` }}>
     <WaveIcon delay={delay} />
     <DragonboatIcon />
     <WaveIcon delay={delay + 0.15} />
   </span>
 );
+
+// One wave period: starts and ends at the same height so periods chain seamlessly.
+const WAVE_PERIOD_W = 174.47;
+const WAVE_PERIOD_PX = 175;
+const WAVE_PERIODS = 8;
+const WAVE_REL_PERIOD =
+  ' c 0,0 21.133851,11.39531 43.617661,11.38441' +
+  ' c 22.4838,-0.0106 64.3509,-22.736 86.8903,-22.7685' +
+  ' c 22.53944,-0.0325 43.96264,11.38441 43.96264,11.38441';
+
+const WAVE_PATH_D =
+  'm 0,11.38448' +
+  WAVE_REL_PERIOD.repeat(WAVE_PERIODS) +
+  ' V 46.34594 H 0 Z';
+
+const WAVE_URL = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${WAVE_PERIOD_W * WAVE_PERIODS} 46.35' preserveAspectRatio='none'>` +
+  `<path fill='white' fill-opacity='0.18' d='${WAVE_PATH_D}'/>` +
+  '</svg>'
+)}")`;
+
+const WAVE_TILE_W = WAVE_PERIOD_PX * WAVE_PERIODS;
+
+const waveLayerBase: React.CSSProperties = {
+  position: 'absolute',
+  left: 0,
+  right: `-${WAVE_PERIOD_PX}px`,
+  top: `${34 * MARQUEE_SCALE}px`,
+  bottom: `${-34 * MARQUEE_SCALE}px`,
+  backgroundImage: WAVE_URL,
+  backgroundRepeat: 'repeat-x',
+  backgroundSize: `${WAVE_TILE_W}px 100%`,
+  backgroundPosition: 'bottom',
+};
 
 // Sponsor credit shown inline in the rotation: a "SPONSORED BY" tag plus the
 // sponsor on a white pill (so logos stay legible against the emerald band).
@@ -141,10 +176,12 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '0.6rem',
+        gap: `${0.6 * MARQUEE_SCALE}rem`,
         backgroundColor: '#fff',
         borderRadius: '999px',
-        padding: hasLogo ? '0.4rem 1rem 0.4rem 0.5rem' : '0.45rem 1rem',
+        padding: hasLogo
+          ? `${0.4 * MARQUEE_SCALE}rem ${1 * MARQUEE_SCALE}rem ${0.4 * MARQUEE_SCALE}rem ${0.5 * MARQUEE_SCALE}rem`
+          : `${0.45 * MARQUEE_SCALE}rem ${1 * MARQUEE_SCALE}rem`,
         boxShadow: hover && isLink ? '0 6px 18px rgba(0,0,0,0.28)' : '0 1px 4px rgba(0,0,0,0.15)',
         transform: hover && isLink ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -155,13 +192,13 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
           src={sponsor.logo}
           alt={sponsor.name}
           onError={() => setHasLogo(false)}
-          style={{ height: '28px', width: 'auto', objectFit: 'contain', display: 'block' }}
+          style={{ height: `${28 * MARQUEE_SCALE}px`, width: 'auto', objectFit: 'contain', display: 'block' }}
         />
       )}
       <span
         style={{
           fontFamily: 'var(--font-display)',
-          fontSize: '0.9rem',
+          fontSize: `${0.9 * MARQUEE_SCALE}rem`,
           letterSpacing: '0.05em',
           color: '#1a1a1a',
         }}
@@ -172,11 +209,11 @@ const SponsorItem: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => {
   );
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.85rem' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: `${0.85 * MARQUEE_SCALE}rem` }}>
       <span
         style={{
           fontFamily: 'var(--font-display)',
-          fontSize: '0.78rem',
+          fontSize: `${0.78 * MARQUEE_SCALE}rem`,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
           color: 'rgba(255,255,255,0.7)',
@@ -212,24 +249,30 @@ const Inner: React.FC<{
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: compact ? '1.25rem' : '2rem',
-      paddingRight: compact ? '1.25rem' : '2rem',
+      gap: compact ? `${1.05 * MARQUEE_SCALE}rem` : `${1.6 * MARQUEE_SCALE}rem`,
+      paddingRight: compact ? `${1.05 * MARQUEE_SCALE}rem` : `${1.6 * MARQUEE_SCALE}rem`,
       whiteSpace: 'nowrap',
     }}
   >
     {items.flatMap((item, i) => [
       // Each phrase leads with an amber cadence beat — the same drummer's-count
       // signature the hero uses — tying the marquee into the page's rhythm.
-      <span key={`item-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? '0.45rem' : '0.7rem' }}>
+      <span key={`item-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? `${0.45 * MARQUEE_SCALE}rem` : `${0.7 * MARQUEE_SCALE}rem` }}>
         <span
           aria-hidden="true"
-          style={{ width: compact ? '5px' : '6px', height: compact ? '5px' : '6px', borderRadius: '999px', backgroundColor: accent, flexShrink: 0 }}
+          style={{
+            width: compact ? `${5 * MARQUEE_SCALE}px` : `${6 * MARQUEE_SCALE}px`,
+            height: compact ? `${5 * MARQUEE_SCALE}px` : `${6 * MARQUEE_SCALE}px`,
+            borderRadius: '999px',
+            backgroundColor: accent,
+            flexShrink: 0,
+          }}
         />
         <span
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: compact ? '0.88rem' : '1rem',
-            letterSpacing: compact ? '0.14em' : '0.18em',
+            fontSize: compact ? `${0.84 * MARQUEE_SCALE}rem` : `${0.94 * MARQUEE_SCALE}rem`,
+            letterSpacing: compact ? '0.13em' : '0.16em',
             color: '#fff',
           }}
         >
@@ -246,74 +289,7 @@ const Inner: React.FC<{
   </span>
 );
 
-// One wave period: starts and ends at the same height (y≈11.38) so periods chain
-// seamlessly. Written relative so it can be repeated to form a single continuous
-// path — that avoids per-tile vertical seams that show on high-DPR mobile screens.
-const WAVE_PERIOD_W = 174.47;
-const WAVE_PERIOD_PX = 175; // rendered width of one period (matches the scroll keyframe)
-// ~1400px wide: comfortably wider than any phone viewport (incl. landscape) so the
-// repeat seam stays off-screen where it was visible (high-DPR mobile), but small
-// enough to keep the animated layer's GPU texture cheap. Going much wider (we had
-// 24 here) blows the mobile texture budget and makes layers flicker / drop paints.
-const WAVE_PERIODS = 8;
-const WAVE_REL_PERIOD =
-  ' c 0,0 21.133851,11.39531 43.617661,11.38441' +
-  ' c 22.4838,-0.0106 64.3509,-22.736 86.8903,-22.7685' +
-  ' c 22.53944,-0.0325 43.96264,11.38441 43.96264,11.38441';
-
-const WAVE_PATH_D =
-  'm 0,11.38448' +
-  WAVE_REL_PERIOD.repeat(WAVE_PERIODS) +
-  ' V 46.34594 H 0 Z';
-
-const WAVE_URL = `url("data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WAVE_PERIOD_W * WAVE_PERIODS} 46.35" preserveAspectRatio="none">` +
-  `<path fill="white" fill-opacity="0.18" d="${WAVE_PATH_D}"/>` +
-  '</svg>'
-)}")`;
-
-const WAVE_TILE_W = WAVE_PERIOD_PX * WAVE_PERIODS;
-
-const waveLayerBase: React.CSSProperties = {
-  position: 'absolute',
-  left: 0,
-  // Extend one period past the right edge so the leftward transform scroll
-  // (translateX up to -175px) never exposes a gap; overflow:hidden clips it.
-  right: `-${WAVE_PERIOD_PX}px`,
-  // Same height as the strip, but shifted down so the wave sits lower.
-  // overflow:hidden on the container clips the part that drops below.
-  top: '34px',
-  bottom: '-34px',
-  backgroundImage: WAVE_URL,
-  backgroundRepeat: 'repeat-x',
-  backgroundSize: `${WAVE_TILE_W}px 100%`,
-  backgroundPosition: 'bottom',
-};
-
-// Wave-shaped edge divider, filled with the page background so it carves a wavy
-// contour out of the emerald band. `flip` mirrors it for the bottom edge (wavy
-// top boundary instead of wavy bottom boundary). Built as one continuous path
-// across many periods so there are no per-tile vertical seams on high-DPR mobile.
-const EDGE_PERIOD_W = 40;
-const EDGE_PERIOD_PX = 300; // rendered width of one period (matches the waveEdge keyframe)
-// ~1500px: wider than any phone viewport (keeps the seam off-screen) while staying
-// small enough to keep the animated layer's texture cheap. See WAVE_PERIODS note.
-const EDGE_PERIODS = 5;
-const EDGE_TILE_W = EDGE_PERIOD_PX * EDGE_PERIODS;
-
-const edgeUrl = (fill: string, flip: boolean) => {
-  // One relative period of the wavy boundary; chains seamlessly start-to-end.
-  const period = flip
-    ? ' c 6.66 4 13.33 4 20 0 c 6.66 -4 13.33 -4 20 0'
-    : ' c 6.66 -4 13.33 -4 20 0 c 6.66 4 13.33 4 20 0';
-  const close = flip ? ' V10 H0 Z' : ' V0 H0 Z';
-  const d = 'M0 5' + period.repeat(EDGE_PERIODS) + close;
-  return `url("data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${EDGE_PERIOD_W * EDGE_PERIODS} 10" preserveAspectRatio="none"><path fill="${fill}" d="${d}"/></svg>`
-  )}")`;
-};
-
-export const Marquee: React.FC = () => {
+export const Marquee: React.FC<{ connected?: boolean }> = ({ connected = false }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
@@ -367,54 +343,25 @@ export const Marquee: React.FC = () => {
     pointerEvents: 'none',
   };
 
-  const edgeBase: React.CSSProperties = {
-    position: 'absolute',
-    // Extend one period past both edges so the transform scroll (which runs in
-    // both directions — the bottom edge is reversed) never exposes a gap.
-    left: `-${EDGE_PERIOD_PX}px`,
-    right: `-${EDGE_PERIOD_PX}px`,
-    height: '13px',
-    backgroundRepeat: 'repeat-x',
-    backgroundSize: `${EDGE_TILE_W}px 13px`,
-    zIndex: 2,
-    pointerEvents: 'none',
-  };
-
   return (
     <div
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       style={{
         position: 'relative',
+        zIndex: 1,
         backgroundColor: c.primary,
+        borderTop: `1px solid ${c.primaryDark}`,
+        borderBottom: `1px solid ${c.primaryDark}`,
         overflow: 'hidden',
-        padding: isMobile ? '1rem 0' : '1.35rem 0',
-        marginTop: isMobile ? '1.25rem' : '2rem',
+        padding: isMobile ? `${0.72 * MARQUEE_SCALE}rem 0` : `${0.92 * MARQUEE_SCALE}rem 0`,
+        marginTop: connected ? (isMobile ? '-0.35rem' : '-0.9rem') : isMobile ? '1.25rem' : '2rem',
       }}
     >
       {/* Wave layer 1 — primary scroll (transform-driven, compositor-only) */}
       <div style={{ ...waveLayerBase, animation: anim('waveScroll 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite') }} />
       {/* Wave layer 2 — offset for depth, scroll + swell combined into one transform */}
       <div style={{ ...waveLayerBase, backgroundSize: `${WAVE_TILE_W}px 80%`, opacity: 0.7, animation: anim('waveScrollSwell 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) -1.25s infinite') }} />
-
-      {/* Wavy top edge */}
-      <div
-        style={{
-          ...edgeBase,
-          top: 0,
-          backgroundImage: edgeUrl(c.background, false),
-          animation: anim('edgeScroll 5s linear infinite'),
-        }}
-      />
-      {/* Wavy bottom edge */}
-      <div
-        style={{
-          ...edgeBase,
-          bottom: 0,
-          backgroundImage: edgeUrl(c.background, true),
-          animation: anim('edgeScroll 5s linear infinite reverse'),
-        }}
-      />
 
       {/* Scrolling content sits above wave layers */}
       <div

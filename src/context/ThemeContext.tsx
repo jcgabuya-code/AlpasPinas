@@ -1,6 +1,10 @@
 import React, { createContext, useState, useContext } from 'react';
 import type { ReactNode } from 'react';
+import { colors } from '../styles/colors';
 import type { Brand } from '../styles/colors';
+
+// Cycle order for the brand switcher — matches the order palettes are defined.
+const BRANDS = Object.keys(colors) as Brand[];   // ['emerald', 'ocean', 'bandila']
 
 type Theme = 'light' | 'dark';
 
@@ -22,8 +26,8 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [brand, setBrand] = useState<Brand>(() => {
     const saved = localStorage.getItem('brand');
-    // Default to emerald — the original AlpasPinas brand color
-    return saved === 'ocean' ? 'ocean' : 'emerald';
+    // Default to bandila — the v2 ocean-blue + bandila-yellow direction (the Home v2 reference)
+    return saved && (BRANDS as string[]).includes(saved) ? (saved as Brand) : 'bandila';
   });
 
   const toggleTheme = () => {
@@ -36,9 +40,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const toggleBrand = () => {
     setBrand((prev) => {
-      const newBrand: Brand = prev === 'emerald' ? 'ocean' : 'emerald';
-      localStorage.setItem('brand', newBrand);
-      return newBrand;
+      const next = BRANDS[(BRANDS.indexOf(prev) + 1) % BRANDS.length];
+      localStorage.setItem('brand', next);
+      return next;
     });
   };
 

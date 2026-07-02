@@ -36,14 +36,14 @@ export const isUpcoming = (iso: string) => {
 const MONTHS_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 /** Medal color for podium ranks. Returns null for 4th+ so the card stays neutral. */
-const medalColor = (rank: number): string | null => {
+export const medalColor = (rank: number): string | null => {
   if (rank === 1) return '#facc15'; // gold
   if (rank === 2) return '#cbd5e1'; // silver
   if (rank === 3) return '#d97706'; // bronze
   return null;
 };
 
-const medalLabel = (rank: number) => {
+export const medalLabel = (rank: number) => {
   if (rank === 1) return 'Gold';
   if (rank === 2) return 'Silver';
   if (rank === 3) return 'Bronze';

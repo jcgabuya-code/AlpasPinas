@@ -21,9 +21,12 @@ export const initials = (name: string) =>
  * on the name, so each member gets a stable, distinct color.
  */
 export const avatarColor = (name: string, brand: Brand = 'emerald') => {
-  const palette = brand === 'ocean'
-    ? ['#0ea5e9', '#0369a1', '#38bdf8', '#0284c7', '#7dd3fc', '#8b5cf6']
-    : ['#10b981', '#047857', '#34d399', '#059669', '#6ee7b7', '#065f46'];
+  const palettes: Record<Brand, string[]> = {
+    emerald: ['#10b981', '#047857', '#34d399', '#059669', '#6ee7b7', '#065f46'],
+    ocean: ['#0ea5e9', '#0369a1', '#38bdf8', '#0284c7', '#7dd3fc', '#8b5cf6'],
+    bandila: ['#0ea5e9', '#0369a1', '#38bdf8', '#0284c7', '#fcd116', '#7dd3fc'],
+  };
+  const palette = palettes[brand] ?? palettes.emerald;
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];

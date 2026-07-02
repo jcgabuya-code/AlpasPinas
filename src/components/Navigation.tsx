@@ -6,7 +6,6 @@ import { useCart } from '../context/CartContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { cadenceAccentUri } from '../styles/tokens';
-import { HOME_HERO } from '../config/homeHero';
 
 const ShieldIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg
@@ -67,26 +66,6 @@ const AboutIcon = () => (
     <path d="M19.5 13.5 l-1.2 1.6" />
   </Glyph>
 );
-// ★ Custom crossed-paddles glyph — the crew.
-const RosterIcon = () => (
-  <Glyph>
-    <line x1="8" y1="16" x2="16" y2="7.6" />
-    <ellipse cx="6.8" cy="16.8" rx="1.2" ry="2" transform="rotate(45 6.8 16.8)" />
-    <line x1="15.1" y1="6.5" x2="16.9" y2="8.5" />
-    <line x1="16" y1="16" x2="8" y2="7.6" />
-    <ellipse cx="17.2" cy="16.8" rx="1.2" ry="2" transform="rotate(-45 17.2 16.8)" />
-    <line x1="8.9" y1="6.5" x2="7.1" y2="8.5" />
-  </Glyph>
-);
-// Medal — race results.
-const EventsIcon = () => (
-  <Glyph>
-    <path d="M7.5 3 L10.5 9" />
-    <path d="M16.5 3 L13.5 9" />
-    <circle cx="12" cy="15" r="5.5" />
-    <path d="M12 12.7 l.9 1.85 2.04 .27 -1.5 1.4 .38 2.02 -1.82 -.98 -1.82 .98 .38 -2.02 -1.5 -1.4 2.04 -.27 z" />
-  </Glyph>
-);
 // Single paddle + ripples — training.
 const TrainingIcon = () => (
   <Glyph>
@@ -95,14 +74,6 @@ const TrainingIcon = () => (
     <path d="M11.9 4.2 q1.6 -.7 2.7 .6" />
     <path d="M3.5 18.5 q2.5 -1.5 5 0 t5 0 t5 0" />
     <path d="M3.5 21 q2.5 -1.5 5 0 t5 0 t5 0" />
-  </Glyph>
-);
-// Photo frame with a wave — gallery.
-const GalleryIcon = () => (
-  <Glyph>
-    <rect x="3" y="5" width="18" height="14" rx="2.5" />
-    <circle cx="8" cy="10" r="1.5" />
-    <path d="M4 16.5 q2.5 -1.8 5 0 t5 0 t4 0" />
   </Glyph>
 );
 // Tag — shop / gear.
@@ -120,27 +91,11 @@ const CartIcon = ({ size = 20 }: { size?: number }) => (
     <path d="M2.5 3.5h2.2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.47-1.18L21 7.5H6" />
   </svg>
 );
-// Life ring — contact.
-const ContactIcon = () => (
-  <Glyph>
-    <circle cx="12" cy="12" r="8.5" />
-    <circle cx="12" cy="12" r="3.5" />
-    <path d="M12 3.5 V8.5" />
-    <path d="M12 15.5 V20.5" />
-    <path d="M3.5 12 H8.5" />
-    <path d="M15.5 12 H20.5" />
-  </Glyph>
-);
-
 const NAV_ICONS: Record<string, React.FC> = {
   Home: HomeIcon,
   About: AboutIcon,
-  Roster: RosterIcon,
-  Events: EventsIcon,
   Training: TrainingIcon,
-  Gallery: GalleryIcon,
-  Shop: ShopIcon,
-  Contact: ContactIcon,
+  Merch: ShopIcon,
 };
 
 // Logout arrow — used on the drawer's Sign Out row.
@@ -261,15 +216,11 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', to: '/', end: true },
   { label: 'About', to: '/', hash: '#about' },
-  { label: 'Roster', to: '/roster' },
-  { label: 'Events', to: '/events' },
   { label: 'Training', to: '/training' },
-  { label: 'Gallery', to: '/gallery' },
-  { label: 'Shop', to: '/shop' },
-  { label: 'Contact', to: '/', hash: '#contact' },
+  { label: 'Merch', to: '/shop' },
 ];
 
-export const Navigation: React.FC = () => {
+export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedHome = false }) => {
   const { theme, toggleTheme, brand, toggleBrand } = useTheme();
   const { user, logout } = useAuth();
   const { count: cartCount } = useCart();
@@ -294,9 +245,16 @@ export const Navigation: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const mergedHome = HOME_HERO === 'wordmark' && location.pathname === '/';
-  const overlay = mergedHome && !scrolled && !isMobile;
-  const hideLogo = overlay; // the hero's wordmark stands in for the nav logo
+  const mergedHome = integratedHome && location.pathname === '/';
+  // On desktop Home the nav floats over the hero: it stays `position: fixed` the
+  // whole time and only morphs its surface (transparent → frosted) on scroll, so
+  // there's no layout jump from swapping position values. `overlay` is the pinned-
+  // at-top, transparent state; `floating` is true for the entire home scroll.
+  const floating = mergedHome && !isMobile;
+  const overlay = floating && !scrolled;
+  // The Home v2 hero shows BREAK / AWAY (not the wordmark), so the nav keeps its
+  // logo + wordmark over the transparent masthead, matching the reference.
+  const hideLogo = false;
 
   // Lock body scroll while the slide-in drawer is open.
   useEffect(() => {
@@ -330,16 +288,22 @@ export const Navigation: React.FC = () => {
         backgroundColor: overlay
           ? 'transparent'
           : theme === 'dark'
-          ? 'rgba(11, 12, 16, 0.95)'
-          : 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: overlay ? 'none' : 'blur(12px)',
-        WebkitBackdropFilter: overlay ? 'none' : 'blur(12px)',
+          ? 'rgba(11, 12, 16, 0.82)'
+          : 'rgba(255, 255, 255, 0.82)',
+        backdropFilter: overlay ? 'none' : 'blur(14px) saturate(140%)',
+        WebkitBackdropFilter: overlay ? 'none' : 'blur(14px) saturate(140%)',
         borderBottom: `1px solid ${overlay ? 'transparent' : c.border}`,
-        padding: '0.9rem 0',
-        position: 'sticky',
+        boxShadow: floating && scrolled ? '0 8px 30px rgba(0, 0, 0, 0.18)' : 'none',
+        padding: overlay ? '1.15rem 0' : '0.9rem 0',
+        // Stay fixed for the whole home scroll so only the surface animates (no
+        // position swap = no jump); other pages keep the in-flow sticky bar.
+        position: floating ? 'fixed' : 'sticky',
         top: 0,
+        left: floating ? 0 : undefined,
+        right: floating ? 0 : undefined,
         zIndex: 100,
-        transition: 'background-color 0.3s ease, border-color 0.3s ease',
+        transition:
+          'background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, padding 0.35s ease',
       }}
     >
       <a
@@ -377,7 +341,7 @@ export const Navigation: React.FC = () => {
         style={{
           maxWidth: '1280px',
           margin: '0 auto',
-          padding: '0 1.5rem',
+          padding: overlay ? '0 1.1rem' : '0 1.25rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -426,28 +390,29 @@ export const Navigation: React.FC = () => {
         </Link>
         )}
 
-        {/* Desktop nav links */}
+        {/* Desktop nav — asymmetric: a tight, logo-anchored link cluster on the left,
+            a single weighted action rail on the right. Rhythm through contrast:
+            the two groups are internally tight and separated by one generous gap. */}
         {!isMobile && (
           <div
             style={{
               display: 'flex',
-              gap: '2rem',
               alignItems: 'center',
+              justifyContent: 'space-between',
               marginLeft: hideLogo ? 0 : '2.25rem',
               minWidth: 0,
-              // When the logo is hidden (merged masthead) the links group fills the bar
-              // so items sit at the left edge and actions stay pinned to the right.
-              flex: hideLogo ? 1 : undefined,
-              justifyContent: hideLogo ? 'space-between' : undefined,
+              flex: 1,
             }}
           >
             <ul
               style={{
                 display: 'flex',
-                gap: '1.75rem',
+                gap: '1.6rem',
+                alignItems: 'center',
                 listStyle: 'none',
                 margin: 0,
                 padding: 0,
+                flexShrink: 0,
               }}
             >
               {visibleItems.map((item) => {
@@ -476,209 +441,216 @@ export const Navigation: React.FC = () => {
               })}
             </ul>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <button
-                onClick={toggleBrand}
-                aria-label={`Switch color theme (currently ${brand})`}
-                title={`Color: ${brand} — click to switch`}
-                style={{
-                  background: 'transparent',
-                  border: `1px solid ${c.border}`,
-                  width: '2.25rem',
-                  height: '2.25rem',
-                  borderRadius: '999px',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <span
+            {/* Right rail: quiet cosmetic duo → divider → functional/session actions,
+                Join the Team (or the account chip) carries the most visual weight. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <button
+                  onClick={toggleBrand}
+                  aria-label={`Switch color theme (currently ${brand})`}
+                  title={`Color: ${brand} — click to switch`}
                   style={{
-                    width: '1.1rem',
-                    height: '1.1rem',
+                    background: 'transparent',
+                    border: `1px solid ${c.border}`,
+                    width: '1.9rem',
+                    height: '1.9rem',
                     borderRadius: '999px',
-                    background: brandGradient(brand, theme),
-                  }}
-                />
-              </button>
-              <button
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                style={{
-                  background: 'transparent',
-                  color: c.text,
-                  border: `1px solid ${c.border}`,
-                  width: '2.25rem',
-                  height: '2.25rem',
-                  borderRadius: '999px',
-                  cursor: 'pointer',
-                  fontSize: '0.95rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-              </button>
-
-              <CartBadge count={cartCount} />
-
-              {canSeeAdmin && (
-                <Link
-                  to="/admin"
-                  aria-label="Admin panel"
-                  title="Admin"
-                  onMouseEnter={() => setHovered('__admin__')}
-                  onMouseLeave={() => setHovered(null)}
-                  style={{
+                    cursor: 'pointer',
+                    padding: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '2.25rem',
-                    height: '2.25rem',
-                    borderRadius: '999px',
-                    border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
-                    color: hovered === '__admin__' ? c.primary : c.textSecondary,
-                    textDecoration: 'none',
-                    transition: 'color 0.15s ease, border-color 0.15s ease',
-                    flexShrink: 0,
                   }}
                 >
-                  <ShieldIcon size={15} />
-                </Link>
-              )}
+                  <span
+                    style={{
+                      width: '0.95rem',
+                      height: '0.95rem',
+                      borderRadius: '999px',
+                      background: brandGradient(brand, theme),
+                    }}
+                  />
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  aria-label="Toggle theme"
+                  style={{
+                    background: 'transparent',
+                    color: c.textSecondary,
+                    border: `1px solid ${c.border}`,
+                    width: '1.9rem',
+                    height: '1.9rem',
+                    borderRadius: '999px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {theme === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
+                </button>
+              </div>
 
-              {user ? (
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    onMouseEnter={() => setHovered('__user__')}
+              <span aria-hidden="true" style={{ width: '1px', height: '20px', backgroundColor: c.border, flexShrink: 0 }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                <CartBadge count={cartCount} />
+
+                {canSeeAdmin && (
+                  <Link
+                    to="/admin"
+                    aria-label="Admin panel"
+                    title="Admin"
+                    onMouseEnter={() => setHovered('__admin__')}
                     onMouseLeave={() => setHovered(null)}
                     style={{
-                      background: 'transparent',
-                      color: c.text,
-                      border: `1px solid ${hovered === '__user__' ? c.primary + '88' : c.border}`,
-                      borderRadius: '999px',
-                      padding: '0.5rem 0.9rem',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: 500,
-                      transition: 'border-color 0.15s ease',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
+                      justifyContent: 'center',
+                      width: '2.25rem',
+                      height: '2.25rem',
+                      borderRadius: '999px',
+                      border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
+                      color: hovered === '__admin__' ? c.primary : c.textSecondary,
+                      textDecoration: 'none',
+                      transition: 'color 0.15s ease, border-color 0.15s ease',
+                      flexShrink: 0,
                     }}
                   >
-                    <UserIcon size={16} /> {user.name.split(' ')[0]}
-                  </button>
+                    <ShieldIcon size={15} />
+                  </Link>
+                )}
 
-                  {userMenuOpen && (
-                    <div
+                {user ? (
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      onMouseEnter={() => setHovered('__user__')}
+                      onMouseLeave={() => setHovered(null)}
                       style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '0.5rem',
-                        backgroundColor: c.surface,
-                        border: `1px solid ${c.border}`,
-                        borderRadius: '0.55rem',
-                        minWidth: '200px',
-                        boxShadow: `0 8px 24px ${c.primary}22`,
-                        zIndex: 1000,
+                        background: 'transparent',
+                        color: c.text,
+                        border: `1px solid ${hovered === '__user__' ? c.primary + '88' : c.border}`,
+                        borderRadius: '999px',
+                        padding: '0.5rem 0.9rem',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        transition: 'border-color 0.15s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
                       }}
                     >
-                      <div style={{ padding: '0.75rem' }}>
-                        <div style={{ fontSize: '0.75rem', color: c.textSecondary, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                          Logged in
-                        </div>
-                        <div style={{ fontSize: '0.9rem', color: c.text, marginBottom: '0.75rem', fontWeight: 500 }}>
-                          {user.name}
-                        </div>
-                        {user.mobile && (
-                          <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginBottom: '0.75rem' }}>
-                            {user.mobile}
+                      <UserIcon size={16} /> {user.name.split(' ')[0]}
+                    </button>
+
+                    {userMenuOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: 0,
+                          marginTop: '0.5rem',
+                          backgroundColor: c.surface,
+                          border: `1px solid ${c.border}`,
+                          borderRadius: '0.55rem',
+                          minWidth: '200px',
+                          boxShadow: `0 8px 24px ${c.primary}22`,
+                          zIndex: 1000,
+                        }}
+                      >
+                        <div style={{ padding: '0.75rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: c.textSecondary, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                            Logged in
                           </div>
-                        )}
-                        <Link
-                          to="/orders"
-                          onClick={() => setUserMenuOpen(false)}
-                          style={{
-                            display: 'block',
-                            textAlign: 'center',
-                            color: c.text,
-                            border: `1px solid ${c.border}`,
-                            borderRadius: '0.4rem',
-                            padding: '0.5rem',
-                            marginBottom: '0.5rem',
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                          }}
-                        >
-                          My Orders
-                        </Link>
-                        <button
-                          onClick={() => {
-                            logout();
-                            setUserMenuOpen(false);
-                          }}
-                          style={{
-                            width: '100%',
-                            background: 'transparent',
-                            color: c.primary,
-                            border: `1px solid ${c.primary}33`,
-                            borderRadius: '0.4rem',
-                            padding: '0.5rem',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                            transition: 'border-color 0.15s ease',
-                          }}
-                        >
-                          Logout
-                        </button>
+                          <div style={{ fontSize: '0.9rem', color: c.text, marginBottom: '0.75rem', fontWeight: 500 }}>
+                            {user.name}
+                          </div>
+                          {user.mobile && (
+                            <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginBottom: '0.75rem' }}>
+                              {user.mobile}
+                            </div>
+                          )}
+                          <Link
+                            to="/orders"
+                            onClick={() => setUserMenuOpen(false)}
+                            style={{
+                              display: 'block',
+                              textAlign: 'center',
+                              color: c.text,
+                              border: `1px solid ${c.border}`,
+                              borderRadius: '0.4rem',
+                              padding: '0.5rem',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                            }}
+                          >
+                            My Orders
+                          </Link>
+                          <button
+                            onClick={() => {
+                              logout();
+                              setUserMenuOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              background: 'transparent',
+                              color: c.primary,
+                              border: `1px solid ${c.primary}33`,
+                              borderRadius: '0.4rem',
+                              padding: '0.5rem',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              transition: 'border-color 0.15s ease',
+                            }}
+                          >
+                            Logout
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Link
-                    to="/login"
-                    style={{
-                      color: c.text,
-                      textDecoration: 'none',
-                      fontWeight: 500,
-                      fontSize: '0.9rem',
-                      padding: '0.5rem 0.9rem',
-                      transition: 'color 0.15s ease',
-                    }}
-                    onMouseEnter={() => setHovered('__login__')}
-                    onMouseLeave={() => setHovered(null)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/join-team"
-                    style={{
-                      background: brandGradient(brand, theme),
-                      color: '#fff',
-                      border: 'none',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '999px',
-                      fontWeight: 600,
-                      fontSize: '0.9rem',
-                      textDecoration: 'none',
-                      letterSpacing: '0.02em',
-                      boxShadow: `0 4px 14px ${c.primary}33`,
-                    }}
-                  >
-                    Join the Team
-                  </Link>
-                </div>
-              )}
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Link
+                      to="/login"
+                      style={{
+                        color: c.text,
+                        textDecoration: 'none',
+                        fontWeight: 500,
+                        fontSize: '0.9rem',
+                        padding: '0.5rem 0.9rem',
+                        transition: 'color 0.15s ease',
+                      }}
+                      onMouseEnter={() => setHovered('__login__')}
+                      onMouseLeave={() => setHovered(null)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/join-team"
+                      style={{
+                        background: brandGradient(brand, theme),
+                        color: '#fff',
+                        border: 'none',
+                        padding: '0.6rem 1.2rem',
+                        borderRadius: '999px',
+                        fontWeight: 700,
+                        fontSize: '0.92rem',
+                        textDecoration: 'none',
+                        letterSpacing: '0.02em',
+                        boxShadow: `0 4px 14px ${c.primary}33`,
+                      }}
+                    >
+                      Join the Team
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

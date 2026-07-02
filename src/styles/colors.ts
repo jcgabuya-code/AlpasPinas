@@ -1,6 +1,7 @@
-// Two brand palettes, each with a dark + light mode.
+// Three brand palettes, each with a dark + light mode.
 //  - emerald: the original AlpasPinas look (dark is the primary aesthetic)
 //  - ocean:   client-requested alt — ocean blue accent, violet→red signature gradient
+//  - bandila: ocean-blue base, golden-yellow signature gradient (blue → yellow)
 const emerald = {
   dark: {
     background: '#0b1014',       // near-black with slight green tint
@@ -19,19 +20,19 @@ const emerald = {
     sun: '#f2b544',              // warm counter-accent (Filipino sun on water) — cadence/beat motif only
   },
   light: {
-    background: '#f7faf8',       // cool white with a hint of green
-    surface: '#ffffff',
-    surfaceAlt: '#eef3ef',
+    background: '#f8f4e8',       // light cream, faint warm-green undertone
+    surface: '#fffdf5',          // near-cream, lifted for cards/nav
+    surfaceAlt: '#f1ead8',
     text: '#0b1014',
     textSecondary: '#5b6863',
     primary: '#10b981',
     primaryDark: '#047857',
     primaryLight: '#6ee7b7',
     accent: '#059669',           // emerald-600 — readable accent on light bg
-    border: '#dde6e0',
-    hover: '#eff4f0',
+    border: '#e3dcc8',
+    hover: '#f4eede',
     overlay: 'rgba(255, 255, 255, 0.6)',
-    sand: '#f3efe6',             // warm cream band — earthy contrast against white/emerald
+    sand: '#efe6cf',             // deeper cream band — alternating-section contrast
     sun: '#d98e0b',              // warm counter-accent, darkened for contrast on light bg — cadence/beat motif only
   },
 };
@@ -54,35 +55,74 @@ const ocean = {
     sun: '#f2b544',              // warm counter-accent — cadence/beat motif only
   },
   light: {
-    background: '#f6f9fc',       // cool white with a hint of blue
-    surface: '#ffffff',
-    surfaceAlt: '#eef3f9',
+    background: '#f7f2e4',       // light cream, cool blue accent carries the "ocean" read
+    surface: '#fffcf2',          // near-cream, lifted for cards/nav
+    surfaceAlt: '#efe6d2',
     text: '#0a1018',
     textSecondary: '#586478',
     primary: '#0ea5e9',
     primaryDark: '#0369a1',
     primaryLight: '#7dd3fc',
     accent: '#0284c7',           // sky-600 — readable accent on light bg
-    border: '#dbe5f0',
-    hover: '#eef4fb',
+    border: '#e2dac2',
+    hover: '#f2ebd5',
     overlay: 'rgba(255, 255, 255, 0.6)',
-    sand: '#f1eef7',             // faint violet-tinted band — nods to the gradient
+    sand: '#eee2c7',             // deeper cream band — alternating-section contrast
     sun: '#d98e0b',              // warm counter-accent, darkened for light bg — cadence/beat motif only
   },
 };
 
-export const colors = { emerald, ocean };
+const bandila = {
+  dark: {
+    background: '#0a1018',       // near-black with a cool blue tint (ocean base)
+    surface: '#111824',          // lifted dark for cards/nav
+    surfaceAlt: '#1a2332',       // even more lifted for nested cards
+    text: '#f5f7fb',             // off-white, cool
+    textSecondary: '#9aa6bd',    // muted, slightly blue
+    primary: '#0ea5e9',          // sky-500 — ocean blue
+    primaryDark: '#0369a1',      // sky-700
+    primaryLight: '#7dd3fc',     // sky-300
+    accent: '#38bdf8',           // sky-400 — bright accent
+    border: '#24324a',
+    hover: '#161f2c',
+    overlay: 'rgba(0, 0, 0, 0.55)',
+    sand: '#141a10',             // alternating band — a touch lifted/warm vs background (nods to the yellow)
+    sun: '#fcd116',              // golden-yellow — gradient end + cadence/beat motif
+  },
+  light: {
+    background: '#f8f3e3',       // light cream, gold-leaning — echoes the sun accent
+    surface: '#fffcf1',          // near-cream, lifted for cards/nav
+    surfaceAlt: '#f1e8d0',
+    text: '#0a1018',
+    textSecondary: '#586478',
+    primary: '#0ea5e9',
+    primaryDark: '#0369a1',
+    primaryLight: '#7dd3fc',
+    accent: '#0284c7',           // sky-600 — readable accent on light bg
+    border: '#e4dac0',
+    hover: '#f3ecd7',
+    overlay: 'rgba(255, 255, 255, 0.6)',
+    sand: '#f0e4c4',             // deeper gold-cream band — nods to the gradient's yellow
+    sun: '#caa406',              // golden-yellow, darkened for contrast on light bg — gradient end + cadence/beat motif
+  },
+};
 
-export type Brand = keyof typeof colors;        // 'emerald' | 'ocean'
+export const colors = { emerald, ocean, bandila };
+
+export type Brand = keyof typeof colors;        // 'emerald' | 'ocean' | 'bandila'
 export type ColorMode = keyof typeof emerald;   // 'dark' | 'light'
 export type ColorPalette = typeof emerald.dark;
 
 // Signature gradient per brand.
 //  - emerald: primaryDark → primary → primaryLight (3-green sweep)
-//  - ocean:   ocean blue → violet → red
+//  - ocean:   midnight blue → red (matches the Drifit Shirt's diagonal fade)
+//  - bandila: pure ocean blue sweep (deep → ocean → bright sky)
 export const brandGradient = (brand: Brand = 'emerald', mode: ColorMode = 'dark') => {
   if (brand === 'ocean') {
-    return 'linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 50%, #ef4444 100%)';
+    return 'linear-gradient(135deg, #0a1a3f 0%, #14275c 55%, #c0272d 100%)';
+  }
+  if (brand === 'bandila') {
+    return 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 55%, #7dd3fc 100%)';
   }
   const c = colors.emerald[mode];
   return `linear-gradient(135deg, ${c.primaryDark} 0%, ${c.primary} 55%, ${c.primaryLight} 100%)`;

@@ -115,7 +115,7 @@ export const Contact: React.FC = () => {
   });
 
   return (
-    <section id="contact" style={{ backgroundColor: c.sand, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
+    <section id="contact" style={{ backgroundColor: c.background, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
       <div
         style={{
           maxWidth: '1080px',
@@ -173,7 +173,7 @@ export const Contact: React.FC = () => {
           }}
         >
           {/* Card header — the open seat */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1.25rem 2rem', borderBottom: `1px solid ${c.border}`, background: `${c.primary}0d` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '1.25rem 2rem', borderBottom: `1px solid ${c.border}`, backgroundColor: c.surfaceAlt }}>
             <span
               style={{
                 width: '42px',
