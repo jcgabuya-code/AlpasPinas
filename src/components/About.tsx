@@ -5,8 +5,8 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useInView } from '../hooks/useInView';
 import { Eyebrow } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
-import teamPhoto1 from '../../images/alpas team.JPG';
-import teamPhoto2 from '../../images/alpas team 2.JPG';
+const teamPhoto1 = new URL('../../images/alpas team.JPG', import.meta.url).href;
+const teamPhoto2 = new URL('../../images/alpas team 2.JPG', import.meta.url).href;
 import melakaTeam1 from '../../images/melaka-team1.jpg';
 import melakaTeam2 from '../../images/melaka-team2.jpg';
 

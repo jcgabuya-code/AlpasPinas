@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { cadenceAccentUri } from '../styles/tokens';
 
 const ShieldIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg
@@ -23,66 +22,6 @@ const ShieldIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   </svg>
 );
 
-// Shared wrapper so every nav glyph has identical sizing + stroke styling.
-const Glyph: React.FC<{ size?: number; children: React.ReactNode }> = ({ size = 20, children }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-);
-
-// ★ Custom dragon-boat glyph — hull, curling dragon-head prow, paddler scallops, water.
-const HomeIcon = () => (
-  <Glyph>
-    <path d="M3 12.5 C4.5 16.5 19.5 16.5 21 12.5" />
-    <path d="M3 12.5 H21" />
-    <path d="M21 12.5 c1.6 -.4 2.2 -2 1.3 -3.1 c-.7 -.8 -1.9 -.5 -2 .6" />
-    <circle cx="19.9" cy="10.8" r="0.55" fill="currentColor" stroke="none" />
-    <path d="M6.5 13.6 q1 1.5 2 0" />
-    <path d="M10.3 13.6 q1 1.5 2 0" />
-    <path d="M14.1 13.6 q1 1.5 2 0" />
-    <path d="M3 19 q2.5 -1.4 5 0 t5 0 t5 0" />
-  </Glyph>
-);
-// Anchor — nautical team identity.
-const AboutIcon = () => (
-  <Glyph>
-    <circle cx="12" cy="5" r="2" />
-    <path d="M12 7 V20" />
-    <path d="M8.5 10 H15.5" />
-    <path d="M4.5 13.5 C4.5 18 8 20.5 12 20.5 C16 20.5 19.5 18 19.5 13.5" />
-    <path d="M4.5 13.5 l-1.8 .6" />
-    <path d="M4.5 13.5 l1.2 1.6" />
-    <path d="M19.5 13.5 l1.8 .6" />
-    <path d="M19.5 13.5 l-1.2 1.6" />
-  </Glyph>
-);
-// Single paddle + ripples — training.
-const TrainingIcon = () => (
-  <Glyph>
-    <path d="M13 4.5 L11 13" />
-    <ellipse cx="10.6" cy="14.4" rx="1.5" ry="2.3" transform="rotate(13 10.6 14.4)" />
-    <path d="M11.9 4.2 q1.6 -.7 2.7 .6" />
-    <path d="M3.5 18.5 q2.5 -1.5 5 0 t5 0 t5 0" />
-    <path d="M3.5 21 q2.5 -1.5 5 0 t5 0 t5 0" />
-  </Glyph>
-);
-// Tag — shop / gear.
-const ShopIcon = () => (
-  <Glyph>
-    <path d="M20.5 13.3 13.3 20.5a1.8 1.8 0 0 1-2.55 0l-7.2-7.2A1.8 1.8 0 0 1 3 12V4.5a1.5 1.5 0 0 1 1.5-1.5H12c.48 0 .94.19 1.28.53l7.22 7.22a1.8 1.8 0 0 1 0 2.55z" />
-    <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
-  </Glyph>
-);
 // Cart — header action.
 const CartIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -91,22 +30,6 @@ const CartIcon = ({ size = 20 }: { size?: number }) => (
     <path d="M2.5 3.5h2.2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.47-1.18L21 7.5H6" />
   </svg>
 );
-const NAV_ICONS: Record<string, React.FC> = {
-  Home: HomeIcon,
-  About: AboutIcon,
-  Training: TrainingIcon,
-  Merch: ShopIcon,
-};
-
-// Logout arrow — used on the drawer's Sign Out row.
-const LogoutIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <path d="m16 17 5-5-5-5" />
-    <path d="M21 12H9" />
-  </svg>
-);
-
 const CloseIcon = ({ size = 22 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M18 6 6 18" />
@@ -136,12 +59,10 @@ const MoonIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
-// Hamburger — three rules, matching the stroke weight of the other glyphs.
-const MenuIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M4 7h16" />
-    <path d="M4 12h16" />
-    <path d="M4 17h16" />
+// Right chevron — trails each oversized drawer nav link.
+const ChevronRight = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 5l7 7-7 7" />
   </svg>
 );
 
@@ -282,6 +203,18 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   );
   const canSeeAdmin = Boolean(user?.isAdmin);
 
+  // Drawer nav — the mobile reference's link set. Home-page sections resolve via
+  // ScrollToHash (matching ids live in MobileHome). Training points members at the
+  // sign-up route, and visitors at the schedule section on the home page.
+  const drawerLinks: { label: string; to: string; hash?: string }[] = [
+    { label: 'Home', to: '/' },
+    { label: 'About', to: '/', hash: '#about' },
+    { label: 'Training', to: user ? '/training' : '/', hash: user ? undefined : '#training' },
+    { label: 'Merch', to: '/shop' },
+    { label: 'Races', to: '/', hash: '#races' },
+    { label: 'Join Us', to: '/', hash: '#contact' },
+  ];
+
   return (
     <nav
       style={{
@@ -294,7 +227,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
         WebkitBackdropFilter: overlay ? 'none' : 'blur(14px) saturate(140%)',
         borderBottom: `1px solid ${overlay ? 'transparent' : c.border}`,
         boxShadow: floating && scrolled ? '0 8px 30px rgba(0, 0, 0, 0.18)' : 'none',
-        padding: overlay ? '1.15rem 0' : '0.9rem 0',
+        padding: isMobile ? '0.5rem 0' : overlay ? '1.15rem 0' : '0.9rem 0',
         // Stay fixed for the whole home scroll so only the surface animates (no
         // position swap = no jump); other pages keep the in-flow sticky bar.
         position: floating ? 'fixed' : 'sticky',
@@ -362,7 +295,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
             flexShrink: 0,
           }}
         >
-          <div style={{ width: '56px', height: '56px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: isMobile ? '38px' : '56px', height: isMobile ? '38px' : '56px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0 }}>
             <img
               src="/logo.jpg"
               alt="AlpasPinas Dragonboat Team Malaysia"
@@ -655,441 +588,216 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
           </div>
         )}
 
-        {/* Mobile: theme toggle + hamburger */}
+        {/* Mobile: cart + animated hamburger. The theme + brand toggles moved into
+            the drawer's Appearance row (matching the mobile reference). */}
         {isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <button
-              onClick={toggleBrand}
-              aria-label={`Switch color theme (currently ${brand})`}
-              title={`Color: ${brand} — click to switch`}
-              style={{
-                background: 'transparent',
-                border: `1px solid ${c.border}`,
-                width: '2.25rem',
-                height: '2.25rem',
-                borderRadius: '999px',
-                cursor: 'pointer',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span
-                style={{
-                  width: '1.1rem',
-                  height: '1.1rem',
-                  borderRadius: '999px',
-                  background: brandGradient(brand, theme),
-                }}
-              />
-            </button>
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              style={{
-                background: 'transparent',
-                color: c.text,
-                border: `1px solid ${c.border}`,
-                width: '2.25rem',
-                height: '2.25rem',
-                borderRadius: '999px',
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
             <CartBadge count={cartCount} onClick={closeMenu} />
             <button
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
               style={{
+                position: 'relative',
                 background: 'transparent',
-                color: c.text,
                 border: `1px solid ${c.border}`,
-                width: '2.25rem',
-                height: '2.25rem',
-                borderRadius: '0.4rem',
+                width: '2.38rem',
+                height: '2.38rem',
+                borderRadius: '999px',
                 cursor: 'pointer',
-                fontSize: '1.1rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {menuOpen ? <CloseIcon size={18} /> : <MenuIcon />}
+              <span style={{ position: 'relative', width: '18px', height: '13px' }}>
+                <span style={{ position: 'absolute', left: 0, top: menuOpen ? '5.5px' : '0px', width: '18px', height: '2px', borderRadius: '2px', background: c.text, transform: menuOpen ? 'rotate(45deg)' : 'rotate(0deg)', transformOrigin: 'center', transition: 'top 0.28s cubic-bezier(0.65,0,0.35,1), transform 0.28s cubic-bezier(0.65,0,0.35,1)' }} />
+                <span style={{ position: 'absolute', left: 0, top: '5.5px', width: '18px', height: '2px', borderRadius: '2px', background: c.text, opacity: menuOpen ? 0 : 1, transition: 'opacity 0.18s' }} />
+                <span style={{ position: 'absolute', left: 0, top: menuOpen ? '5.5px' : '11px', width: '18px', height: '2px', borderRadius: '2px', background: c.text, transform: menuOpen ? 'rotate(-45deg)' : 'rotate(0deg)', transformOrigin: 'center', transition: 'top 0.28s cubic-bezier(0.65,0,0.35,1), transform 0.28s cubic-bezier(0.65,0,0.35,1)' }} />
+              </span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Mobile slide-in drawer */}
+      {/* Mobile full-screen drawer — matches the AlpasPinas mobile reference: a
+          fade-in overlay with oversized Anton nav links, an Appearance row (brand
+          swatch + light/dark toggle), and auth-aware actions below. */}
       {isMobile && (
-        <>
-          {/* Dimmed backdrop */}
-          <div
-            onClick={closeMenu}
-            aria-hidden="true"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
-              opacity: menuOpen ? 1 : 0,
-              pointerEvents: menuOpen ? 'auto' : 'none',
-              transition: 'opacity 0.28s ease',
-              zIndex: 200,
-            }}
-          />
-
-          {/* Drawer panel */}
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menu"
-            style={{
-              position: 'fixed',
-              top: 0,
-              right: 0,
-              height: '100dvh',
-              width: 'min(85vw, 360px)',
-              backgroundColor: c.background,
-              boxShadow: menuOpen ? '-12px 0 40px rgba(0,0,0,0.35)' : 'none',
-              transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
-              transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-              borderTopLeftRadius: '1.25rem',
-              borderBottomLeftRadius: '1.25rem',
-              overflow: 'hidden',
-              zIndex: 201,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {/* Gradient header block */}
-            <div
-              style={{
-                background: brandGradient(brand, theme),
-                color: '#fff',
-                padding: '1.4rem 1.25rem 1.5rem',
-                position: 'relative',
-                flexShrink: 0,
-              }}
-            >
-              <button
-                onClick={closeMenu}
-                aria-label="Close menu"
-                style={{
-                  position: 'absolute',
-                  top: '1rem',
-                  right: '1rem',
-                  background: 'rgba(255,255,255,0.18)',
-                  color: '#fff',
-                  border: 'none',
-                  width: '2.1rem',
-                  height: '2.1rem',
-                  borderRadius: '999px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <CloseIcon size={20} />
-              </button>
-              <div
-                aria-hidden="true"
-                style={{
-                  width: '3rem',
-                  height: '3rem',
-                  borderRadius: '999px',
-                  background: 'rgba(255,255,255,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.25rem',
-                  fontWeight: 700,
-                  marginBottom: '0.85rem',
-                }}
-              >
-                {user ? user.name.trim().charAt(0).toUpperCase() : 'AP'}
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+          style={{
+            // Explicit viewport sizing (not inset:0) because the nav's
+            // backdrop-filter makes it the containing block for fixed children —
+            // inset:0 would size the drawer to the bar, not the screen.
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100dvh',
+            zIndex: 200,
+            background: c.background,
+            display: 'flex',
+            flexDirection: 'column',
+            opacity: menuOpen ? 1 : 0,
+            pointerEvents: menuOpen ? 'auto' : 'none',
+            transition: 'opacity 0.22s ease',
+          }}
+        >
+          {/* Header: logo + close */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px', height: '60px', borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}>
+            <Link to="/" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', textDecoration: 'none', color: c.text }}>
+              <div style={{ width: '34px', height: '34px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0 }}>
+                <img src="/logo.jpg" alt="AlpasPinas" style={{ width: '130%', height: '130%', marginLeft: '-15%', marginTop: '-15%', objectFit: 'cover', display: 'block' }} />
               </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.4rem',
-                  lineHeight: 1.15,
-                  letterSpacing: '0.01em',
-                }}
-              >
-                {user ? `Welcome back, ${user.name.split(' ')[0]}` : 'Welcome aboard'}
-              </div>
-              <div style={{ fontSize: '0.88rem', opacity: 0.85, marginTop: '0.35rem' }}>
-                {user ? 'Ready to hit the water?' : 'Join the AlpasPinas crew'}
-              </div>
-
-              {/* Cadence meter — the page's signature stroke-beat, along the header's base */}
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: '14px',
-                  backgroundImage: cadenceAccentUri('rgba(255,255,255,0.55)'),
-                  backgroundRepeat: 'repeat-x',
-                  backgroundSize: '80px 14px',
-                  backgroundPosition: 'left center',
-                  WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%)',
-                  maskImage: 'linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%)',
-                }}
-              />
-            </div>
-
-            {/* Scrollable nav list */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: '0.85rem 1rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.2rem',
-              }}
-            >
-          {visibleItems.map((item, i) => {
-            const key = `${item.to}${item.hash ?? ''}`;
-            const Icon = NAV_ICONS[item.label];
-            return (
-              <NavLink
-                key={key}
-                to={{ pathname: item.to, hash: item.hash ?? '' }}
-                end={item.end}
-                onClick={closeMenu}
-                className={menuOpen ? 'drawer-item-in' : undefined}
-                style={({ isActive }) => {
-                  const active = isActive && !item.hash;
-                  return {
-                    color: active ? c.primary : c.text,
-                    backgroundColor: active ? `${c.primary}14` : 'transparent',
-                    textDecoration: 'none',
-                    fontWeight: active ? 600 : 500,
-                    fontSize: '0.92rem',
-                    letterSpacing: '0.01em',
-                    padding: '0.5rem 0.7rem',
-                    borderRadius: '0.7rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.7rem',
-                    animationDelay: `${i * 0.04}s`,
-                    transition: 'background-color 0.15s ease, color 0.15s ease',
-                  };
-                }}
-              >
-                {({ isActive }) => {
-                  const active = isActive && !item.hash;
-                  return (
-                    <>
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '1.6rem',
-                          flexShrink: 0,
-                          color: active ? c.primary : c.textSecondary,
-                        }}
-                      >
-                        {Icon ? <Icon /> : null}
-                      </span>
-                      <span style={{ flex: 1 }}>{item.label}</span>
-                      {active && (
-                        <span
-                          aria-hidden="true"
-                          style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
-                        />
-                      )}
-                    </>
-                  );
-                }}
-              </NavLink>
-            );
-          })}
-
-          {canSeeAdmin && (
-            <NavLink
-              to="/admin"
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', letterSpacing: '0.03em', color: c.text }}>
+                ALPAS<span style={{ color: c.primary }}>PINAS</span>
+              </span>
+            </Link>
+            <button
               onClick={closeMenu}
-              className={menuOpen ? 'drawer-item-in' : undefined}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.7rem',
-                color: isActive ? c.primary : c.text,
-                backgroundColor: isActive ? `${c.primary}14` : 'transparent',
-                textDecoration: 'none',
-                fontWeight: isActive ? 600 : 500,
-                fontSize: '0.92rem',
-                letterSpacing: '0.01em',
-                padding: '0.5rem 0.7rem',
-                borderRadius: '0.7rem',
-                animationDelay: `${visibleItems.length * 0.04}s`,
-                transition: 'background-color 0.15s ease, color 0.15s ease',
-              })}
+              aria-label="Close menu"
+              style={{ width: '2.38rem', height: '2.38rem', borderRadius: '999px', border: `1px solid ${c.border}`, background: 'transparent', color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
             >
-              {({ isActive }) => (
-                <>
-                  <span
-                    aria-hidden="true"
+              <CloseIcon size={18} />
+            </button>
+          </div>
+
+          {/* Scrollable content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 26px 26px', display: 'flex', flexDirection: 'column' }}>
+            {/* Oversized nav links, staggered fade-in */}
+            <div style={{ display: 'flex', flexDirection: 'column', paddingTop: '10px' }}>
+              {drawerLinks.map((item, i) => {
+                const active = item.hash
+                  ? location.pathname === item.to && location.hash === item.hash
+                  : location.pathname === item.to && !location.hash;
+                return (
+                  <NavLink
+                    key={item.label}
+                    to={{ pathname: item.to, hash: item.hash ?? '' }}
+                    onClick={closeMenu}
+                    className={menuOpen ? 'drawer-item-in' : undefined}
                     style={{
+                      animationDelay: `${0.08 + i * 0.05}s`,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '1.6rem',
-                      flexShrink: 0,
-                      color: isActive ? c.primary : c.textSecondary,
+                      justifyContent: 'space-between',
+                      padding: '13px 4px',
+                      textDecoration: 'none',
+                      borderBottom: `1px solid ${c.border}`,
+                      color: active ? c.primary : c.text,
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.4rem',
+                      letterSpacing: '0.02em',
                     }}
                   >
-                    <ShieldIcon size={20} />
-                  </span>
-                  <span style={{ flex: 1 }}>Admin</span>
-                  {isActive && (
-                    <span
-                      aria-hidden="true"
-                      style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
-                    />
-                  )}
-                </>
+                    <span>{item.label}</span>
+                    <ChevronRight />
+                  </NavLink>
+                );
+              })}
+
+              {canSeeAdmin && (
+                <NavLink
+                  to="/admin"
+                  onClick={closeMenu}
+                  className={menuOpen ? 'drawer-item-in' : undefined}
+                  style={({ isActive }) => ({
+                    animationDelay: `${0.08 + drawerLinks.length * 0.05}s`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '13px 4px',
+                    textDecoration: 'none',
+                    borderBottom: `1px solid ${c.border}`,
+                    color: isActive ? c.primary : c.text,
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.4rem',
+                    letterSpacing: '0.02em',
+                  })}
+                >
+                  <span>Admin</span>
+                  <ChevronRight />
+                </NavLink>
               )}
-            </NavLink>
-          )}
             </div>
 
-            {/* Bottom block: sign-out (logged in) or auth CTAs (logged out) */}
-            <div style={{ borderTop: `1px solid ${c.border}`, padding: '0.85rem 1rem 1rem' }}>
-              {user ? (
-                <>
+            {/* Appearance row — brand swatch + light/dark toggle */}
+            <div
+              className={menuOpen ? 'drawer-item-in' : undefined}
+              style={{ animationDelay: '0.5s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 4px', marginTop: '4px', borderBottom: `1px solid ${c.border}` }}
+            >
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: c.textSecondary }}>Appearance</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  onClick={toggleBrand}
+                  aria-label={`Switch color theme (currently ${brand})`}
+                  title={`Color: ${brand} — tap to switch`}
+                  style={{ background: 'transparent', border: `1px solid ${c.border}`, width: '32px', height: '32px', borderRadius: '999px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                >
+                  <span style={{ width: '16px', height: '16px', borderRadius: '999px', background: brandGradient(brand, theme) }} />
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  aria-label="Toggle light or dark theme"
+                  style={{ background: 'transparent', color: c.text, border: `1px solid ${c.border}`, width: '32px', height: '32px', borderRadius: '999px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {theme === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Auth-aware actions */}
+            {user ? (
+              <>
                 <Link
                   to="/orders"
                   onClick={closeMenu}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.7rem',
-                    color: c.text,
-                    textDecoration: 'none',
-                    padding: '0.65rem 0.85rem',
-                    fontSize: '0.92rem',
-                    fontWeight: 600,
-                    borderRadius: '0.7rem',
-                    marginBottom: '0.3rem',
-                  }}
+                  className={menuOpen ? 'drawer-item-in' : undefined}
+                  style={{ animationDelay: '0.56s', padding: '16px 4px', textDecoration: 'none', color: c.text, fontWeight: 600, fontSize: '1rem', borderBottom: `1px solid ${c.border}` }}
                 >
-                  <span aria-hidden="true" style={{ display: 'flex', width: '1.6rem', justifyContent: 'center', color: c.textSecondary }}>
-                    <CartIcon size={18} />
-                  </span>
-                  <span style={{ flex: 1 }}>My Orders</span>
+                  My Orders
                 </Link>
                 <button
-                  onClick={() => {
-                    logout();
-                    closeMenu();
-                  }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.7rem',
-                    background: 'transparent',
-                    color: '#e5484d',
-                    border: 'none',
-                    padding: '0.65rem 0.85rem',
-                    cursor: 'pointer',
-                    fontSize: '0.92rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.01em',
-                    borderRadius: '0.7rem',
-                    textAlign: 'left',
-                  }}
+                  onClick={() => { logout(); closeMenu(); }}
+                  className={menuOpen ? 'drawer-item-in' : undefined}
+                  style={{ animationDelay: '0.6s', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: `1px solid ${c.border}`, padding: '16px 4px', color: '#e5484d', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', fontFamily: 'inherit' }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '1.6rem',
-                      flexShrink: 0,
-                      color: '#e5484d',
-                    }}
-                  >
-                    <LogoutIcon />
-                  </span>
-                  <span style={{ flex: 1 }}>Sign Out</span>
+                  Sign Out
                 </button>
-                </>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  <Link
-                    to="/login"
-                    onClick={closeMenu}
-                    style={{
-                      display: 'block',
-                      textAlign: 'center',
-                      color: c.text,
-                      border: `1px solid ${c.border}`,
-                      padding: '0.8rem 1.25rem',
-                      borderRadius: '0.6rem',
-                      fontWeight: 600,
-                      fontSize: '0.95rem',
-                      textDecoration: 'none',
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/join-team"
-                    onClick={closeMenu}
-                    style={{
-                      display: 'block',
-                      textAlign: 'center',
-                      background: brandGradient(brand, theme),
-                      color: '#fff',
-                      padding: '0.8rem 1.25rem',
-                      borderRadius: '0.6rem',
-                      fontWeight: 600,
-                      fontSize: '0.95rem',
-                      textDecoration: 'none',
-                      letterSpacing: '0.02em',
-                      boxShadow: `0 4px 14px ${c.primary}33`,
-                    }}
-                  >
-                    Join the Team
-                  </Link>
-                </div>
-              )}
-              <div
-                style={{
-                  textAlign: 'center',
-                  fontSize: '0.72rem',
-                  color: c.textSecondary,
-                  marginTop: '0.9rem',
-                  letterSpacing: '0.03em',
-                }}
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={closeMenu}
+                className={menuOpen ? 'drawer-item-in' : undefined}
+                style={{ animationDelay: '0.56s', padding: '16px 4px', textDecoration: 'none', color: c.text, fontWeight: 600, fontSize: '1rem', borderBottom: `1px solid ${c.border}` }}
               >
-                AlpasPinas Dragonboat · Malaysia
-              </div>
+                Login
+              </Link>
+            )}
+
+            {/* Join CTA */}
+            <Link
+              to="/join-team"
+              onClick={closeMenu}
+              className={menuOpen ? 'drawer-item-in' : undefined}
+              style={{ animationDelay: '0.64s', marginTop: '20px', textAlign: 'center', background: brandGradient(brand, theme), color: '#fff', padding: '1rem 1.3rem', borderRadius: '999px', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', letterSpacing: '0.02em', boxShadow: `0 6px 18px ${c.primary}47` }}
+            >
+              Join the Team
+            </Link>
+
+            <div
+              className={menuOpen ? 'drawer-item-in' : undefined}
+              style={{ animationDelay: '0.7s', marginTop: 'auto', paddingTop: '26px', fontSize: '0.78rem', color: c.textSecondary, textAlign: 'center' }}
+            >
+              One stroke. One team.
             </div>
-          </aside>
-        </>
+          </div>
+        </div>
       )}
     </nav>
   );

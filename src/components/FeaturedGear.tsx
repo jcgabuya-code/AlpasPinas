@@ -228,7 +228,6 @@ export const FeaturedGear: React.FC = () => {
   // One compact list row — thumb, name/sub/price, and a view affordance.
   const listRow = (p: Product) => {
     const price = effectivePrice(p);
-    const promo = p.promoPrice != null && p.promoPrice < p.price;
     const soldOut = !inStock(p);
     const hovered = hoverId === p.id;
     return (

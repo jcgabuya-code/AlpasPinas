@@ -32,3 +32,6 @@ supabase/.branches
 
 # Screenshot artifacts from dev scripts
 scripts/*.png
+
+# PDF export artifacts from dev scripts
+design-export/

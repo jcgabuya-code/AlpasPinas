@@ -57,16 +57,33 @@ const ArrowGlyph: React.FC<{ size?: number }> = ({ size = 16 }) => (
 
 // WhatsApp mark — the "Book a Session" CTA messages the crew, so it carries the
 // recognizable WhatsApp glyph + green, matching the Home v2 reference.
-const WhatsAppGlyph: React.FC<{ size?: number }> = ({ size = 22 }) => (
+export const WhatsAppGlyph: React.FC<{ size?: number }> = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
     <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.8c2.16 0 4.19.84 5.72 2.37a8.06 8.06 0 0 1 2.37 5.72c0 4.46-3.63 8.09-8.1 8.09a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.07.81.82-3-.19-.31a8.05 8.05 0 0 1-1.24-4.3c0-4.46 3.63-8.09 8.1-8.09zm-3.04 4.3c-.14 0-.37.05-.57.27-.2.22-.75.74-.75 1.8s.77 2.09.88 2.23c.11.14 1.51 2.31 3.67 3.24.51.22.91.35 1.22.45.51.16.98.14 1.35.08.41-.06 1.27-.52 1.45-1.02.18-.5.18-.93.13-1.02-.05-.09-.2-.14-.41-.25-.21-.11-1.27-.63-1.46-.7-.2-.07-.34-.11-.48.11-.14.22-.55.7-.68.84-.12.14-.25.16-.46.05-.21-.11-.9-.33-1.71-1.06-.63-.56-1.06-1.26-1.18-1.47-.12-.22-.01-.33.1-.44.1-.1.21-.25.32-.38.11-.12.14-.21.21-.36.07-.14.04-.27-.02-.38-.05-.11-.48-1.18-.66-1.61-.17-.42-.35-.36-.48-.37l-.41-.01z" />
   </svg>
 );
 
 // YouTube play badge — the "Watch Race" CTA, red to read as "watch the highlight reel".
-const YouTubeGlyph: React.FC<{ size?: number }> = ({ size = 24 }) => (
+export const YouTubeGlyph: React.FC<{ size?: number }> = ({ size = 24 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
     <path d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.82.42A2.5 2.5 0 0 0 2.42 7.19 26 26 0 0 0 2 12a26 26 0 0 0 .42 4.81 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77A26 26 0 0 0 22 12a26 26 0 0 0-.42-4.81zM10 15V9l5.2 3-5.2 3z" />
+  </svg>
+);
+
+// Instagram mark — line-art camera outline (matches the site's existing icon
+// system, e.g. Contact.tsx's InstagramIcon), rendered white for a colored bubble.
+export const InstagramGlyph: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+    <circle cx="12" cy="12" r="3.8" />
+    <circle cx="17" cy="7" r="0.9" fill="#fff" stroke="none" />
+  </svg>
+);
+
+// Facebook mark — the classic "f" glyph, filled white for a colored bubble.
+export const FacebookGlyph: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+    <path d="M13.5 21v-7.2h2.4l.36-2.8h-2.76V9.1c0-.81.22-1.36 1.39-1.36h1.48V5.2A20 20 0 0 0 14.3 5c-2.15 0-3.62 1.31-3.62 3.72v2.28H8.25v2.8h2.43V21h2.82z" />
   </svg>
 );
 
@@ -338,7 +355,7 @@ export const Hero: React.FC = () => {
           gap: isMobile ? '0.45rem' : '0.6rem',
         }}
       >
-        <WhatsAppGlyph size={isMobile ? 22 : 28} />
+        <WhatsAppGlyph size={isMobile ? 26 : 34} />
         Book a Session
       </a>
       {/* Watch Race — opens the highlight reel (YouTube red) */}
@@ -367,7 +384,7 @@ export const Hero: React.FC = () => {
           justifyContent: 'center',
         }}
       >
-        <YouTubeGlyph size={isMobile ? 24 : 31} />
+        <YouTubeGlyph size={isMobile ? 29 : 38} />
         Watch Race
       </button>
     </div>
