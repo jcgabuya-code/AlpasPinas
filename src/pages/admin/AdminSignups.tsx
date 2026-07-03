@@ -78,7 +78,7 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
             SIGN-UPS
           </h1>
           <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
-            {loading ? 'Fetching…' : `${pending.length} pending · ${confirmed.length} confirmed`}
+            {loading ? 'Fetching…' : `${pending.length} waitlisted · ${confirmed.length} confirmed`}
           </p>
         </div>
         <button
@@ -99,11 +99,11 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast }) => {
       {!loading && (
         <>
           {/* Pending section */}
-          <SectionHeader c={c} title="Pending approval" count={pending.length} accent="#d97706"
+          <SectionHeader c={c} title="Waitlist" count={pending.length} accent="#d97706"
             open={openPending} onToggle={() => setOpenPending((o) => !o)} />
           {openPending && (
             pending.length === 0 ? (
-              <EmptyState c={c} msg="No pending sign-ups." />
+              <EmptyState c={c} msg="No one waitlisted." />
             ) : (
               byEvent(pending).map(({ event, rows }) => (
                 <EventGroup key={event.id} event={event} rows={rows} c={c} busyKey={busyKey}
@@ -207,17 +207,17 @@ const EventGroup: React.FC<{
         const meta = [
           b.gender,
           b.side,
-          `${b.weight} kg`,
+          b.weight !== undefined ? `${b.weight} kg` : null,
           ...(b.needPFD === 'Yes' ? ['PFD'] : []),
           ...(b.needPaddle === 'Yes' ? ['Paddle'] : []),
-        ].join(' · ');
+        ].filter(Boolean).join(' · ');
         return (
           <div
             key={b.id ?? `${b.eventId}::${b.name}`}
             style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.7rem', borderRadius: '0.5rem', backgroundColor: c.surface, border: `1px solid ${c.border}` }}
           >
             <span style={{ fontWeight: 700, fontSize: '0.88rem', color: c.text, flexShrink: 0, whiteSpace: 'nowrap' }}>{b.name}</span>
-            <Chip label={attendingLabel(b.attending)} color={c.primary} />
+            <Chip label={attendingLabel(b.attending, event)} color={c.primary} />
             <span
               style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: c.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               title={meta}
@@ -226,7 +226,7 @@ const EventGroup: React.FC<{
             </span>
             <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
               {showApprove && (
-                <ActionBtn onClick={() => onApprove(b)} disabled={busy} color="#16a34a" label={busy ? '…' : '✓ Approve'} />
+                <ActionBtn onClick={() => onApprove(b)} disabled={busy} color="#16a34a" label={busy ? '…' : '✓ Confirm'} />
               )}
               <ActionBtn onClick={() => onCancel(b)} disabled={busy} color="#ef4444" label={busy ? '…' : 'Remove'} outline />
             </div>

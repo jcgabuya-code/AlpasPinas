@@ -1,15 +1,17 @@
 /**
  * Dev-only sample athletes for testing the admin Boat Assignments planner.
  *
- * Activated by VITE_SEED_BOOKINGS=1 in .env.local — when set, fetchBookings()
- * returns this roster instead of calling the Google Sheet, so the bench fills
- * up locally WITHOUT touching production training data. Remove the env line
- * (or this file) to turn it off.
+ * Activated by VITE_SEED_BOOKINGS=1 in .env.local — when set,
+ * `fetchBoatPlannerBench()` (utils/bookings.ts) returns this roster instead
+ * of real Supabase data, so the bench fills up locally WITHOUT touching
+ * production training data. Scoped to the boat planner only — the public
+ * /training page and everything else always reads real Supabase data
+ * regardless of this flag. Remove the env line (or this file) to turn it off.
  *
  * The roster is intentionally lopsided side-wise and varied in weight so the
  * side-matching warnings and the trim/balance panel are easy to exercise.
  */
-import type { Booking, Gender, SideRole, Attending } from './bookings';
+import type { Booking, Gender, SideRole } from './bookings';
 
 type Person = { name: string; gender: Gender; side: SideRole; weight: number; birthday: string };
 
@@ -45,7 +47,7 @@ const ROSTER: Person[] = [
 ];
 
 // Spread attendance so the day filter (sat / sun / both) has something to show.
-const attendingFor = (i: number): Attending =>
+const attendingFor = (i: number): string =>
   i % 5 === 0 ? 'sat' : i % 5 === 1 ? 'sun' : 'both';
 
 // Seed the same roster onto both training events so whichever one is selected

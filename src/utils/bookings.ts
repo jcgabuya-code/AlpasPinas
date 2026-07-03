@@ -11,14 +11,17 @@
  * on load, after every mutation, and on Supabase realtime changes.
  *
  * If Supabase isn't configured the module runs LOCAL-ONLY (pure localStorage)
- * so dev still works. With VITE_SEED_BOOKINGS=1 it serves a sample roster so
- * the admin Boat Assignments planner has a bench to test with.
+ * so dev still works.
+ *
+ * VITE_SEED_BOOKINGS=1 does NOT touch this module or its cache — it only
+ * feeds a sample roster to the admin Boat Assignments planner (see
+ * `fetchBoatPlannerBench` below), so the real public /training page and every
+ * other consumer of fetchBookings/fetchEventCounts always reflect actual
+ * Supabase data.
  */
 import { supabase, isSupabaseConfigured } from './supabase';
 
 const isRemote = isSupabaseConfigured;
-
-const useSeed = (import.meta.env.VITE_SEED_BOOKINGS ?? '').trim() === '1';
 
 const CACHE_KEY = 'alpas-bookings-v2';
 const COUNTS_KEY = 'alpas-booking-counts-v1';
@@ -27,7 +30,8 @@ const CHANGE_EVENT = 'alpas-bookings-changed';
 export type Gender = 'Male' | 'Female';
 export type SideRole = 'Left' | 'Right' | 'Coxswain' | 'Coach';
 export type YesNo = 'Yes' | 'No';
-export type Attending = 'sat' | 'sun' | 'both';
+/** An event day-key (free-form, matches TrainingDay.key) or 'both' — every day of the event. */
+export type Attending = string;
 
 export type BookingStatus = 'waiting' | 'confirmed';
 
@@ -39,16 +43,16 @@ export type Booking = {
   name: string;
   gender: Gender;
   birthday?: string;    // 'YYYY-MM-DD' — mandatory on new sign-ups; older rows may lack it
-  side: SideRole;
-  weight: number;       // kg
-  needPFD: YesNo;
-  needPaddle: YesNo;
+  side?: SideRole;       // boat-only — absent for land (venue) sign-ups
+  weight?: number;       // kg, boat-only — absent for land sign-ups
+  needPFD?: YesNo;        // boat-only
+  needPaddle?: YesNo;     // boat-only
   createdAt: string;    // ISO timestamp
   status: BookingStatus;
 };
 
-/** Per-event seat tallies from the counts RPC: eventId → { sat, sun }. */
-export type EventCounts = Map<string, { sat: number; sun: number }>;
+/** Per-event, per-day-key sign-up tallies from the counts RPC. 'both' is its own raw key. */
+export type EventCounts = Map<string, Map<string, number>>;
 
 /* --------------------------- DB row <-> Booking --------------------------- */
 
@@ -61,10 +65,10 @@ type DbRow = {
   name: string;
   gender: Gender;
   birthday: string | null;
-  side: SideRole;
-  weight: number | string;
-  need_pfd: boolean;
-  need_paddle: boolean;
+  side: SideRole | null;
+  weight: number | string | null;
+  need_pfd: boolean | null;
+  need_paddle: boolean | null;
   status: BookingStatus;
   created_at: string;
 };
@@ -77,26 +81,28 @@ const toBooking = (r: DbRow): Booking => ({
   name: r.name,
   gender: r.gender,
   birthday: r.birthday ?? undefined,
-  side: r.side,
-  weight: Number(r.weight),
-  needPFD: r.need_pfd ? 'Yes' : 'No',
-  needPaddle: r.need_paddle ? 'Yes' : 'No',
+  side: r.side ?? undefined,
+  weight: r.weight === null ? undefined : Number(r.weight),
+  needPFD: r.need_pfd === null ? undefined : r.need_pfd ? 'Yes' : 'No',
+  needPaddle: r.need_paddle === null ? undefined : r.need_paddle ? 'Yes' : 'No',
   createdAt: r.created_at,
   status: r.status,
 });
 
-/** Insert payload — `user_id` is omitted (DB column defaults to auth.uid()). */
-const toInsert = (b: Omit<Booking, 'createdAt' | 'status' | 'id'>) => ({
+/** Insert payload — `user_id` is omitted (DB column defaults to auth.uid()). Boat-only
+ * fields (side/weight/PFD/paddle) are sent as null when the sign-up omits them (land). */
+const toInsert = (b: Omit<Booking, 'createdAt' | 'id'>) => ({
   event_id: b.eventId,
   event_title: b.eventTitle ?? null,
   attending: b.attending,
   name: b.name,
   gender: b.gender,
   birthday: b.birthday ?? null,
-  side: b.side,
-  weight: b.weight,
-  need_pfd: b.needPFD === 'Yes',
-  need_paddle: b.needPaddle === 'Yes',
+  side: b.side ?? null,
+  weight: b.weight ?? null,
+  need_pfd: b.needPFD === undefined ? null : b.needPFD === 'Yes',
+  need_paddle: b.needPaddle === undefined ? null : b.needPaddle === 'Yes',
+  status: b.status,
 });
 
 /** Whole years between a 'YYYY-MM-DD' birthday and today. undefined if unknown/unparseable. */
@@ -143,8 +149,8 @@ export const getEventCounts = (): EventCounts => {
   try {
     const raw = window.localStorage.getItem(COUNTS_KEY);
     if (!raw) return new Map();
-    const parsed = JSON.parse(raw) as Record<string, { sat: number; sun: number }>;
-    return new Map(Object.entries(parsed));
+    const parsed = JSON.parse(raw) as Record<string, Record<string, number>>;
+    return new Map(Object.entries(parsed).map(([eventId, byDay]) => [eventId, new Map(Object.entries(byDay))]));
   } catch {
     return new Map();
   }
@@ -152,18 +158,21 @@ export const getEventCounts = (): EventCounts => {
 
 const writeCountsCache = (counts: EventCounts) => {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(COUNTS_KEY, JSON.stringify(Object.fromEntries(counts)));
+  const plain = Object.fromEntries(
+    Array.from(counts.entries()).map(([eventId, byDay]) => [eventId, Object.fromEntries(byDay)]),
+  );
+  window.localStorage.setItem(COUNTS_KEY, JSON.stringify(plain));
   window.dispatchEvent(new Event(CHANGE_EVENT));
 };
 
-/** Build a counts map from a Booking[] (used for seed/local mode). */
+/** Build a counts map from a Booking[] (used for seed/local mode) — mirrors the
+ * RPC's raw (event_id, attending) group-by; 'both' expansion happens at read time. */
 const countsFromList = (bookings: Booking[]): EventCounts => {
   const m: EventCounts = new Map();
   for (const b of bookings) {
-    const c = m.get(b.eventId) ?? { sat: 0, sun: 0 };
-    if (b.attending === 'sat' || b.attending === 'both') c.sat++;
-    if (b.attending === 'sun' || b.attending === 'both') c.sun++;
-    m.set(b.eventId, c);
+    const byDay = m.get(b.eventId) ?? new Map<string, number>();
+    byDay.set(b.attending, (byDay.get(b.attending) ?? 0) + 1);
+    m.set(b.eventId, byDay);
   }
   return m;
 };
@@ -176,12 +185,6 @@ const countsFromList = (bookings: Booking[]): EventCounts => {
  * local-only mode it returns the cache. Falls back to the cache on error.
  */
 export const fetchBookings = async (): Promise<Booking[]> => {
-  if (useSeed) {
-    const { getSeedBookings } = await import('./seedBookings');
-    const seeded = getSeedBookings();
-    writeCache(seeded);
-    return seeded;
-  }
   if (!isRemote) return getAllBookings();
   const { data, error } = await supabase
     .from('training_signups')
@@ -194,22 +197,35 @@ export const fetchBookings = async (): Promise<Booking[]> => {
 };
 
 /**
+ * Bench data for the admin Boat Assignments planner ONLY. With
+ * VITE_SEED_BOOKINGS=1 it returns a canned sample roster so the planner has
+ * athletes to test seating with; otherwise it's just `fetchBookings()`.
+ * Deliberately a separate function — and the seed branch never calls
+ * `writeCache`, so this can't leak fake data into the shared cache that the
+ * real public /training page reads from.
+ */
+export const fetchBoatPlannerBench = async (): Promise<Booking[]> => {
+  const useSeed = (import.meta.env.VITE_SEED_BOOKINGS ?? '').trim() === '1';
+  if (useSeed) {
+    const { getSeedBookings } = await import('./seedBookings');
+    return getSeedBookings();
+  }
+  return fetchBookings();
+};
+
+/**
  * Pull PII-free capacity counts (all events) via the counts RPC and refresh
  * the cache. Anyone can call this — it powers the public capacity display.
  */
 export const fetchEventCounts = async (): Promise<EventCounts> => {
-  if (useSeed) {
-    const { getSeedBookings } = await import('./seedBookings');
-    const counts = countsFromList(getSeedBookings());
-    writeCountsCache(counts);
-    return counts;
-  }
   if (!isRemote) return countsFromList(getAllBookings());
   const { data, error } = await supabase.rpc('training_signup_counts');
   if (error || !data) return getEventCounts();
   const counts: EventCounts = new Map();
-  for (const row of data as { event_id: string; sat: number; sun: number }[]) {
-    counts.set(row.event_id, { sat: row.sat, sun: row.sun });
+  for (const row of data as { event_id: string; attending: string; cnt: number }[]) {
+    const byDay = counts.get(row.event_id) ?? new Map<string, number>();
+    byDay.set(row.attending, row.cnt);
+    counts.set(row.event_id, byDay);
   }
   writeCountsCache(counts);
   return counts;
@@ -217,19 +233,19 @@ export const fetchEventCounts = async (): Promise<EventCounts> => {
 
 /* ----------------------------- queries ------------------------------ */
 
-/** Does this booking cover the given day key? "both" covers sat and sun. */
+/** Does this booking cover the given day key? "both" covers every day of the event. */
 export const coversDay = (b: Booking, dayKey: string) =>
   b.attending === 'both' || b.attending === dayKey;
 
-/** Seats taken for one event + one day (sat/sun) from the counts map. */
+/** Seats taken for one event + one day key, expanding 'both' sign-ups into every day. */
 export const takenForDay = (
   counts: EventCounts,
   eventId: string,
   dayKey: string,
 ): number => {
-  const c = counts.get(eventId);
-  if (!c) return 0;
-  return dayKey === 'sun' ? c.sun : c.sat;
+  const byDay = counts.get(eventId);
+  if (!byDay) return 0;
+  return (byDay.get(dayKey) ?? 0) + (byDay.get('both') ?? 0);
 };
 
 /**
@@ -252,17 +268,19 @@ export const hasNameBooked = (
 
 /**
  * Add a sign-up for the logged-in user (their `user_id` is filled by the DB
- * default). Refreshes own rows + counts. Throws a friendly message on the
- * unique-constraint violation (already signed up).
+ * default). No admin approval required: the caller decides `status` up front
+ * — 'confirmed' if the chosen day(s) still have room, 'waiting' if they're
+ * full (join the waitlist rather than being blocked). Refreshes own rows +
+ * counts. Throws a friendly message on the unique-constraint violation
+ * (already signed up).
  */
 export const addBooking = async (
-  b: Omit<Booking, 'createdAt' | 'status' | 'id'>,
+  b: Omit<Booking, 'createdAt' | 'id'>,
 ): Promise<Booking> => {
   if (!isRemote) {
     const booking: Booking = {
       ...b,
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      status: 'waiting',
       createdAt: new Date().toISOString(),
     };
     writeCache([...getAllBookings(), booking]);
@@ -332,7 +350,7 @@ export const subscribeBookings = (handler: () => void) => {
   window.addEventListener('storage', onStorage);
 
   let channel: ReturnType<typeof supabase.channel> | null = null;
-  if (isRemote && !useSeed) {
+  if (isRemote) {
     channel = supabase
       .channel(`training_signups_${channelSeq++}`)
       .on(
@@ -383,6 +401,19 @@ export const isUpcomingDate = (iso: string) => {
   return iso >= todayIso;
 };
 
-/** Pretty-print attending value. */
-export const attendingLabel = (a: Attending) =>
-  a === 'both' ? 'Both days' : a === 'sat' ? 'Saturday only' : 'Sunday only';
+/**
+ * Pretty-print an attending value. Given the event's days it renders the real
+ * day labels (e.g. "Tuesday only", "Saturday + Sunday"); without an event it
+ * falls back to a generic label so older call sites still compile.
+ */
+export const attendingLabel = (
+  a: Attending,
+  event?: { days: { key: string; label: string }[] },
+): string => {
+  if (!event) return a === 'both' ? 'Both days' : `${a[0]?.toUpperCase()}${a.slice(1)} only`;
+  if (a === 'both') {
+    return event.days.length > 1 ? event.days.map((d) => d.label).join(' + ') : (event.days[0]?.label ?? 'Both days');
+  }
+  const day = event.days.find((d) => d.key === a);
+  return day ? `${day.label} only` : a;
+};

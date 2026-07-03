@@ -3,12 +3,15 @@ import { useTheme } from '../context/ThemeContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { colors, brandGradient } from '../styles/colors';
 import {
+  attendingLabel,
   takenForDay,
   formatShortDate,
   isUpcomingDate,
+  type Booking,
   type EventCounts,
 } from '../utils/bookings';
 import { Clock, MapPin, Users, ArrowRight, Check } from 'lucide-react';
+import { LandGlyph, WaveGlyph } from './icons/trainingGlyphs';
 
 export type TrainingDay = {
   key: string;        // 'sat' | 'sun' (free-form so future events can have any day key)
@@ -25,6 +28,9 @@ export type TrainingEvent = {
   description: string;
   thumbnail?: string;
   thumbnailCredit?: string;
+  /** Which discipline this event belongs to — drives the venue badge + which
+   * page section it renders in. Defaults to 'lake' for older data without it. */
+  venue?: 'land' | 'lake';
   days: TrainingDay[];
 };
 
@@ -32,14 +38,17 @@ type Props = {
   event: TrainingEvent;
   counts: EventCounts;
   onBook: (event: TrainingEvent) => void;
-  /** True when the signed-in user already has a sign-up for this event. */
-  alreadyBooked?: boolean;
+  /** The signed-in user's own sign-up for this event, if any — drives the
+   * "you're in" treatment (badge, border, disabled button) up front instead of
+   * only surfacing at submit time. */
+  myBooking?: Booking;
 };
 
-export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBooked = false }) => {
+export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, myBooking }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
+  const alreadyBooked = !!myBooking;
 
   const dayStats = event.days.map((d) => {
     const taken = takenForDay(counts, event.id, d.key);
@@ -52,73 +61,15 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
   return (
     <article
       style={{
-        backgroundColor: c.surface,
+        backgroundColor: alreadyBooked ? `${c.primary}0a` : c.surface,
         borderRadius: '0.85rem',
-        border: `1px solid ${c.border}`,
+        border: `1px solid ${alreadyBooked ? c.primary + '80' : c.border}`,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Thumbnail */}
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          aspectRatio: isMobile ? '5 / 2' : '21 / 9',
-          backgroundColor: c.surfaceAlt,
-          overflow: 'hidden',
-          flexShrink: 0,
-        }}
-      >
-        {event.thumbnail ? (
-          <img
-            src={event.thumbnail}
-            alt={event.title}
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-        ) : (
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              background: brandGradient(brand, theme),
-            }}
-          />
-        )}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.5) 100%)',
-            pointerEvents: 'none',
-          }}
-        />
-        <span
-          style={{
-            position: 'absolute',
-            top: '0.7rem',
-            left: '0.7rem',
-            padding: '0.3rem 0.7rem',
-            borderRadius: '999px',
-            backgroundColor: 'rgba(11, 16, 20, 0.78)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            border: `1px solid ${stillUpcoming ? c.primary + '88' : 'rgba(255,255,255,0.1)'}`,
-            color: stillUpcoming ? c.primaryLight : 'rgba(255,255,255,0.75)',
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase' as const,
-          }}
-        >
-          {stillUpcoming ? 'Upcoming' : 'Past'}
-        </span>
-      </div>
-
       {/* Body */}
       <div
         style={{
@@ -131,18 +82,74 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
       >
       {/* Title + description */}
       <div>
-        <h3
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: isMobile ? '1.45rem' : '1.7rem',
-            margin: 0,
-            color: c.text,
-            letterSpacing: '0.02em',
-            lineHeight: 1.05,
-          }}
-        >
-          {event.title.toUpperCase()}
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
+          <h3
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: isMobile ? '1.45rem' : '1.7rem',
+              margin: 0,
+              color: c.text,
+              letterSpacing: '0.02em',
+              lineHeight: 1.05,
+            }}
+          >
+            {event.title.toUpperCase()}
+          </h3>
+          <span
+            aria-hidden="true"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '2rem',
+              height: '2rem',
+              flexShrink: 0,
+              borderRadius: '999px',
+              backgroundColor: `${c.primary}1f`,
+              border: `1px solid ${c.primary}59`,
+            }}
+          >
+            {event.venue === 'land' ? <LandGlyph color={c.primary} size={15} /> : <WaveGlyph color={c.primary} size={15} />}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '0.25rem 0.65rem',
+              borderRadius: '999px',
+              backgroundColor: stillUpcoming ? `${c.primary}15` : c.surfaceAlt,
+              border: `1px solid ${stillUpcoming ? c.primary + '55' : c.border}`,
+              color: stillUpcoming ? c.primary : c.textSecondary,
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase' as const,
+            }}
+          >
+            {stillUpcoming ? 'Upcoming' : 'Past'}
+          </span>
+          {myBooking && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '999px',
+                backgroundColor: myBooking.status === 'confirmed' ? `${c.primary}22` : '#d9770620',
+                border: `1px solid ${myBooking.status === 'confirmed' ? c.primary + '66' : '#d9770655'}`,
+                color: myBooking.status === 'confirmed' ? c.primaryLight : '#d97706',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+              }}
+            >
+              {myBooking.status === 'confirmed' ? <Check size={11} /> : <span style={{ fontSize: '0.55rem' }}>●</span>}
+              {myBooking.status === 'confirmed' ? "You're confirmed" : "You're on the list"} · {attendingLabel(myBooking.attending, event)}
+            </span>
+          )}
+        </div>
         <p
           style={{
             color: c.textSecondary,
@@ -240,20 +247,20 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
       <button
         type="button"
         onClick={() => onBook(event)}
-        disabled={alreadyBooked || !anyOpen || !stillUpcoming}
+        disabled={alreadyBooked || !stillUpcoming}
         style={{
           marginTop: '0.2rem',
           padding: '0.8rem 1rem',
           borderRadius: '999px',
           border: alreadyBooked ? `1px solid ${c.primary}66` : 'none',
-          background: alreadyBooked ? `${c.primary}18` : !anyOpen || !stillUpcoming ? c.border : brandGradient(brand, theme),
+          background: alreadyBooked ? `${c.primary}18` : !stillUpcoming ? c.border : brandGradient(brand, theme),
           color: alreadyBooked ? c.primaryLight : '#fff',
           fontWeight: 700,
           fontSize: '0.92rem',
           letterSpacing: '0.02em',
-          cursor: alreadyBooked || !anyOpen || !stillUpcoming ? 'not-allowed' : 'pointer',
+          cursor: alreadyBooked || !stillUpcoming ? 'not-allowed' : 'pointer',
           fontFamily: 'inherit',
-          boxShadow: alreadyBooked || !anyOpen || !stillUpcoming ? 'none' : `0 6px 18px ${c.primary}33`,
+          boxShadow: alreadyBooked || !stillUpcoming ? 'none' : `0 6px 18px ${c.primary}33`,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -265,7 +272,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, alreadyBo
           : !stillUpcoming
             ? 'Past weekend'
             : !anyOpen
-              ? 'Both days full'
+              ? <><span>Join waitlist</span><ArrowRight size={16} /></>
               : <><span>Sign up</span><ArrowRight size={16} /></>}
       </button>
       </div>

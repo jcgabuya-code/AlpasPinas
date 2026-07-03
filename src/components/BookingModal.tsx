@@ -16,6 +16,7 @@ import {
   takenForDay,
   type EventCounts,
   type Attending,
+  type BookingStatus,
   type Gender,
   type SideRole,
   type YesNo,
@@ -37,6 +38,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
+  // Land sign-ups skip the boat-specific fields (side/weight/PFD/paddle) — not
+  // relevant to weeknight conditioning.
+  const isLand = event?.venue === 'land';
+  // Single-day events (typical for land) don't need a "which day" picker at
+  // all — the sign-up covers that one day, full stop.
+  const singleDay = (event?.days.length ?? 0) <= 1;
+
   // Form state — name defaults to the logged-in user and is locked to them.
   const [name, setName] = useState(user?.name ?? '');
   const [gender, setGender] = useState<Gender>('Male');
@@ -47,7 +55,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   const [needPaddle, setNeedPaddle] = useState<YesNo>('No');
   const [attending, setAttending] = useState<Attending>('both');
   const [error, setError] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
+  const [result, setResult] = useState<BookingStatus | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Live capacity counts (PII-free) from the counts RPC.
   const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
@@ -62,9 +70,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
       setWeight('');
       setNeedPFD('No');
       setNeedPaddle('No');
-      setAttending('both');
+      setAttending(event.days.length === 1 ? event.days[0].key : 'both');
       setError(null);
-      setConfirmed(false);
+      setResult(null);
       setSubmitting(false);
       fetchEventCounts().then(setCounts);
     }
@@ -95,23 +103,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
 
   if (!open || !event) return null;
 
-  const satStat = dayStats.find((s) => s.day.key === 'sat');
-  const sunStat = dayStats.find((s) => s.day.key === 'sun');
-  const satFull = satStat?.full ?? false;
-  const sunFull = sunStat?.full ?? false;
-  const bothFull = satFull && sunFull;
-
-  // If their current selection is now invalid because seats just filled, snap
-  // it to a still-open option.
-  const effectiveAttending: Attending = (() => {
-    if (attending === 'both' && (satFull || sunFull)) {
-      if (!satFull) return 'sat';
-      if (!sunFull) return 'sun';
-    }
-    if (attending === 'sat' && satFull && !sunFull) return 'sun';
-    if (attending === 'sun' && sunFull && !satFull) return 'sat';
-    return attending;
-  })();
+  // No admin approval needed: a day with room confirms immediately. If every
+  // covered day is full the sign-up still goes through — it just lands on
+  // the waitlist instead of being blocked.
+  const coveredDays =
+    attending === 'both' ? event.days : event.days.filter((d) => d.key === attending);
+  const joiningWaitlist = coveredDays.some(
+    (d) => (dayStats.find((s) => s.day.key === d.key)?.remaining ?? 0) <= 0,
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +122,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
     if (age === undefined || age < 8 || age > 100)
       return setError('Please enter a valid date of birth.');
     const weightNum = Number(weight);
-    if (!weight || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200)
+    if (!isLand && (!weight || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200))
       return setError('Please enter a weight in kg between 30 and 200.');
 
     // Re-check the freshest counts (capacity) + own rows (dedup) before writing.
@@ -141,38 +140,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
       // fall back to the counts we have if the refresh fails
     }
 
-    const satTaken = takenForDay(freshCounts, event.id, 'sat');
-    const sunTaken = takenForDay(freshCounts, event.id, 'sun');
-    const satCap = event.days.find((d) => d.key === 'sat')?.capacity ?? 0;
-    const sunCap = event.days.find((d) => d.key === 'sun')?.capacity ?? 0;
-
-    if (effectiveAttending === 'sat' && satTaken >= satCap) {
-      setSubmitting(false);
-      return setError('Saturday just filled up.');
-    }
-    if (effectiveAttending === 'sun' && sunTaken >= sunCap) {
-      setSubmitting(false);
-      return setError('Sunday just filled up.');
-    }
-    if (effectiveAttending === 'both' && (satTaken >= satCap || sunTaken >= sunCap)) {
-      setSubmitting(false);
-      return setError('One of the days just filled up — pick a single day instead.');
-    }
+    // Confirmed only if every covered day still has room on the freshest
+    // counts; otherwise this sign-up joins the waitlist for that day.
+    const stillHasRoom = coveredDays.every(
+      (d) => takenForDay(freshCounts, event.id, d.key) < d.capacity,
+    );
+    const status: BookingStatus = stillHasRoom ? 'confirmed' : 'waiting';
 
     try {
       await addBooking({
         eventId: event.id,
         eventTitle: event.title,
-        attending: effectiveAttending,
+        attending,
         name: name.trim(),
         gender,
         birthday,
-        side,
-        weight: weightNum,
-        needPFD,
-        needPaddle,
+        status,
+        ...(isLand ? {} : { side, weight: weightNum, needPFD, needPaddle }),
       });
-      setConfirmed(true);
+      setResult(status);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save your sign-up.');
     } finally {
@@ -250,8 +236,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
 
         {!user ? (
           <LoginPrompt c={c} theme={theme} onClose={onClose} />
-        ) : confirmed ? (
-          <WaitingView event={event} attending={effectiveAttending} name={name} onClose={onClose} />
+        ) : result === 'confirmed' ? (
+          <ConfirmedView event={event} attending={attending} name={name} onClose={onClose} />
+        ) : result === 'waiting' ? (
+          <WaitingView event={event} attending={attending} name={name} onClose={onClose} />
         ) : (
           <form onSubmit={handleSubmit} style={{ padding: isMobile ? '1.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom))' : '1.75rem' }}>
             <div style={{ marginBottom: '1.25rem' }}>
@@ -344,68 +332,74 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
               </div>
             </Field>
 
-            <Field label="Paddling side / role" c={c}>
-              <Chips options={SIDES} value={side} onChange={setSide} c={c} />
-            </Field>
+            {!isLand && (
+              <>
+                <Field label="Paddling side / role" c={c}>
+                  <Chips options={SIDES} value={side} onChange={setSide} c={c} />
+                </Field>
 
-            <Field label="Weight (kg)" c={c}>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                placeholder="72"
-                min={30}
-                max={200}
-                style={inputStyle(c, isMobile)}
-              />
-              <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                Used to balance the boat — kept private.
-              </div>
-            </Field>
+                <Field label="Weight (kg)" c={c}>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="72"
+                    min={30}
+                    max={200}
+                    style={inputStyle(c, isMobile)}
+                  />
+                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                    Used to balance the boat — kept private.
+                  </div>
+                </Field>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <Field label="Need PFD?" c={c}>
-                <Chips options={YES_NO} value={needPFD} onChange={setNeedPFD} c={c} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <Field label="Need PFD?" c={c}>
+                    <Chips options={YES_NO} value={needPFD} onChange={setNeedPFD} c={c} />
+                  </Field>
+                  <Field label="Need paddle?" c={c}>
+                    <Chips options={YES_NO} value={needPaddle} onChange={setNeedPaddle} c={c} />
+                  </Field>
+                </div>
+              </>
+            )}
+
+            {!singleDay && (
+              <Field label="Joining" c={c}>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {event.days.map((d) => {
+                    const stat = dayStats.find((s) => s.day.key === d.key);
+                    return (
+                      <AttendingChip
+                        key={d.key}
+                        label={`${d.label} only`}
+                        active={attending === d.key}
+                        full={stat?.full ?? false}
+                        onClick={() => setAttending(d.key)}
+                        c={c}
+                      />
+                    );
+                  })}
+                  <AttendingChip
+                    label="Both days"
+                    active={attending === 'both'}
+                    full={dayStats.some((s) => s.full)}
+                    onClick={() => setAttending('both')}
+                    c={c}
+                  />
+                </div>
+                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.4rem' }}>
+                  {dayStats.map((s, i) => (
+                    <React.Fragment key={s.day.key}>
+                      {i > 0 && ' · '}
+                      {s.day.label}:{' '}
+                      <strong style={{ color: c.text }}>{s.full ? 'Waitlist' : `${s.remaining} seats`}</strong>
+                    </React.Fragment>
+                  ))}
+                </div>
               </Field>
-              <Field label="Need paddle?" c={c}>
-                <Chips options={YES_NO} value={needPaddle} onChange={setNeedPaddle} c={c} />
-              </Field>
-            </div>
-
-            <Field label="Joining" c={c}>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <AttendingChip
-                  label="Saturday only"
-                  active={effectiveAttending === 'sat'}
-                  disabled={satFull}
-                  onClick={() => setAttending('sat')}
-                  c={c}
-                />
-                <AttendingChip
-                  label="Sunday only"
-                  active={effectiveAttending === 'sun'}
-                  disabled={sunFull}
-                  onClick={() => setAttending('sun')}
-                  c={c}
-                />
-                <AttendingChip
-                  label="Both days"
-                  active={effectiveAttending === 'both'}
-                  disabled={satFull || sunFull}
-                  onClick={() => setAttending('both')}
-                  c={c}
-                />
-              </div>
-              <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.4rem' }}>
-                {satStat && sunStat && (
-                  <>
-                    Sat: <strong style={{ color: c.text }}>{satStat.remaining}</strong> seats ·{' '}
-                    Sun: <strong style={{ color: c.text }}>{sunStat.remaining}</strong> seats
-                  </>
-                )}
-              </div>
-            </Field>
+            )}
 
             {error && (
               <div
@@ -424,26 +418,43 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
               </div>
             )}
 
+            {joiningWaitlist && (
+              <div
+                style={{
+                  marginBottom: '0.85rem',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '0.5rem',
+                  backgroundColor: '#d9770618',
+                  border: '1px solid #d9770644',
+                  color: '#d97706',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                This session is full — you'll be added to the waitlist and confirmed if a spot opens.
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={bothFull || submitting}
+              disabled={submitting}
               style={{
                 width: '100%',
                 padding: '0.85rem 1rem',
                 borderRadius: '0.6rem',
                 border: 'none',
-                background: bothFull ? c.border : brandGradient(brand, theme),
+                background: brandGradient(brand, theme),
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '0.95rem',
                 letterSpacing: '0.02em',
-                cursor: bothFull || submitting ? 'not-allowed' : 'pointer',
+                cursor: submitting ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit',
                 opacity: submitting ? 0.8 : 1,
-                boxShadow: bothFull ? 'none' : `0 8px 24px ${c.primary}33`,
+                boxShadow: `0 8px 24px ${c.primary}33`,
               }}
             >
-              {bothFull ? 'Weekend full' : submitting ? 'Saving…' : 'Confirm sign-up'}
+              {submitting ? 'Saving…' : joiningWaitlist ? 'Join waitlist' : 'Confirm sign-up'}
             </button>
 
             <p
@@ -526,6 +537,80 @@ const LoginPrompt: React.FC<{ c: ColorPalette; theme: 'light' | 'dark'; onClose:
   );
 };
 
+const ConfirmedView: React.FC<{
+  event: TrainingEvent;
+  attending: Attending;
+  name: string;
+  onClose: () => void;
+}> = ({ event, attending, name, onClose }) => {
+  const { theme, brand } = useTheme();
+  const c = colors[brand][theme];
+  const joined =
+    attending === 'both'
+      ? event.days.map((d) => `${d.label} (${formatShortDate(d.date)})`).join(' + ')
+      : (() => {
+          const d = event.days.find((day) => day.key === attending);
+          return d ? `${d.label} (${formatShortDate(d.date)}) at ${d.location}` : '';
+        })();
+
+  return (
+    <div style={{ padding: '2rem 1.75rem', textAlign: 'center' }}>
+      <div
+        style={{
+          width: '64px',
+          height: '64px',
+          borderRadius: '999px',
+          background: brandGradient(brand, theme),
+          color: '#fff',
+          margin: '0 auto 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.7rem',
+          boxShadow: `0 8px 24px ${c.primary}40`,
+        }}
+      >
+        ✓
+      </div>
+      <h2
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '2rem',
+          letterSpacing: '0.02em',
+          margin: '0 0 0.5rem 0',
+          lineHeight: 1.1,
+        }}
+      >
+        YOU'RE CONFIRMED
+      </h2>
+      <p style={{ color: c.textSecondary, fontSize: '0.92rem', margin: '0 0 0.4rem 0' }}>
+        Spot locked in for {joined}.
+      </p>
+      <p style={{ color: c.textSecondary, fontSize: '0.8rem', margin: '0 0 1.5rem 0' }}>
+        Registered as <strong style={{ color: c.text }}>{name}</strong>.
+      </p>
+      <button
+        type="button"
+        onClick={onClose}
+        style={{
+          padding: '0.75rem 1.5rem',
+          borderRadius: '999px',
+          border: 'none',
+          background: brandGradient(brand, theme),
+          color: '#fff',
+          fontWeight: 700,
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          boxShadow: `0 8px 24px ${c.primary}33`,
+        }}
+      >
+        Got it, see you there!
+      </button>
+    </div>
+  );
+};
+
 const WaitingView: React.FC<{
   event: TrainingEvent;
   attending: Attending;
@@ -597,11 +682,11 @@ const WaitingView: React.FC<{
             border: '1px solid #d9770644',
           }}
         >
-          <span style={{ fontSize: '0.55rem' }}>●</span> Waiting for confirmation
+          <span style={{ fontSize: '0.55rem' }}>●</span> On the waitlist
         </span>
       </div>
       <p style={{ color: c.textSecondary, fontSize: '0.75rem', margin: '0 0 1.5rem 0', lineHeight: 1.6 }}>
-        The coach will review and confirm your spot.<br />
+        That session is full. We'll move you to confirmed if a spot opens up.<br />
         Check the Training page to see your status update.
       </p>
       <button
@@ -692,30 +777,29 @@ function Chips<T extends string>({
 const AttendingChip: React.FC<{
   label: string;
   active: boolean;
-  disabled: boolean;
+  /** Seats are gone for this option — still selectable, just joins the waitlist. */
+  full: boolean;
   onClick: () => void;
   c: ColorPalette;
-}> = ({ label, active, disabled, onClick, c }) => (
+}> = ({ label, active, full, onClick, c }) => (
   <button
     type="button"
-    onClick={() => !disabled && onClick()}
-    disabled={disabled}
+    onClick={onClick}
     style={{
       padding: '0.5rem 0.9rem',
       borderRadius: '999px',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      border: `1px solid ${active ? c.primary : c.border}`,
+      cursor: 'pointer',
+      border: `1px solid ${active ? c.primary : full ? '#d9770655' : c.border}`,
       backgroundColor: active ? c.primary : c.background,
-      color: active ? '#fff' : disabled ? c.textSecondary : c.text,
+      color: active ? '#fff' : full ? '#d97706' : c.text,
       fontSize: '0.85rem',
       fontWeight: 600,
       fontFamily: 'inherit',
-      opacity: disabled ? 0.5 : 1,
       transition: 'all 0.15s ease',
     }}
   >
     {label}
-    {disabled && <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem' }}>(full)</span>}
+    {full && <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem' }}>(waitlist)</span>}
   </button>
 );
 

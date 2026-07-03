@@ -3,7 +3,7 @@ import { Plus, Trash2, AlertTriangle, Scale, Wand2, ChevronDown, ChevronRight, E
 import { brandGradient, type ColorPalette } from '../../styles/colors';
 import { useTheme } from '../../context/ThemeContext';
 import { type ShowToast } from '../Admin';
-import { fetchBookings, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
+import { fetchBoatPlannerBench, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
 import { getTrainingEvents } from '../../utils/adminTrainingEvents';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import {
@@ -95,7 +95,9 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const { brand } = useTheme();
   const isMobile = useIsMobile();
-  const events = getTrainingEvents();
+  // Boat seating only makes sense for lake weekends — land conditioning
+  // sign-ups carry no side/weight and would show up as an empty bench.
+  const events = getTrainingEvents().filter((ev) => (ev.venue ?? 'lake') === 'lake');
   const [eventId, setEventId] = useState(events[0]?.id ?? '');
   const [dayKey, setDayKey] = useState(events[0]?.days[0]?.key ?? '');
   const [boats, setBoats] = useState<Boat[]>([]);
@@ -112,9 +114,11 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load bookings once.
+  // Load bookings once. Uses the boat-planner-only bench fetch, which is real
+  // Supabase data unless VITE_SEED_BOOKINGS=1 fills it with a sample roster
+  // for testing — either way, isolated from the shared bookings cache.
   useEffect(() => {
-    fetchBookings().then(setAllBookings);
+    fetchBoatPlannerBench().then(setAllBookings);
   }, []);
 
   // Load plan when event/day changes: paint the cache instantly, then refresh
@@ -171,7 +175,10 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const infoByName = useMemo(() => {
     const m = new Map<string, AthleteInfo>();
     athletes.forEach((b) =>
-      m.set(b.name, { side: b.side, weight: b.weight, gender: b.gender, age: ageFromBirthday(b.birthday) }),
+      // Boat planning only ever looks at lake bookings (side/weight are always
+      // collected there); the fallback just satisfies the type for land rows
+      // that could theoretically leak in.
+      m.set(b.name, { side: b.side ?? 'Coach', weight: b.weight ?? 0, gender: b.gender, age: ageFromBirthday(b.birthday) }),
     );
     return m;
   }, [athletes]);
@@ -360,7 +367,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
       return;
     }
 
-    const byWeightDesc = (a: Booking, b: Booking) => b.weight - a.weight;
+    const byWeightDesc = (a: Booking, b: Booking) => (b.weight ?? 0) - (a.weight ?? 0);
     const coxes = pool.filter((a) => a.side === 'Coxswain');
     const coaches = pool.filter((a) => a.side === 'Coach');
     const paddlerPool = pool.filter((a) => a.side === 'Left' || a.side === 'Right');
@@ -392,8 +399,8 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
         : rightFull ? true
         : leftKg !== rightKg ? leftKg < rightKg
         : a.side === 'Left'; // even so far → honor their preferred side
-      if (toLeft) { seatLeft.push(a); leftKg += a.weight; }
-      else { seatRight.push(a); rightKg += a.weight; }
+      if (toLeft) { seatLeft.push(a); leftKg += a.weight ?? 0; }
+      else { seatRight.push(a); rightKg += a.weight ?? 0; }
     }
 
     // Seat heaviest-first from the centre outward so weight sits amidships (trim).
@@ -918,7 +925,7 @@ const SeatPickerSheet: React.FC<{
     const aPre = offPresetName(a.name);
     const bPre = offPresetName(b.name);
     if (aPre !== bPre) return aPre ? 1 : -1;
-    return b.weight - a.weight;
+    return (b.weight ?? 0) - (a.weight ?? 0);
   });
 
   // Mobile slides up from the bottom; desktop drops in as a centered modal.

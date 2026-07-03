@@ -82,6 +82,7 @@ const blankTraining = (): TrainingEvent => ({
   title: '',
   description: '',
   thumbnail: '',
+  venue: 'lake',
   days: [blankDay()],
 });
 
@@ -180,7 +181,7 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, s
                 {regs.length === 0 && <p style={{ color: c.textSecondary, fontSize: '0.82rem' }}>No sign-ups yet.</p>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {regs.map((b) => (
-                    <RegRow key={`${b.eventId}::${b.name}`} b={b} c={c} showToast={showToast} />
+                    <RegRow key={`${b.eventId}::${b.name}`} b={b} event={ev} c={c} showToast={showToast} />
                   ))}
                 </div>
               </div>
@@ -210,6 +211,32 @@ const TrainingForm: React.FC<{
         {isNew ? 'New Training Session' : 'Edit Session'}
       </div>
       <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <div>
+          <label style={labelStyle(c)}>Venue</label>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            {(['land', 'lake'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => set({ venue: v })}
+                style={{
+                  padding: '0.45rem 1rem',
+                  borderRadius: '999px',
+                  border: `1px solid ${(ev.venue ?? 'lake') === v ? c.primary : c.border}`,
+                  background: (ev.venue ?? 'lake') === v ? `${c.primary}18` : 'transparent',
+                  color: (ev.venue ?? 'lake') === v ? c.primary : c.textSecondary,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
         <Field label="Title" value={ev.title} onChange={(v) => set({ title: v })} c={c} />
         <Field label="Description" value={ev.description} onChange={(v) => set({ description: v })} c={c} multiline />
         <Field label="Thumbnail URL" value={ev.thumbnail ?? ''} onChange={(v) => set({ thumbnail: v })} c={c} placeholder="/marina-putrajaya.jpg" />
@@ -404,7 +431,7 @@ const RaceForm: React.FC<{
 /*  Registration row (training tab)                                     */
 /* ================================================================== */
 
-const RegRow: React.FC<{ b: ReturnType<typeof getAllBookings>[0]; c: ColorPalette; showToast: ShowToast }> = ({ b, c, showToast }) => {
+const RegRow: React.FC<{ b: ReturnType<typeof getAllBookings>[0]; event: TrainingEvent; c: ColorPalette; showToast: ShowToast }> = ({ b, event, c, showToast }) => {
   const [busy, setBusy] = useState(false);
   const [removed, setRemoved] = useState(false);
 
@@ -429,7 +456,7 @@ const RegRow: React.FC<{ b: ReturnType<typeof getAllBookings>[0]; c: ColorPalett
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.65rem', borderRadius: '0.5rem', backgroundColor: c.background, border: `1px solid ${c.border}`, flexWrap: 'wrap' }}>
       <span style={{ fontWeight: 600, fontSize: '0.85rem', color: c.text, flex: 1 }}>{b.name}</span>
-      <span style={{ fontSize: '0.68rem', color: c.textSecondary }}>{attendingLabel(b.attending)}</span>
+      <span style={{ fontSize: '0.68rem', color: c.textSecondary }}>{attendingLabel(b.attending, event)}</span>
       <span style={{ fontSize: '0.65rem', fontWeight: 700, color: statusColor, textTransform: 'uppercase' }}>{b.status}</span>
       <button type="button" onClick={handleCancel} disabled={busy} style={{ padding: '0.25rem 0.6rem', borderRadius: '999px', border: '1px solid #ef444466', background: 'transparent', color: '#ef4444', fontSize: '0.72rem', cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: busy ? 0.5 : 1 }}>
         Remove

@@ -138,7 +138,7 @@ export const ConfirmedNotification: React.FC<{
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.92rem', color: c.text }}>{b.name}</div>
                     <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.15rem' }}>
-                      {ev ? ev.title : b.eventId} · {attendingLabel(b.attending)}
+                      {ev ? ev.title : b.eventId} · {attendingLabel(b.attending, ev)}
                     </div>
                   </div>
                   <span

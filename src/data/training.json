@@ -5,6 +5,7 @@
     "description": "Two-day lake training. Saturday at Marina Putrajaya, Sunday at Subang PARC. Open to all paddlers — sign up for one day or both.",
     "thumbnail": "/marina-putrajaya.jpg",
     "thumbnailCredit": "Photo by Elliot Andrews on Unsplash",
+    "venue": "lake",
     "days": [
       {
         "key": "sat",
@@ -30,6 +31,7 @@
     "description": "Race-prep weekend. Both sessions at Marina Putrajaya. Focus on starts, exchanges, and 500m time trials.",
     "thumbnail": "/marina-putrajaya.jpg",
     "thumbnailCredit": "Photo by Elliot Andrews on Unsplash",
+    "venue": "lake",
     "days": [
       {
         "key": "sat",
@@ -46,6 +48,38 @@
         "time": "07:30",
         "location": "Marina Putrajaya",
         "capacity": 22
+      }
+    ]
+  },
+  {
+    "id": "jul-2026-land-tue",
+    "title": "Land Conditioning — Tuesday",
+    "description": "Strength circuit, paddle ergs, and core work to build the engine off the water. All levels, drop-ins welcome.",
+    "venue": "land",
+    "days": [
+      {
+        "key": "session",
+        "label": "Tuesday",
+        "date": "2026-07-07",
+        "time": "19:00",
+        "location": "Subang PARC",
+        "capacity": 16
+      }
+    ]
+  },
+  {
+    "id": "jul-2026-land-thu",
+    "title": "Land Conditioning — Thursday",
+    "description": "Strength circuit, paddle ergs, and core work to build the engine off the water. All levels, drop-ins welcome.",
+    "venue": "land",
+    "days": [
+      {
+        "key": "session",
+        "label": "Thursday",
+        "date": "2026-07-09",
+        "time": "19:00",
+        "location": "Subang PARC",
+        "capacity": 16
       }
     ]
   }

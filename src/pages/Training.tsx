@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useInView } from '../hooks/useInView';
 import { colors } from '../styles/colors';
+import { sectionShell, contentMaxWidth } from '../styles/tokens';
+import { SectionHeader } from '../components/SectionHeader';
+import { LandGlyph, WaveGlyph } from '../components/icons/trainingGlyphs';
 import { TrainingCard, type TrainingEvent } from '../components/TrainingCard';
 import { getTrainingEvents, subscribeTrainingEvents } from '../utils/adminTrainingEvents';
 import { BookingModal } from '../components/BookingModal';
@@ -47,6 +51,7 @@ export const Training: React.FC = () => {
   const { user } = useAuth();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
+  const accent = theme === 'dark' ? c.primaryLight : c.primary;
 
   const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
   const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
@@ -88,8 +93,10 @@ export const Training: React.FC = () => {
     });
   };
 
-  // Past weekends drop off the public listing entirely.
+  // Past sessions drop off the public listing entirely, split by discipline.
   const upcomingEvents = useMemo(() => events.filter(isEventUpcoming), [events]);
+  const landEvents = useMemo(() => upcomingEvents.filter((ev) => (ev.venue ?? 'lake') === 'land'), [upcomingEvents]);
+  const lakeEvents = useMemo(() => upcomingEvents.filter((ev) => (ev.venue ?? 'lake') === 'lake'), [upcomingEvents]);
 
   const eventById = useMemo(() => {
     const m = new Map<string, TrainingEvent>();
@@ -102,15 +109,16 @@ export const Training: React.FC = () => {
   // panel would list — and offer to cancel — everyone's sign-ups.
   const myName = user?.name.trim().toLowerCase();
 
-  // Event IDs the signed-in user has already signed up for — used to block a
-  // second sign-up for the same weekend straight from the card.
-  const myBookedEventIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (!myName) return ids;
+  // The signed-in user's own booking per event — surfaced directly on the card
+  // (badge + border + disabled button) so "you're already in" is visible while
+  // browsing, not just discovered at submit time in the modal.
+  const myBookingByEventId = useMemo(() => {
+    const m = new Map<string, Booking>();
+    if (!myName) return m;
     bookings.forEach((b) => {
-      if (b.name.trim().toLowerCase() === myName) ids.add(b.eventId);
+      if (b.name.trim().toLowerCase() === myName) m.set(b.eventId, b);
     });
-    return ids;
+    return m;
   }, [bookings, myName]);
 
   const myBookings = useMemo(
@@ -125,84 +133,55 @@ export const Training: React.FC = () => {
     [bookings, eventById, myName],
   );
 
+  const [landRef, landInView] = useInView<HTMLDivElement>();
+  const [lakeRef, lakeInView] = useInView<HTMLDivElement>();
+
   return (
     <>
-      {/* Hero banner */}
+      {/* Header — Shop.tsx's already-v2 pattern: back-link, display h1 with the
+          wake-underline motif on the accent word. No image hero, no eyebrow chip. */}
       <section
         style={{
-          position: 'relative',
-          width: '100%',
-          height: 'clamp(140px, 22vw, 240px)',
-          overflow: 'hidden',
-          backgroundColor: c.surface,
+          paddingBlock: 'clamp(2.5rem, 6vw, 4rem) clamp(1rem, 3vw, 1.75rem)',
+          paddingInline: 'clamp(1rem, 4vw, 2rem)',
+          backgroundColor: c.background,
         }}
       >
-        <img
-          src="/team.jpg"
-          alt="AlpasPinas team training"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center 25%',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: `linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.15) 45%, ${c.background} 100%)`,
-          }}
-        />
-      </section>
-
-      {/* Page header */}
-      <section style={{ padding: isMobile ? '1.75rem 1.15rem 1.25rem' : '2.5rem 1.5rem 1.5rem', backgroundColor: c.background }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
           <Link
             to="/"
-            style={{
-              display: 'inline-block',
-              color: c.textSecondary,
-              textDecoration: 'none',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
-            }}
+            style={{ display: 'inline-block', color: c.textSecondary, textDecoration: 'none', fontSize: '0.85rem', marginBottom: '1.25rem' }}
           >
             ← Back to home
           </Link>
 
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '0.35rem 0.85rem',
-              borderRadius: '999px',
-              border: `1px solid ${c.primary}55`,
-              backgroundColor: `${c.primary}15`,
-              color: c.primary,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              marginBottom: '1rem',
-            }}
-          >
-            Training sign-up
-          </span>
-
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.5rem, 7vw, 4.5rem)',
+              fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
               color: c.text,
-              margin: '0 0 0.75rem 0',
+              margin: '0 0 0.9rem 0',
               letterSpacing: '0.02em',
-              lineHeight: 1,
+              lineHeight: 0.98,
             }}
           >
-            PADDLE WITH <span style={{ color: c.primary }}>US</span>
+            TRAIN WITH{' '}
+            <span style={{ position: 'relative', display: 'inline-block', color: c.primary }}>
+              US
+              <span
+                aria-hidden="true"
+                className="wake-underline"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: '0.02em',
+                  height: '0.07em',
+                  borderRadius: '999px',
+                  background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                }}
+              />
+            </span>
           </h1>
 
           <p
@@ -214,8 +193,9 @@ export const Training: React.FC = () => {
               margin: 0,
             }}
           >
-            Lake training weekends in Malaysia. Sign up for Saturday, Sunday, or both —
-            tell us your side, weight, and whether you need a PFD or paddle.
+            Two disciplines, one crew: weeknight land conditioning to build the engine, weekend
+            lake sessions to put it in the boat. Sign up below — all sessions save to your team
+            account.
           </p>
         </div>
       </section>
@@ -229,64 +209,137 @@ export const Training: React.FC = () => {
         />
       )}
 
-      {/* Events grid */}
-      <section style={{ padding: isMobile ? '0.75rem 1.15rem 4rem' : '1rem 1.5rem 5rem', backgroundColor: c.background }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.6rem, 4vw, 2.2rem)',
-              color: c.text,
-              margin: '0.5rem 0 1.25rem',
-              letterSpacing: '0.02em',
-            }}
+      {/* On Land — weeknight conditioning */}
+      <section
+        ref={landRef}
+        style={{
+          backgroundColor: c.sand,
+          borderTop: `1px solid ${c.border}`,
+          ...sectionShell,
+        }}
+      >
+        <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
+          <div
+            className={`reveal${landInView ? ' is-visible' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: isMobile ? '1.5rem' : '2rem' }}
           >
-            UPCOMING WEEKENDS
-          </h2>
-
-          {upcomingEvents.length > 0 ? (
-            <div
+            <span
+              aria-hidden="true"
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                borderRadius: '0.7rem',
+                background: `${c.primary}1f`,
+                border: `1px solid ${c.primary}59`,
+              }}
+            >
+              <LandGlyph color={accent} size={19} />
+            </span>
+            <SectionHeader style={{ margin: 0 }}>ON LAND</SectionHeader>
+          </div>
+
+          {landEvents.length > 0 ? (
+            <div
+              className={`reveal${landInView ? ' is-visible' : ''}`}
+              style={{
+                animationDelay: '0.08s',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                 gap: '1.25rem',
               }}
             >
-              {upcomingEvents.map((ev) => (
+              {landEvents.map((ev) => (
                 <TrainingCard
                   key={ev.id}
                   event={ev}
                   counts={counts}
                   onBook={setModalEvent}
-                  alreadyBooked={myBookedEventIds.has(ev.id)}
+                  myBooking={myBookingByEventId.get(ev.id)}
                 />
               ))}
             </div>
           ) : (
-            <p
+            <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: '0.5rem 0' }}>
+              No land sessions scheduled right now — check back soon.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* On the Water — weekend lake crew time */}
+      <section
+        ref={lakeRef}
+        style={{
+          backgroundColor: c.background,
+          borderTop: `1px solid ${c.border}`,
+          ...sectionShell,
+        }}
+      >
+        <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
+          <div
+            className={`reveal${lakeInView ? ' is-visible' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: isMobile ? '1.5rem' : '2rem' }}
+          >
+            <span
+              aria-hidden="true"
               style={{
-                color: c.textSecondary,
-                fontSize: '0.95rem',
-                lineHeight: 1.6,
-                margin: '0.5rem 0',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                borderRadius: '0.7rem',
+                background: `${c.primary}1f`,
+                border: `1px solid ${c.primary}59`,
               }}
             >
+              <WaveGlyph color={accent} size={19} />
+            </span>
+            <SectionHeader style={{ margin: 0 }}>ON THE WATER</SectionHeader>
+          </div>
+
+          {lakeEvents.length > 0 ? (
+            <div
+              className={`reveal${lakeInView ? ' is-visible' : ''}`}
+              style={{
+                animationDelay: '0.08s',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '1.25rem',
+              }}
+            >
+              {lakeEvents.map((ev) => (
+                <TrainingCard
+                  key={ev.id}
+                  event={ev}
+                  counts={counts}
+                  onBook={setModalEvent}
+                  myBooking={myBookingByEventId.get(ev.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: '0.5rem 0' }}>
               No upcoming weekends scheduled right now — check back soon.
             </p>
           )}
 
           <p
             style={{
-              marginTop: '2rem',
+              marginTop: '2.5rem',
               color: c.textSecondary,
               fontSize: '0.78rem',
               textAlign: 'center',
-              opacity: 0.7,
+              opacity: 0.6,
             }}
           >
-            Edit{' '}
-            <code style={{ color: c.primary }}>src/data/training.json</code> for the
-            real schedule. Sign-ups are saved to your team account.
+            Edit <code style={{ color: c.primary }}>src/data/training.json</code> for the
+            real schedule, or manage sessions from the admin Events panel.
           </p>
         </div>
       </section>

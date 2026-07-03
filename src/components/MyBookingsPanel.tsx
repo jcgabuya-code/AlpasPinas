@@ -90,7 +90,7 @@ export const MyBookingsPanel: React.FC<{
                           border: `1px solid ${c.primary}44`,
                         }}
                       >
-                        {attendingLabel(b.attending)}
+                        {attendingLabel(b.attending, ev)}
                       </span>
                       {b.status === 'confirmed' ? (
                         <span
@@ -140,10 +140,10 @@ export const MyBookingsPanel: React.FC<{
                     <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.45rem' }}>
                       {[
                         b.side,
-                        `${b.weight} kg`,
+                        b.weight !== undefined ? `${b.weight} kg` : null,
                         ...(b.needPFD === 'Yes' ? ['PFD'] : []),
                         ...(b.needPaddle === 'Yes' ? ['Paddle'] : []),
-                      ].map((tag) => (
+                      ].filter((v): v is string => Boolean(v)).map((tag) => (
                         <span
                           key={tag}
                           style={{
