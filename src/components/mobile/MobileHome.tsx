@@ -25,6 +25,8 @@ import race1 from '../../../images/race-1.jpg';
 import race2 from '../../../images/race-2.jpg';
 import race3 from '../../../images/race-3.jpeg';
 import { WhatsAppGlyph, YouTubeGlyph } from '../Hero';
+import { ContactRow, LocationIcon, MailIcon, InstagramIcon } from '../Contact';
+import { cadenceAccentUri } from '../../styles/tokens';
 
 /**
  * MobileHome — the phone-width Home page, rebuilt to the AlpasPinas mobile
@@ -52,8 +54,8 @@ const RACE_PHOTOS = [
 
 const FACTS = [
   { value: 'Five', label: 'Seasons on the water' },
-  { value: '12+', label: 'Paddlers, one crew' },
-  { value: 'Putrajaya', label: 'Home water' },
+  { value: '20+', label: 'Paddlers, one crew' },
+  { value: 'Malaysia', label: 'Home water' },
 ];
 
 // Keyword tagline under the hero headline — mirrors the desktop hero's cadence
@@ -64,14 +66,14 @@ const KEYWORDS = ['SPEED', 'SYNC', 'STRENGTH'];
 const LAND = {
   label: 'On Land — Strength & Erg',
   cadence: 'TUE & THU · 7–9 PM',
-  spots: '8 spots left',
+  spots: 'Open',
   title: 'Land & Erg Conditioning',
   copy: 'Strength circuit, paddle ergs, and core work to build the engine off the water. Subang PARC · All levels · Drop-ins welcome.',
 };
 const WATER = {
   label: 'On the Water — Boat Time',
   cadence: 'SAT & SUN · 7–10 AM',
-  spots: 'Open seat',
+  spots: '8 spots left',
   title: 'Full Crew Session',
   copy: 'Full-boat pieces, race starts, and crew building. The best place to try paddling. Marina Putrajaya · Beginner friendly.',
 };
@@ -85,10 +87,10 @@ const TRAINING_TAGS = [
   'FILIPINO CREW IN MALAYSIA',
 ];
 
-const CONTACT_INFO: { label: string; value: string }[] = [
-  { label: 'Training base', value: 'Marina Putrajaya / Subang PARC' },
-  { label: 'Email', value: 'admin@alpaspinas.com' },
-  { label: 'Instagram', value: '@alpaspinasdbt' },
+const CONTACT_INFO: { label: string; value: string; icon: React.ReactNode }[] = [
+  { label: 'Training base', value: 'Marina Putrajaya / Subang PARC', icon: <LocationIcon /> },
+  { label: 'Email', value: 'admin@alpaspinas.com', icon: <MailIcon /> },
+  { label: 'Instagram', value: '@alpaspinasdbt', icon: <InstagramIcon /> },
 ];
 
 const prefersReducedMotion = () =>
@@ -270,9 +272,10 @@ export const MobileHome: React.FC = () => {
     <div style={{ background: c.background }}>
       <style>{SCROLL_CSS}</style>
 
-      {/* Quick-jump pill bar — sticky beneath the app nav */}
+      {/* Quick-jump pill bar — sticky beneath the app nav. Pills share the width
+          evenly (flex: 1, no overflow-x) so every label fits on one row without
+          a horizontal scroll, at any phone width. */}
       <div
-        className="apn-mobile-scroll"
         style={{
           position: 'sticky',
           top: 0,
@@ -280,9 +283,8 @@ export const MobileHome: React.FC = () => {
           height: PILL_H,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          padding: '0 18px',
-          overflowX: 'auto',
+          gap: 'clamp(3px, 1.4vw, 8px)',
+          padding: '0 clamp(8px, 3vw, 18px)',
           background: c.background,
           borderBottom: `1px solid ${c.border}`,
         }}
@@ -292,18 +294,22 @@ export const MobileHome: React.FC = () => {
             key={p.key}
             onClick={() => scrollTo(p.key)}
             style={{
-              flexShrink: 0,
+              flex: '1 1 0%',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              padding: '6px 13px',
+              padding: 'clamp(5px, 1.6vw, 6px) clamp(4px, 2vw, 13px)',
               borderRadius: '999px',
               border: `1px solid ${c.border}`,
               background: 'transparent',
               color: c.textSecondary,
-              fontSize: '0.78rem',
+              fontSize: 'clamp(0.66rem, 2.9vw, 0.78rem)',
               fontWeight: 700,
               letterSpacing: '0.02em',
               cursor: 'pointer',
               fontFamily: 'inherit',
+              textAlign: 'center',
             }}
           >
             {p.label}
@@ -490,7 +496,7 @@ export const MobileHome: React.FC = () => {
         {eyebrow('The Weekly Rhythm')}
         {heading('TRAINING SCHEDULE')}
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
-          Four sessions a week — weeknights for fitness and technique, weekends for full-crew water time. Sessions marked <b style={{ color: c.text }}>open</b> welcome drop-ins, no membership needed.
+          Four sessions a week — weeknights for fitness and technique, weekends for full-crew water time. Sessions marked <b style={{ color: c.text }}>open</b> welcome drop-ins, no confirmation needed.
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
@@ -670,18 +676,31 @@ const ClaimYourSeat: React.FC<{
     <section ref={sectionRef} id="contact" style={{ ...sectionStyle, paddingBottom: '30px' }}>
       {eyebrow('The Open Seat')}
       {heading('CLAIM YOUR SEAT')}
+      <div
+        aria-hidden="true"
+        style={{
+          height: '14px',
+          width: '100%',
+          maxWidth: '260px',
+          backgroundImage: cadenceAccentUri(c.sun),
+          backgroundRepeat: 'repeat-x',
+          backgroundSize: '70px 14px',
+          backgroundPosition: 'left center',
+          opacity: 0.9,
+          WebkitMaskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
+          maskImage: 'linear-gradient(90deg, #000 70%, transparent 100%)',
+          margin: '-6px 0 0',
+        }}
+      />
       <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
         There's a seat in the boat with your name on it. Come try a session — no experience needed, all gear provided. We'll get you on the water within a week or two.
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
-        {CONTACT_INFO.map((row, i) => (
-          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', borderBottom: i < CONTACT_INFO.length - 1 ? `1px solid ${c.border}` : 'none', padding: '8px 0' }}>
-            <span style={{ color: c.textSecondary }}>{row.label}</span>
-            <span style={{ color: c.text, fontWeight: 600, textAlign: 'right' }}>{row.value}</span>
-          </div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.9rem' }}>
+        {CONTACT_INFO.map((row) => (
+          <ContactRow key={row.label} icon={row.icon} label={row.label} value={row.value} color={accent} textColor={c.text} subColor={c.textSecondary} />
         ))}
-      </div>
+      </ul>
 
       {status === 'success' ? (
         <div role="status" style={{ marginTop: '6px', border: `1px solid ${c.border}`, borderRadius: '14px', padding: '22px 18px', textAlign: 'center', background: c.background }}>

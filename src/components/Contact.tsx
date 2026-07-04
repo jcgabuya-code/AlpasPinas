@@ -11,19 +11,19 @@ const IconBase: React.FC<{ children: React.ReactNode; size?: number }> = ({ chil
     {children}
   </svg>
 );
-const LocationIcon = () => (
+export const LocationIcon = () => (
   <IconBase>
     <path d="M12 21s-6.5-5.2-6.5-10.2A6.5 6.5 0 0 1 18.5 10.8C18.5 15.8 12 21 12 21z" />
     <circle cx="12" cy="10.5" r="2.4" />
   </IconBase>
 );
-const MailIcon = () => (
+export const MailIcon = () => (
   <IconBase>
     <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
     <path d="M4 7.5l8 5.5 8-5.5" />
   </IconBase>
 );
-const InstagramIcon = () => (
+export const InstagramIcon = () => (
   <IconBase>
     <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
     <circle cx="12" cy="12" r="3.6" />
@@ -381,7 +381,7 @@ const Field: React.FC<{ label: string; htmlFor: string; color: string; error?: s
   </label>
 );
 
-const ContactRow: React.FC<{
+export const ContactRow: React.FC<{
   icon: React.ReactNode;
   label: string;
   value: string;

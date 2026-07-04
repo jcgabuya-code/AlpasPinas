@@ -25,23 +25,23 @@
     "id": "boracay-2025",
     "name": "Boracay International Dragon Boat Festival",
     "location": "Boracay, Aklan",
-    "date": "2025-04-26",
+    "date": "2026-04-26",
     "type": "Festival",
-    "description": "Open water races in front of White Beach. Won bronze in the Mixed 500m final on a tight photo finish.",
+    "description": "Open water races in front of White Beach. Won bronze in the Mixed 200m final on a tight photo finish.",
     "thumbnail": "https://images.unsplash.com/photo-1553195029-754fbd369560?w=800&q=80&auto=format&fit=crop",
     "thumbnailCredit": "Photo by Laurentiu Morariu on Unsplash",
     "result": {
       "rank": 3,
-      "category": "Mixed 500m",
-      "time": "2:14.32",
+      "category": "Mixed 200m",
+      "time": "1:14.32",
       "notes": "Bronze medal — first podium on international waters."
     }
   },
   {
     "id": "manila-bay-2024",
-    "name": "Manila Bay Heritage Cup",
-    "location": "Manila Bay, Manila",
-    "date": "2024-11-16",
+    "name": "Titiwangsa Regatta",
+    "location": "Titiwangsa Lake, Malaysia",
+    "date": "2026-04-25",
     "type": "Regatta",
     "description": "Local season closer. Strong tailwinds in the afternoon final boosted everyone's times.",
     "thumbnail": "https://images.unsplash.com/photo-1609657135866-d2ee46d7ae63?w=800&q=80&auto=format&fit=crop",
@@ -54,18 +54,18 @@
     }
   },
   {
-    "id": "iloilo-2024",
-    "name": "Iloilo River Regatta",
-    "location": "Iloilo River, Iloilo City",
-    "date": "2024-09-07",
+    "id": "melaka-2024",
+    "name": "Melaka Dragon Boat Festival",
+    "location": "Melaka River, Melaka",
+    "date": "2026-07-04",
     "type": "Regatta",
-    "description": "First time racing the Iloilo course. Tight bends rewarded steerer discipline and clean exchanges.",
+    "description": "First time racing the Melaka course. Tight bends rewarded steerer discipline and clean exchanges.",
     "thumbnail": "https://images.unsplash.com/photo-1747324501494-7160e33668a7?w=800&q=80&auto=format&fit=crop",
     "thumbnailCredit": "Photo by Joseph Corl on Unsplash",
     "result": {
       "rank": 5,
-      "category": "Mixed 500m",
-      "time": "2:18.04",
+      "category": "Mixed 200m",
+      "time": "0:58.04",
       "notes": "Top five finish in our first appearance at this regatta."
     }
   },
@@ -73,15 +73,15 @@
     "id": "putrajaya-2024",
     "name": "Putrajaya International Dragon Boat Festival",
     "location": "Putrajaya Lake, Malaysia",
-    "date": "2024-08-10",
+    "date": "2026-08-10",
     "type": "Festival",
     "description": "Long weekend in Malaysia. Squad split across mixed and open categories — solid heats, eliminated in semis.",
     "thumbnail": "https://images.unsplash.com/photo-1755742318436-8fee0ad695fd?w=800&q=80&auto=format&fit=crop",
     "thumbnailCredit": "Photo by Junliang Deng on Unsplash",
     "result": {
       "rank": 7,
-      "category": "Mixed Standard 500m",
-      "time": "2:21.55",
+      "category": "Mixed Standard 200m",
+      "time": "0:59.55",
       "notes": "Semi-final exit. Best Standard-boat result to date."
     }
   },

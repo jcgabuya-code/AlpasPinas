@@ -297,13 +297,11 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
         >
           <div style={{ width: isMobile ? '38px' : '56px', height: isMobile ? '38px' : '56px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0 }}>
             <img
-              src="/logo.jpg"
+              src="/logo-round.jpg"
               alt="AlpasPinas Dragonboat Team Malaysia"
               style={{
-                width: '130%',
-                height: '130%',
-                marginLeft: '-15%',
-                marginTop: '-15%',
+                width: '100%',
+                height: '100%',
                 objectFit: 'cover',
                 display: 'block',
               }}
@@ -651,7 +649,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px', height: '60px', borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}>
             <Link to="/" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', textDecoration: 'none', color: c.text }}>
               <div style={{ width: '34px', height: '34px', borderRadius: '999px', overflow: 'hidden', flexShrink: 0 }}>
-                <img src="/logo.jpg" alt="AlpasPinas" style={{ width: '130%', height: '130%', marginLeft: '-15%', marginTop: '-15%', objectFit: 'cover', display: 'block' }} />
+                <img src="/logo-round.jpg" alt="AlpasPinas" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </div>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', letterSpacing: '0.03em', color: c.text }}>
                 ALPAS<span style={{ color: c.primary }}>PINAS</span>

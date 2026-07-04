@@ -38,7 +38,7 @@ const SCHEDULE: Session[] = [
     level: 'All levels',
     open: true,
     openLabel: 'Drop-ins welcome',
-    spots: '8 spots left',
+    spots: 'Open',
   },
   {
     venue: 'land',
@@ -51,7 +51,7 @@ const SCHEDULE: Session[] = [
     level: 'All levels',
     open: true,
     openLabel: 'Drop-ins welcome',
-    spots: '8 spots left',
+    spots: 'Open',
   },
   {
     venue: 'lake',
@@ -64,7 +64,7 @@ const SCHEDULE: Session[] = [
     level: 'All levels',
     open: true,
     openLabel: 'Beginner friendly',
-    spots: 'Open seat',
+    spots: '8 spots left',
   },
   {
     venue: 'lake',
@@ -77,7 +77,7 @@ const SCHEDULE: Session[] = [
     level: 'All levels',
     open: true,
     openLabel: 'Beginner friendly',
-    spots: 'Open seat',
+    spots: '8 spots left',
   },
 ];
 
@@ -213,7 +213,7 @@ export const TrainingSchedule: React.FC = () => {
             <p style={{ maxWidth: '350px', color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.55, margin: 0 }}>
               Four sessions a week — weeknights for fitness and technique, weekends for full-crew
               water time. Sessions marked <span style={{ color: accent, fontWeight: 700 }}>open</span> welcome
-              drop-ins, no membership needed.
+              drop-ins, no confirmation needed.
             </p>
           }
         >

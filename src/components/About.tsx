@@ -43,8 +43,8 @@ const ABOUT_PHOTOS: { src: string; alt: string; objectPosition: string }[] = [
 // facts that ground it. Numbers mirror the hero's stat readout (no new claims).
 const FACTS = [
   { value: 'Five', label: 'Seasons on the water' },
-  { value: '12+', label: 'Paddlers, one crew' },
-  { value: 'Putrajaya', label: 'Home water' },
+  { value: '20+', label: 'Paddlers, one crew' },
+  { value: 'Malaysia', label: 'Home water' },
 ];
 
 const prefersReducedMotion = () =>

@@ -389,9 +389,9 @@ export const Hero: React.FC = () => {
               }}
             >
               <img
-                src="/logo.jpg"
+                src="/logo-round.jpg"
                 alt="AlpasPinas logo"
-                style={{ width: '130%', height: '130%', marginLeft: '-15%', marginTop: '-15%', objectFit: 'cover', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             </div>
           )}
