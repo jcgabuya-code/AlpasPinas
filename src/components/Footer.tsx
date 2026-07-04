@@ -27,7 +27,7 @@ export const Footer: React.FC = () => {
         color: c.text,
         overflow: 'hidden',
         borderTop: `1px solid ${c.border}`,
-        padding: isMobile ? '3rem 1.5rem 2rem' : '4.5rem 2rem 2.5rem',
+        padding: isMobile ? '2rem 1.5rem 1.5rem' : '4.5rem 2rem 2.5rem',
       }}
     >
       {/* soft emerald glow accent — subtle warmth, not a heavy block */}
@@ -49,11 +49,11 @@ export const Footer: React.FC = () => {
         <div
           style={{
             display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
+            flexDirection: isMobile ? 'row' : 'row',
             justifyContent: 'space-between',
-            alignItems: isMobile ? 'flex-start' : 'center',
+            alignItems: isMobile ? 'center' : 'center',
             gap: '1.5rem',
-            paddingBottom: '2rem',
+            paddingBottom: isMobile ? '1.1rem' : '2rem',
             borderBottom: `1px solid ${c.border}`,
           }}
         >
@@ -61,7 +61,7 @@ export const Footer: React.FC = () => {
             <div
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: isMobile ? 'clamp(2.25rem, 11vw, 3rem)' : '3.25rem',
+                fontSize: isMobile ? 'clamp(1.6rem, 7vw, 2rem)' : '3.25rem',
                 letterSpacing: '0.02em',
                 lineHeight: 1,
                 color: c.text,
@@ -69,17 +69,19 @@ export const Footer: React.FC = () => {
             >
               ALPAS<span style={{ color: c.primary }}>PINAS</span>
             </div>
-            <p
-              style={{
-                margin: '0.85rem 0 0',
-                color: c.textSecondary,
-                fontSize: '1rem',
-                maxWidth: '340px',
-                lineHeight: 1.55,
-              }}
-            >
-              One stroke. One team. Filipino dragon boat crew based in Malaysia.
-            </p>
+            {!isMobile && (
+              <p
+                style={{
+                  margin: '0.85rem 0 0',
+                  color: c.textSecondary,
+                  fontSize: '1rem',
+                  maxWidth: '340px',
+                  lineHeight: 1.55,
+                }}
+              >
+                One stroke. One team. Filipino dragon boat crew based in Malaysia.
+              </p>
+            )}
           </div>
 
           <Link
@@ -88,58 +90,91 @@ export const Footer: React.FC = () => {
               flexShrink: 0,
               background: brandGradient(brand, theme),
               color: '#fff',
-              padding: '0.9rem 1.6rem',
+              padding: isMobile ? '0.55rem 1rem' : '0.9rem 1.6rem',
               borderRadius: '999px',
               fontWeight: 700,
               textDecoration: 'none',
-              fontSize: '0.95rem',
+              fontSize: isMobile ? '0.82rem' : '0.95rem',
               letterSpacing: '0.02em',
               boxShadow: `0 10px 30px ${c.primary}44`,
               whiteSpace: 'nowrap',
             }}
           >
-            Join the Team →
+            Join {!isMobile && 'the Team '}→
           </Link>
         </div>
 
         {/* Link row */}
-        <nav
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: isMobile ? '1rem 1.5rem' : '2rem',
-            padding: '1.75rem 0',
-          }}
-        >
-          {LINKS.map((l) => (
-            <Link
-              key={l.label}
-              to={{ pathname: l.to, hash: l.hash ?? '' }}
-              style={{
-                color: c.textSecondary,
-                fontSize: '0.92rem',
-                fontWeight: 500,
-                textDecoration: 'none',
-                letterSpacing: '0.02em',
-              }}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        {isMobile ? (
+          <p
+            style={{
+              margin: 0,
+              padding: '1rem 0',
+              color: c.textSecondary,
+              fontSize: '0.9rem',
+              lineHeight: 1.9,
+              letterSpacing: '0.01em',
+            }}
+          >
+            {LINKS.map((l, i) => (
+              <React.Fragment key={l.label}>
+                <Link
+                  to={{ pathname: l.to, hash: l.hash ?? '' }}
+                  style={{
+                    color: c.textSecondary,
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    padding: '0.3rem 0',
+                    display: 'inline-block',
+                  }}
+                >
+                  {l.label}
+                </Link>
+                {i < LINKS.length - 1 && (
+                  <span style={{ color: c.border, padding: '0 0.5rem' }}>·</span>
+                )}
+              </React.Fragment>
+            ))}
+          </p>
+        ) : (
+          <nav
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '2rem',
+              padding: '1.75rem 0',
+            }}
+          >
+            {LINKS.map((l) => (
+              <Link
+                key={l.label}
+                to={{ pathname: l.to, hash: l.hash ?? '' }}
+                style={{
+                  color: c.textSecondary,
+                  fontSize: '0.92rem',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {/* Bottom legal row */}
         <div
           style={{
             display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
+            flexDirection: 'row',
             justifyContent: 'space-between',
-            alignItems: isMobile ? 'flex-start' : 'center',
+            alignItems: 'center',
             gap: '0.75rem',
-            paddingTop: '1.5rem',
-            borderTop: `1px solid ${c.border}`,
+            paddingTop: isMobile ? '0.85rem' : '1.5rem',
+            borderTop: isMobile ? 'none' : `1px solid ${c.border}`,
             color: c.textSecondary,
-            fontSize: '0.8rem',
+            fontSize: isMobile ? '0.72rem' : '0.8rem',
           }}
         >
           <span>© {new Date().getFullYear()} AlpasPinas Dragon Boat Team</span>

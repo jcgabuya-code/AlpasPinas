@@ -4,15 +4,18 @@ import { useTheme } from '../context/ThemeContext';
 import { colors, type ColorPalette } from '../styles/colors';
 import { fetchMyOrders, formatPrice, type MerchOrder, type OrderStatus } from '../utils/merch';
 
-// The forward fulfilment path. Cancelled is handled separately.
-const FLOW: OrderStatus[] = ['pending', 'confirmed', 'paid', 'fulfilled'];
+// The forward fulfilment path: reserve -> confirm availability & collect
+// payment -> hand over. 'confirmed' is a legacy status from an older 4-step
+// flow; normalizeStatus folds it into 'paid' so any old rows still render.
+const FLOW: OrderStatus[] = ['pending', 'paid', 'fulfilled'];
 const STEP_LABEL: Record<OrderStatus, string> = {
   pending: 'Reserved',
-  confirmed: 'Confirmed',
-  paid: 'Paid',
+  confirmed: 'Confirmed & Paid',
+  paid: 'Confirmed & Paid',
   fulfilled: 'Fulfilled',
   cancelled: 'Cancelled',
 };
+const normalizeStatus = (status: OrderStatus): OrderStatus => (status === 'confirmed' ? 'paid' : status);
 
 const longDate = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
@@ -164,7 +167,7 @@ const OrderCard: React.FC<{ order: MerchOrder; c: ColorPalette }> = ({ order, c 
 };
 
 const StatusTracker: React.FC<{ status: OrderStatus; c: ColorPalette }> = ({ status, c }) => {
-  const currentIndex = FLOW.indexOf(status);
+  const currentIndex = FLOW.indexOf(normalizeStatus(status));
   return (
     <ol
       aria-label="Order status"

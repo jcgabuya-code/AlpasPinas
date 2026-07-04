@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Trophy } from 'lucide-react';
 import { type ColorPalette } from '../../styles/colors';
 import { type ShowToast } from '../Admin';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import {
-  getTrainingEvents,
+  fetchTrainingEvents,
   createTrainingEvent,
   updateTrainingEvent,
   deleteTrainingEvent,
-} from '../../utils/adminTrainingEvents';
+} from '../../utils/trainingEvents';
 import {
   getRaceEvents,
   createRaceEvent,
@@ -25,27 +26,36 @@ type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
 
 export const AdminEvents: React.FC<Props> = ({ c, showToast }) => {
   const [tab, setTab] = useState<Tab>('training');
+  const isMobile = useIsMobile();
 
   return (
-    <div style={{ padding: '2rem 1.5rem 4rem' }}>
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 1.25rem', letterSpacing: '0.02em', lineHeight: 1 }}>
+    <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
+      <style>{`.admin-focus:focus-visible { outline: 2px solid ${c.primary}; outline-offset: 2px; }`}</style>
+
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
         EVENTS
       </h1>
+      <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
+        Training sessions, races, socials and clinics on the calendar
+      </p>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '1.75rem' }}>
+      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: isMobile ? '1.25rem' : '1.75rem', flexWrap: 'wrap' }}>
         {(['training', 'races'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
+            aria-pressed={tab === t}
+            className="admin-focus"
             style={{
-              padding: '0.45rem 1rem',
+              padding: '0.5rem 1rem',
+              minHeight: 40,
               borderRadius: '999px',
               border: `1px solid ${tab === t ? c.primary : c.border}`,
-              background: tab === t ? `${c.primary}18` : 'transparent',
-              color: tab === t ? c.primary : c.textSecondary,
-              fontWeight: tab === t ? 600 : 500,
+              background: tab === t ? c.primary : 'transparent',
+              color: tab === t ? '#fff' : c.text,
+              fontWeight: 600,
               fontSize: '0.85rem',
               cursor: 'pointer',
               fontFamily: 'inherit',
@@ -58,8 +68,8 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast }) => {
       </div>
 
       {tab === 'training'
-        ? <TrainingTab c={c} showToast={showToast} />
-        : <RaceTab c={c} showToast={showToast} />}
+        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
+        : <RaceTab c={c} showToast={showToast} isMobile={isMobile} />}
     </div>
   );
 };
@@ -86,14 +96,16 @@ const blankTraining = (): TrainingEvent => ({
   days: [blankDay()],
 });
 
-const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, showToast }) => {
-  const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
+const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast }) => {
+  const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [editing, setEditing] = useState<TrainingEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const reload = () => setEvents(getTrainingEvents());
+  const reload = () => fetchTrainingEvents().then(setEvents);
+
+  useEffect(() => { reload(); }, []);
 
   const openNew = () => {
     setEditing(blankTraining());
@@ -105,22 +117,31 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, s
     setIsNew(false);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) { showToast('Title is required.', 'error'); return; }
     if (editing.days.some((d) => !d.date)) { showToast('All days need a date.', 'error'); return; }
-    if (isNew) createTrainingEvent(editing);
-    else updateTrainingEvent(editing.id, editing);
-    reload();
-    setEditing(null);
-    showToast(isNew ? 'Event created.' : 'Event updated.');
+    try {
+      if (isNew) await createTrainingEvent(editing);
+      else await updateTrainingEvent(editing.id, editing);
+      await reload();
+      setEditing(null);
+      showToast(isNew ? 'Event created.' : 'Event updated.');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not save the session.', 'error');
+    }
   };
 
-  const remove = (id: string) => {
-    deleteTrainingEvent(id);
-    reload();
-    setConfirmDelete(null);
-    showToast('Event deleted.', 'info');
+  const remove = async (id: string) => {
+    try {
+      await deleteTrainingEvent(id);
+      await reload();
+      showToast('Event deleted.', 'info');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not delete the session.', 'error');
+    } finally {
+      setConfirmDelete(null);
+    }
   };
 
   const allBookings = getAllBookings();
@@ -128,7 +149,7 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, s
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button type="button" onClick={openNew} style={addBtn(c)}>
+        <button type="button" onClick={openNew} className="admin-focus" style={addBtn(c)}>
           <Plus size={14} /> New Session
         </button>
       </div>
@@ -159,16 +180,16 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, s
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
-                <IconBtn icon={<Pencil size={14} />} onClick={() => openEdit(ev)} c={c} />
+                <IconBtn icon={<Pencil size={14} />} onClick={() => openEdit(ev)} c={c} label={`Edit ${ev.title}`} />
                 {confirmDelete === ev.id ? (
                   <>
                     <ConfirmBtn label="Delete?" onClick={() => remove(ev.id)} />
-                    <IconBtn icon="✕" onClick={() => setConfirmDelete(null)} c={c} />
+                    <IconBtn icon="✕" onClick={() => setConfirmDelete(null)} c={c} label="Cancel delete" />
                   </>
                 ) : (
-                  <IconBtn icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(ev.id)} c={c} danger />
+                  <IconBtn icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(ev.id)} c={c} danger label={`Delete ${ev.title}`} />
                 )}
-                <IconBtn icon={isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />} onClick={() => setExpanded(isExp ? null : ev.id)} c={c} />
+                <IconBtn icon={isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />} onClick={() => setExpanded(isExp ? null : ev.id)} c={c} label={isExp ? 'Collapse' : 'Show registrations'} />
               </div>
             </div>
 
@@ -293,7 +314,7 @@ const blankRace = (): RaceEvent => ({
   result: null,
 });
 
-const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, showToast }) => {
+const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast, isMobile }) => {
   const [events, setEvents] = useState<RaceEvent[]>(() => getRaceEvents());
   const [editing, setEditing] = useState<RaceEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -325,7 +346,7 @@ const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, showT
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button type="button" onClick={openNew} style={addBtn(c)}>
+        <button type="button" onClick={openNew} className="admin-focus" style={addBtn(c)}>
           <Plus size={14} /> New Race Event
         </button>
       </div>
@@ -336,32 +357,113 @@ const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast }> = ({ c, showT
 
       {events.length === 0 && !editing && <EmptyMsg c={c} msg="No race events yet." />}
 
-      {events.map((ev) => (
-        <div
-          key={ev.id}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1rem', backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: c.text }}>{ev.name}</div>
-            <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.2rem' }}>
-              {ev.date} · {ev.location} · {ev.type}
-              {ev.result && ` · #${ev.result.rank} ${ev.result.category}`}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
-            <IconBtn icon={<Pencil size={14} />} onClick={() => openEdit(ev)} c={c} />
-            {confirmDelete === ev.id ? (
-              <>
-                <ConfirmBtn label="Delete?" onClick={() => remove(ev.id)} />
-                <IconBtn icon="✕" onClick={() => setConfirmDelete(null)} c={c} />
-              </>
-            ) : (
-              <IconBtn icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(ev.id)} c={c} danger />
-            )}
-          </div>
+      {events.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 240 : 290}px, 1fr))`, gap: isMobile ? '0.85rem' : '1.1rem' }}>
+          {sortRaces(events).map((ev) => (
+            <RaceCard
+              key={ev.id}
+              ev={ev}
+              c={c}
+              isMobile={isMobile}
+              confirming={confirmDelete === ev.id}
+              onEdit={() => openEdit(ev)}
+              onAskDelete={() => setConfirmDelete(ev.id)}
+              onCancelDelete={() => setConfirmDelete(null)}
+              onConfirmDelete={() => remove(ev.id)}
+            />
+          ))}
         </div>
-      ))}
+      )}
     </>
+  );
+};
+
+/* ------------------------- race card + helpers -------------------------- */
+
+// Upcoming (soonest first), then past (most recent first) — matches how an
+// admin scans a calendar: what's next, then history.
+const sortRaces = (events: RaceEvent[]): RaceEvent[] => {
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = events.filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const past = events.filter((e) => e.date < today).sort((a, b) => b.date.localeCompare(a.date));
+  return [...upcoming, ...past];
+};
+
+const dateChip = (iso: string): { mon: string; day: string } => {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return { mon: '—', day: '—' };
+  return { mon: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(), day: String(d.getDate()) };
+};
+
+// Podium (rank 1–3) gets a warm medal accent; other finishes stay neutral.
+const medalColor = (rank: number): string => (rank === 1 ? '#d4a017' : rank === 2 ? '#9ca3af' : rank === 3 ? '#c2703d' : '');
+
+const RaceCard: React.FC<{
+  ev: RaceEvent;
+  c: ColorPalette;
+  isMobile: boolean;
+  confirming: boolean;
+  onEdit: () => void;
+  onAskDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
+}> = ({ ev, c, isMobile, confirming, onEdit, onAskDelete, onCancelDelete, onConfirmDelete }) => {
+  const { mon, day } = dateChip(ev.date);
+  const upcoming = ev.date >= new Date().toISOString().slice(0, 10);
+  const btn = isMobile ? 40 : 32;
+
+  return (
+    <div style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '1rem', padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+      {/* date chip + type pill */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ width: 52, height: 52, borderRadius: '0.7rem', background: `${c.primary}1f`, color: c.primary, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, flexShrink: 0 }}>
+          <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.04em' }}>{mon}</span>
+          <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{day}</span>
+        </div>
+        <span style={{ display: 'inline-flex', padding: '0.25rem 0.65rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700, backgroundColor: c.hover, color: c.text, whiteSpace: 'nowrap' }}>
+          {ev.type}
+        </span>
+      </div>
+
+      {/* title + location */}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: '1rem', color: c.text, lineHeight: 1.25 }}>{ev.name}</div>
+        {ev.location && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+            <MapPin size={13} strokeWidth={1.8} aria-hidden style={{ flexShrink: 0 }} /> {ev.location}
+          </div>
+        )}
+      </div>
+
+      {/* footer: result (or upcoming) + edit/delete */}
+      <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '0.8rem', marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
+        <div style={{ minWidth: 0, fontSize: '0.8rem' }}>
+          {ev.result ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: medalColor(ev.result.rank) || c.textSecondary, fontWeight: 600 }}>
+              <Trophy size={13} strokeWidth={1.9} aria-hidden style={{ flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                #{ev.result.rank} · {ev.result.category}
+              </span>
+            </span>
+          ) : (
+            <span style={{ color: c.textSecondary }}>{upcoming ? 'Upcoming' : 'No result recorded'}</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+          {confirming ? (
+            <>
+              <ConfirmBtn label="Delete?" onClick={onConfirmDelete} />
+              <IconBtn icon="✕" onClick={onCancelDelete} c={c} size={btn} label="Cancel delete" />
+            </>
+          ) : (
+            <>
+              <IconBtn icon={<Pencil size={14} />} onClick={onEdit} c={c} size={btn} label={`Edit ${ev.name}`} />
+              <IconBtn icon={<Trash2 size={14} />} onClick={onAskDelete} c={c} size={btn} danger label={`Delete ${ev.name}`} />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -511,14 +613,21 @@ const inputStyle = (c: ColorPalette): React.CSSProperties => ({
   boxSizing: 'border-box',
 });
 
-const IconBtn: React.FC<{ icon: React.ReactNode; onClick: () => void; c: ColorPalette; danger?: boolean }> = ({ icon, onClick, c, danger }) => (
-  <button type="button" onClick={onClick} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '0.4rem', border: `1px solid ${danger ? '#ef444455' : c.border}`, background: 'transparent', color: danger ? '#ef4444' : c.textSecondary, cursor: 'pointer', flexShrink: 0 }}>
+const IconBtn: React.FC<{ icon: React.ReactNode; onClick: () => void; c: ColorPalette; danger?: boolean; size?: number; label?: string }> = ({ icon, onClick, c, danger, size = 30, label }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+    className="admin-focus"
+    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: size, height: size, borderRadius: '0.4rem', border: `1px solid ${danger ? '#ef444455' : c.border}`, background: 'transparent', color: danger ? '#ef4444' : c.textSecondary, cursor: 'pointer', flexShrink: 0 }}
+  >
     {icon}
   </button>
 );
 
 const ConfirmBtn: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
-  <button type="button" onClick={onClick} style={{ padding: '0.3rem 0.7rem', borderRadius: '0.4rem', border: 'none', background: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+  <button type="button" onClick={onClick} className="admin-focus" style={{ padding: '0.3rem 0.7rem', borderRadius: '0.4rem', border: 'none', background: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
     {label}
   </button>
 );

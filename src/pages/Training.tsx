@@ -9,7 +9,7 @@ import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { SectionHeader } from '../components/SectionHeader';
 import { LandGlyph, WaveGlyph } from '../components/icons/trainingGlyphs';
 import { TrainingCard, type TrainingEvent } from '../components/TrainingCard';
-import { getTrainingEvents, subscribeTrainingEvents } from '../utils/adminTrainingEvents';
+import { fetchTrainingEvents, subscribeTrainingEvents } from '../utils/trainingEvents';
 import { BookingModal } from '../components/BookingModal';
 import { MyBookingsPanel } from '../components/MyBookingsPanel';
 import { ConfirmedNotification } from '../components/ConfirmedNotification';
@@ -53,7 +53,7 @@ export const Training: React.FC = () => {
   const isMobile = useIsMobile();
   const accent = theme === 'dark' ? c.primaryLight : c.primary;
 
-  const [events, setEvents] = useState<TrainingEvent[]>(() => getTrainingEvents());
+  const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
   const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
   const [modalEvent, setModalEvent] = useState<TrainingEvent | null>(null);
@@ -66,7 +66,8 @@ export const Training: React.FC = () => {
   useEffect(() => {
     const refresh = () => { setBookings(getAllBookings()); setCounts(getEventCounts()); };
     const unsub = subscribeBookings(refresh);
-    const unsubEvents = subscribeTrainingEvents(() => setEvents(getTrainingEvents()));
+    const unsubEvents = subscribeTrainingEvents(() => { fetchTrainingEvents().then(setEvents); });
+    fetchTrainingEvents().then(setEvents);
     fetchEventCounts().then(setCounts);
     fetchBookings().then((fresh) => {
       // Detect the signed-in user's OWN newly confirmed bookings (status flipped
@@ -338,8 +339,7 @@ export const Training: React.FC = () => {
               opacity: 0.6,
             }}
           >
-            Edit <code style={{ color: c.primary }}>src/data/training.json</code> for the
-            real schedule, or manage sessions from the admin Events panel.
+            Manage sessions from the admin Events panel.
           </p>
         </div>
       </section>

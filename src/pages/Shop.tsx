@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors, type ColorPalette } from '../styles/colors';
 import { contentMaxWidth } from '../styles/tokens';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { ProductCard } from '../components/ProductCard';
 import { FeaturedSpotlight } from '../components/FeaturedSpotlight';
 import { fetchProducts, type Product } from '../utils/merch';
@@ -10,6 +11,7 @@ import { fetchProducts, type Product } from '../utils/merch';
 export const Shop: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const isMobile = useIsMobile();
   // Muted-but-AA body color — textSecondary is borderline on the dark bg.
   const muted = `color-mix(in srgb, ${c.text} 74%, ${c.background})`;
 
@@ -51,6 +53,45 @@ export const Shop: React.FC = () => {
     return map;
   }, [gridProducts, categories]);
 
+  // "All Gear" becomes a horizontal swipe row on mobile (rather than a tall
+  // 2-column grid) — one screen's worth of browsing without a wall of vertical
+  // scroll. Two scrollability tells, one passive and one active:
+  //  - the progress track below the row: its thumb is already narrower than
+  //    the track at rest, before any touch, which is the "there's more here"
+  //    signal a clipped edge card can't give you until you've started dragging.
+  //  - the edge fades: a plain clipped card at the row's edge reads as "the
+  //    layout ran out of room," a fade that recedes as you reach the end reads
+  //    as "there's more, and here's where it stops."
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [thumb, setThumb] = useState({ widthPct: 100, leftPct: 0 });
+
+  const updateRailEdges = () => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    const widthPct = Math.min(100, (el.clientWidth / el.scrollWidth) * 100);
+    const scrollableWidth = el.scrollWidth - el.clientWidth;
+    const leftPct = scrollableWidth > 0 ? (el.scrollLeft / scrollableWidth) * (100 - widthPct) : 0;
+    setThumb({ widthPct, leftPct });
+  };
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = railRef.current;
+    if (!el) return;
+    // Filter changes swap the row's contents — snap back to the start and
+    // re-measure rather than leaving the track/fade in a stale state.
+    el.scrollTo({ left: 0 });
+    updateRailEdges();
+    const onResize = () => updateRailEdges();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, filtered.length]);
+
   return (
     <>
       {/* Header */}
@@ -64,7 +105,15 @@ export const Shop: React.FC = () => {
         <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
           <Link
             to="/"
-            style={{ display: 'inline-block', color: muted, textDecoration: 'none', fontSize: '0.85rem', marginBottom: '1.25rem' }}
+            style={{
+              display: 'inline-block',
+              color: muted,
+              textDecoration: 'none',
+              fontSize: '0.85rem',
+              marginBottom: '1.25rem',
+              marginInlineStart: '-0.4rem',
+              padding: '0.4rem',
+            }}
           >
             ← Back to home
           </Link>
@@ -139,37 +188,158 @@ export const Shop: React.FC = () => {
             </div>
           )}
           {categories.length > 1 && (
-            <div role="tablist" aria-label="Product category" style={{ display: 'flex', flexWrap: 'wrap', marginBottom: '1.75rem', gap: '0.5rem' }}>
-              <TabButton active={filter === 'All'} onClick={() => setFilter('All')} c={c} label="All" count={counts.All} />
+            <div
+              role="tablist"
+              aria-label="Product category"
+              className={isMobile ? 'scroll-strip' : undefined}
+              style={
+                isMobile
+                  ? {
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      overflowX: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      marginInline: 'clamp(-1rem, -4vw, -2rem)',
+                      paddingInline: 'clamp(1rem, 4vw, 2rem)',
+                      marginBottom: '1.5rem',
+                      gap: '0.5rem',
+                    }
+                  : { display: 'flex', flexWrap: 'wrap', marginBottom: '1.75rem', gap: '0.5rem' }
+              }
+            >
+              <TabButton active={filter === 'All'} onClick={() => setFilter('All')} c={c} label="All" count={counts.All} isMobile={isMobile} />
               {categories.map((cat) => (
-                <TabButton key={cat} active={filter === cat} onClick={() => setFilter(cat)} c={c} label={cat} count={counts[cat]} />
+                <TabButton key={cat} active={filter === cat} onClick={() => setFilter(cat)} c={c} label={cat} count={counts[cat]} isMobile={isMobile} />
               ))}
             </div>
           )}
 
           {products === null ? (
-            // Loading skeleton
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  aria-hidden="true"
-                  style={{ borderRadius: '0.9rem', border: `1px solid ${c.border}`, overflow: 'hidden', backgroundColor: c.surface }}
-                >
-                  <div style={{ aspectRatio: '1 / 1', backgroundColor: c.surfaceAlt }} />
-                  <div style={{ padding: '0.9rem 1rem 1.05rem' }}>
-                    <div style={{ height: '0.7rem', width: '40%', backgroundColor: c.surfaceAlt, borderRadius: '4px', marginBottom: '0.6rem' }} />
-                    <div style={{ height: '0.9rem', width: '80%', backgroundColor: c.surfaceAlt, borderRadius: '4px' }} />
+            // Loading skeleton — matches whichever layout (rail or grid) the
+            // real content below will render in, so nothing reflows on load.
+            isMobile ? (
+              <div className="scroll-strip" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto' }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    style={{ flex: '0 0 42%', borderRadius: '0.9rem', border: `1px solid ${c.border}`, overflow: 'hidden', backgroundColor: c.surface }}
+                  >
+                    <div style={{ aspectRatio: '4 / 3', backgroundColor: c.surfaceAlt }} />
+                    <div style={{ padding: '0.9rem 1rem 1.05rem' }}>
+                      <div style={{ height: '0.7rem', width: '40%', backgroundColor: c.surfaceAlt, borderRadius: '4px', marginBottom: '0.6rem' }} />
+                      <div style={{ height: '0.9rem', width: '80%', backgroundColor: c.surfaceAlt, borderRadius: '4px' }} />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    style={{ borderRadius: '0.9rem', border: `1px solid ${c.border}`, overflow: 'hidden', backgroundColor: c.surface }}
+                  >
+                    <div style={{ aspectRatio: '1 / 1', backgroundColor: c.surfaceAlt }} />
+                    <div style={{ padding: '0.9rem 1rem 1.05rem' }}>
+                      <div style={{ height: '0.7rem', width: '40%', backgroundColor: c.surfaceAlt, borderRadius: '4px', marginBottom: '0.6rem' }} />
+                      <div style={{ height: '0.9rem', width: '80%', backgroundColor: c.surfaceAlt, borderRadius: '4px' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : filtered.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
-              {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
+            isMobile ? (
+              // Horizontal swipe row — see railRef effect above for the fade logic.
+              <div style={{ position: 'relative' }}>
+                <div
+                  ref={railRef}
+                  onScroll={updateRailEdges}
+                  className="scroll-strip"
+                  style={{
+                    display: 'flex',
+                    gap: '0.75rem',
+                    overflowX: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollSnapType: 'x proximity',
+                    paddingBottom: '0.15rem',
+                  }}
+                >
+                  {filtered.map((p) => (
+                    <div key={p.id} style={{ flex: '0 0 42%', scrollSnapAlign: 'start' }}>
+                      <ProductCard product={p} />
+                    </div>
+                  ))}
+                </div>
+                {/* Edge fades — the scrollability tell. A card clipped flush at the
+                    row's edge reads as "layout ran out of room"; a fade that only
+                    shows on the side there's more to see reads as "swipe here." */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: '0.15rem',
+                    left: 0,
+                    width: '28px',
+                    background: `linear-gradient(to right, ${c.background}, transparent)`,
+                    opacity: canScrollLeft ? 1 : 0,
+                    transition: 'opacity 0.2s ease',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: '0.15rem',
+                    right: 0,
+                    width: '28px',
+                    background: `linear-gradient(to left, ${c.background}, transparent)`,
+                    opacity: canScrollRight ? 1 : 0,
+                    transition: 'opacity 0.2s ease',
+                    pointerEvents: 'none',
+                  }}
+                />
+                {/* Progress track — the at-rest tell. The thumb starts narrower
+                    than the track, before any touch, so the row reads as
+                    scrollable the instant it renders. */}
+                {thumb.widthPct < 100 && (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'relative',
+                      height: '3px',
+                      borderRadius: '999px',
+                      marginTop: '0.7rem',
+                      backgroundColor: c.border,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        width: `${thumb.widthPct}%`,
+                        left: `${thumb.leftPct}%`,
+                        borderRadius: '999px',
+                        backgroundColor: c.primary,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
+                {filtered.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )
           ) : (
             <div
               style={{
@@ -201,7 +371,8 @@ const TabButton: React.FC<{
   c: ColorPalette;
   label: string;
   count: number;
-}> = ({ active, onClick, c, label, count }) => (
+  isMobile?: boolean;
+}> = ({ active, onClick, c, label, count, isMobile }) => (
   <button
     role="tab"
     aria-selected={active}
@@ -209,7 +380,9 @@ const TabButton: React.FC<{
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      padding: '0.55rem 1.1rem',
+      flexShrink: 0,
+      minHeight: isMobile ? '44px' : undefined,
+      padding: isMobile ? '0.6rem 1.15rem' : '0.55rem 1.1rem',
       borderRadius: '999px',
       fontSize: '0.88rem',
       fontWeight: 600,

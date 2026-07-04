@@ -5,6 +5,7 @@ import { PromoBar } from './PromoBar';
 import { Footer } from './Footer';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 /**
  * Shared layout for all routed pages — renders Navigation at the top, the
@@ -15,6 +16,12 @@ export const Layout: React.FC = () => {
   const c = colors[brand][theme];
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const isMobile = useIsMobile();
+  const isDenseMobilePage =
+    isMobile &&
+    (location.pathname.startsWith('/shop') ||
+      location.pathname.startsWith('/training') ||
+      location.pathname.startsWith('/orders'));
 
   return (
     <div
@@ -33,7 +40,7 @@ export const Layout: React.FC = () => {
       <main style={{ flex: 1 }}>
         <Outlet />
       </main>
-      <Footer />
+      {!isDenseMobilePage && <Footer />}
     </div>
   );
 };

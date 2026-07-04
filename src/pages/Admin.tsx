@@ -15,7 +15,9 @@ import {
   Home,
   ShoppingBag,
   Package,
+  Download,
 } from 'lucide-react';
+import { downloadAdminExport } from '../utils/adminExport';
 
 // Section components — lazy-loaded inline after the shell
 import { AdminDashboard } from './admin/AdminDashboard';
@@ -177,10 +179,23 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [active, setActive] = useState<AdminSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
+  const [exporting, setExporting] = useState(false);
 
   const showToast: ShowToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), type === 'error' ? 7000 : 3200);
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await downloadAdminExport();
+      showToast('Snapshot downloaded.');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not build the export.', 'error');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const setActiveSection = (s: AdminSection) => {
@@ -294,8 +309,32 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         })}
       </nav>
 
-      {/* Sign out */}
-      <div style={{ padding: '0.75rem' }}>
+      {/* Export + sign out */}
+      <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          title="Download a standalone HTML snapshot of registrations, sign-ups, and boat assignments"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            width: '100%',
+            padding: '0.65rem 0.75rem',
+            borderRadius: '0.55rem',
+            border: `1px solid ${c.border}`,
+            backgroundColor: 'transparent',
+            color: c.textSecondary,
+            fontSize: '0.85rem',
+            cursor: exporting ? 'not-allowed' : 'pointer',
+            fontFamily: 'inherit',
+            opacity: exporting ? 0.6 : 1,
+          }}
+        >
+          <Download size={15} />
+          {exporting ? 'Exporting…' : 'Export snapshot'}
+        </button>
         <button
           type="button"
           onClick={onLogout}
@@ -412,7 +451,7 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             turned this into a sideways scroll container on mobile. minWidth:0
             lets it shrink below its content's intrinsic width inside the flex. */}
         <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden' }}>
-          <SectionContent active={active} showToast={showToast} c={c} theme={theme} />
+          <SectionContent active={active} showToast={showToast} c={c} theme={theme} onNavigate={setActiveSection} />
         </main>
       </div>
 
@@ -437,10 +476,11 @@ const SectionContent: React.FC<{
   showToast: ShowToast;
   c: ColorPalette;
   theme: 'dark' | 'light';
-}> = ({ active, showToast, c, theme }) => {
+  onNavigate: (s: AdminSection) => void;
+}> = ({ active, showToast, c, theme, onNavigate }) => {
   switch (active) {
-    case 'dashboard': return <AdminDashboard showToast={showToast} c={c} theme={theme} />;
-    case 'applications': return <AdminApplications showToast={showToast} c={c} />;
+    case 'dashboard': return <AdminDashboard showToast={showToast} c={c} theme={theme} onNavigate={onNavigate} />;
+    case 'applications': return <AdminApplications showToast={showToast} c={c} theme={theme} />;
     case 'signups':   return <AdminSignups   showToast={showToast} c={c} theme={theme} />;
     case 'boats':     return <AdminBoats     showToast={showToast} c={c} theme={theme} />;
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;

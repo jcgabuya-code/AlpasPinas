@@ -4,7 +4,8 @@ import { brandGradient, type ColorPalette } from '../../styles/colors';
 import { useTheme } from '../../context/ThemeContext';
 import { type ShowToast } from '../Admin';
 import { fetchBoatPlannerBench, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
-import { getTrainingEvents } from '../../utils/adminTrainingEvents';
+import { fetchTrainingEvents } from '../../utils/trainingEvents';
+import { type TrainingEvent } from '../../components/TrainingCard';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import {
   loadPlan,
@@ -97,9 +98,18 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const isMobile = useIsMobile();
   // Boat seating only makes sense for lake weekends — land conditioning
   // sign-ups carry no side/weight and would show up as an empty bench.
-  const events = getTrainingEvents().filter((ev) => (ev.venue ?? 'lake') === 'lake');
-  const [eventId, setEventId] = useState(events[0]?.id ?? '');
-  const [dayKey, setDayKey] = useState(events[0]?.days[0]?.key ?? '');
+  const [events, setEvents] = useState<TrainingEvent[]>([]);
+  const [eventId, setEventId] = useState('');
+  const [dayKey, setDayKey] = useState('');
+
+  useEffect(() => {
+    fetchTrainingEvents().then((all) => {
+      const lake = all.filter((ev) => (ev.venue ?? 'lake') === 'lake');
+      setEvents(lake);
+      setEventId((cur) => cur || lake[0]?.id || '');
+      setDayKey((cur) => cur || lake[0]?.days[0]?.key || '');
+    });
+  }, []);
   const [boats, setBoats] = useState<Boat[]>([]);
   const [activeBoatId, setActiveBoatId] = useState('');
   const [selected, setSelected] = useState<string | null>(null); // selected bench athlete

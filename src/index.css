@@ -242,3 +242,13 @@ button {
 .btn-spinner {
   animation: spin 0.7s linear infinite;
 }
+
+/* Horizontally-scrollable strip (e.g. mobile filter chips) with no visible
+   scrollbar — the scroll affordance is the clipped edge item, not a bar. */
+.scroll-strip {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}

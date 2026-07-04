@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, brandGradient, type ColorPalette } from '../../styles/colors';
 import { Marquee } from '../Marquee';
 import {
@@ -23,7 +24,7 @@ import melakaTeam2 from '../../../images/melaka-team2.jpg';
 import race1 from '../../../images/race-1.jpg';
 import race2 from '../../../images/race-2.jpg';
 import race3 from '../../../images/race-3.jpeg';
-import { WhatsAppGlyph, YouTubeGlyph, InstagramGlyph, FacebookGlyph } from '../Hero';
+import { WhatsAppGlyph, YouTubeGlyph } from '../Hero';
 
 /**
  * MobileHome — the phone-width Home page, rebuilt to the AlpasPinas mobile
@@ -112,6 +113,7 @@ type SectionKey = 'home' | 'about' | 'training' | 'gear' | 'races' | 'contact';
 
 export const MobileHome: React.FC = () => {
   const { theme, brand } = useTheme();
+  const { user } = useAuth();
   const c = colors[brand][theme];
   const isDark = theme === 'dark';
   const accent = isDark ? c.primaryLight : c.primary;
@@ -151,9 +153,9 @@ export const MobileHome: React.FC = () => {
     { key: 'home', label: 'Home' },
     { key: 'about', label: 'Story' },
     { key: 'training', label: 'Training' },
-    { key: 'gear', label: 'Gear' },
+    { key: 'gear', label: 'Merch' },
     { key: 'races', label: 'Races' },
-    { key: 'contact', label: 'Join' },
+    ...(user ? [] : [{ key: 'contact' as SectionKey, label: 'Join' }]),
   ];
 
   // Jumped sections clear the pinned pill bar.
@@ -179,16 +181,17 @@ export const MobileHome: React.FC = () => {
   );
 
   // ---- Next race (hero badge) — soonest upcoming event from events.json ----
-  const nextRace = useMemo(() => {
+  const nextEvent = useMemo(() => {
     const upcoming = (eventsData as RaceEvent[])
       .filter((e) => isUpcoming(e.date))
       .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
-    const e = upcoming[0];
-    if (!e) return null;
-    const d = parseEventDate(e.date);
-    const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    return { name: e.name, when };
+    return upcoming[0] ?? null;
   }, []);
+  const nextRace = useMemo(() => {
+    if (!nextEvent) return null;
+    const when = parseEventDate(nextEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return { name: nextEvent.name, when };
+  }, [nextEvent]);
 
   // ---- Race record (results, newest first) ----
   const results = useMemo(
@@ -449,45 +452,6 @@ export const MobileHome: React.FC = () => {
               <YouTubeGlyph size={29} />
               Watch Race
             </button>
-          </div>
-          {/* Social links — Instagram / Facebook, opens the crew's public profiles */}
-          <div className="stroke-in" style={{ display: 'flex', gap: '10px', marginTop: '2px', animationDelay: '0.86s' }}>
-            <a
-              href="https://instagram.com/alpaspinasdbt"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="AlpasPinas on Instagram"
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)',
-                boxShadow: '0 8px 20px rgba(214,36,159,0.35)',
-              }}
-            >
-              <InstagramGlyph size={18} />
-            </a>
-            <a
-              href="https://facebook.com/alpaspinasdbt"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="AlpasPinas on Facebook"
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#1877F2',
-                boxShadow: '0 8px 20px rgba(24,119,242,0.35)',
-              }}
-            >
-              <FacebookGlyph size={18} />
-            </a>
           </div>
         </div>
       </section>

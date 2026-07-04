@@ -44,12 +44,13 @@ export const ProductCard: React.FC<{ product: Product; feature?: boolean }> = ({
         boxShadow: hovered ? `0 14px 30px rgba(0,0,0,0.28)` : 'none',
       }}
     >
-      {/* Image */}
+      {/* Image — shorter on mobile grid tiles (4:3, not square) so more rows fit
+          the screen without scrolling; the feature slot stays 4:3 everywhere. */}
       <div
         style={{
           position: 'relative',
           width: '100%',
-          aspectRatio: feature ? '4 / 3' : '1 / 1',
+          aspectRatio: feature ? '4 / 3' : isMobile ? '4 / 3' : '1 / 1',
           backgroundColor: c.surfaceAlt,
           overflow: 'hidden',
         }}

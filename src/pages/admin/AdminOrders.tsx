@@ -12,25 +12,35 @@ import {
 
 type Props = { showToast: ShowToast; c: ColorPalette };
 
-const STATUS_FLOW: OrderStatus[] = ['pending', 'confirmed', 'paid', 'fulfilled'];
+// Reserve -> confirm availability & collect payment -> hand over. 'confirmed'
+// is a legacy status from an older 4-step flow; kept in the type/records for
+// backward compat with any old rows, but it's no longer part of the flow.
+const STATUS_FLOW: OrderStatus[] = ['pending', 'paid', 'fulfilled'];
 const STATUS_COLORS: Record<OrderStatus, string> = {
   pending: '#f59e0b',
-  confirmed: '#0ea5e9',
+  confirmed: '#8b5cf6',
   paid: '#8b5cf6',
   fulfilled: '#16a34a',
   cancelled: '#ef4444',
 };
 const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: 'Pending',
-  confirmed: 'Confirmed',
-  paid: 'Paid',
+  pending: 'Reserved',
+  confirmed: 'Confirmed & Paid',
+  paid: 'Confirmed & Paid',
   fulfilled: 'Fulfilled',
   cancelled: 'Cancelled',
 };
 
-/** Next status in the flow, or null at the end. */
+// Fulfilled/cancelled orders are done business — no admin action needed until
+// a rare audit, so they age out of the working list after this many days.
+const ARCHIVE_AFTER_DAYS = 30;
+const isArchived = (o: MerchOrder): boolean =>
+  (o.status === 'fulfilled' || o.status === 'cancelled') &&
+  Date.now() - new Date(o.updatedAt).getTime() > ARCHIVE_AFTER_DAYS * 24 * 60 * 60 * 1000;
+
+/** Next status in the flow, or null at the end. Legacy 'confirmed' rows advance from 'paid'. */
 const nextStatus = (s: OrderStatus): OrderStatus | null => {
-  const i = STATUS_FLOW.indexOf(s);
+  const i = STATUS_FLOW.indexOf(s === 'confirmed' ? 'paid' : s);
   return i >= 0 && i < STATUS_FLOW.length - 1 ? STATUS_FLOW[i + 1] : null;
 };
 
@@ -38,7 +48,9 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
   const [orders, setOrders] = useState<MerchOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const [filter, setFilter] = useState<OrderStatus | 'all' | 'archived'>('all');
+  const [query, setQuery] = useState('');
+  const [month, setMonth] = useState<string>('all'); // 'all' or 'YYYY-MM'
 
   const load = async () => {
     setLoading(true);
@@ -78,13 +90,51 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
     }
   };
 
-  const counts = useMemo(() => {
-    const m: Record<string, number> = { all: orders.length };
-    for (const s of [...STATUS_FLOW, 'cancelled' as OrderStatus]) m[s] = orders.filter((o) => o.status === s).length;
-    return m;
+  // Months with at least one order, newest first — powers the month filter.
+  const monthOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const o of orders) {
+      const key = o.createdAt.slice(0, 7); // 'YYYY-MM'
+      if (!seen.has(key)) {
+        seen.set(
+          key,
+          new Date(o.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        );
+      }
+    }
+    return [...seen.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [orders]);
 
-  const visible = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
+  // Search + month narrow the pool before status chips split it up, so chip
+  // counts always reflect what search/month currently show.
+  const q = query.trim().toLowerCase();
+  const narrowed = orders.filter((o) => {
+    if (month !== 'all' && !o.createdAt.startsWith(month)) return false;
+    if (!q) return true;
+    return (
+      o.contactName.toLowerCase().includes(q) ||
+      o.contactEmail.toLowerCase().includes(q) ||
+      (o.contactPhone ?? '').toLowerCase().includes(q) ||
+      o.items.some((it) => it.name.toLowerCase().includes(q))
+    );
+  });
+
+  const narrowedActive = narrowed.filter((o) => !isArchived(o));
+  const counts: Record<string, number> = { all: narrowedActive.length, archived: narrowed.length - narrowedActive.length };
+  for (const s of [...STATUS_FLOW, 'cancelled' as OrderStatus]) counts[s] = narrowedActive.filter((o) => o.status === s).length;
+
+  const visible =
+    filter === 'all'
+      ? narrowed.filter((o) => !isArchived(o))
+      : filter === 'archived'
+        ? narrowed.filter(isArchived)
+        : narrowed.filter((o) => o.status === filter && !isArchived(o));
+
+  const hasNarrowing = q !== '' || month !== 'all';
+  const clearNarrowing = () => {
+    setQuery('');
+    setMonth('all');
+  };
 
   return (
     <div style={{ padding: '2rem 1.5rem 4rem' }}>
@@ -104,6 +154,76 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
         Reservations from the shop. Move each through the flow as you confirm and collect payment.
       </p>
 
+      {/* Search + month narrowing — kept on one row, shrinking together */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '0.6rem', flex: '1 1 260px', minWidth: 0 }}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, email, phone, or item…"
+            style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              boxSizing: 'border-box',
+              minHeight: '2.75rem',
+              padding: '0.5rem 0.85rem',
+              borderRadius: '0.45rem',
+              border: `1px solid ${c.border}`,
+              backgroundColor: c.surfaceAlt,
+              color: c.text,
+              fontSize: '16px',
+              fontFamily: 'inherit',
+              outline: 'none',
+            }}
+          />
+          <select
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            aria-label="Filter by month"
+            style={{
+              flex: '0 1 auto',
+              width: '9.5rem',
+              minWidth: '5.5rem',
+              boxSizing: 'border-box',
+              minHeight: '2.75rem',
+              padding: '0.5rem 0.6rem',
+              borderRadius: '0.45rem',
+              border: `1px solid ${c.border}`,
+              backgroundColor: c.surfaceAlt,
+              color: c.text,
+              fontSize: '16px',
+              fontFamily: 'inherit',
+            }}
+          >
+            <option value="all">All months</option>
+            {monthOptions.map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {hasNarrowing && (
+          <button
+            onClick={clearNarrowing}
+            style={{
+              minHeight: '2.75rem',
+              padding: '0.5rem 0.9rem',
+              borderRadius: '0.45rem',
+              border: `1px solid ${c.border}`,
+              backgroundColor: 'transparent',
+              color: c.textSecondary,
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Filter chips with counts */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.75rem' }}>
         <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} c={c} label="All" count={counts.all} />
@@ -118,12 +238,29 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
             dot={STATUS_COLORS[s]}
           />
         ))}
+        <FilterChip
+          active={filter === 'archived'}
+          onClick={() => setFilter('archived')}
+          c={c}
+          label="Archived"
+          count={counts.archived}
+          dot={c.textSecondary}
+        />
       </div>
+      {filter === 'archived' && (
+        <p style={{ color: c.textSecondary, fontSize: '0.8rem', margin: '-1.25rem 0 1.75rem' }}>
+          Fulfilled or cancelled orders older than {ARCHIVE_AFTER_DAYS} days — kept for audit, out of the working list.
+        </p>
+      )}
 
       {loading && <p style={{ color: c.textSecondary }}>Loading…</p>}
       {!loading && visible.length === 0 && (
         <p style={{ color: c.textSecondary, fontSize: '0.9rem' }}>
-          {orders.length === 0 ? 'No orders yet.' : 'No orders in this status.'}
+          {orders.length === 0
+            ? 'No orders yet.'
+            : hasNarrowing
+              ? 'No orders match this search and filter combination.'
+              : 'No orders in this status.'}
         </p>
       )}
 
@@ -131,6 +268,7 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
         {visible.map((o) => {
           const next = nextStatus(o.status);
           const busy = busyId === o.id;
+          const needsEta = next === 'paid' && !o.estimatedDelivery;
           return (
             <div
               key={o.id}
@@ -232,7 +370,8 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
                   {next && (
                     <button
                       onClick={() => change(o.id, next)}
-                      disabled={busy}
+                      disabled={busy || needsEta}
+                      title={needsEta ? 'Set an estimated delivery date first' : undefined}
                       style={{
                         minHeight: '2.75rem',
                         padding: '0.5rem 1.1rem',
@@ -240,14 +379,19 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
                         color: '#fff',
                         border: 'none',
                         borderRadius: '0.45rem',
-                        cursor: busy ? 'not-allowed' : 'pointer',
+                        cursor: busy || needsEta ? 'not-allowed' : 'pointer',
                         fontSize: '0.85rem',
                         fontWeight: 600,
-                        opacity: busy ? 0.6 : 1,
+                        opacity: busy || needsEta ? 0.5 : 1,
                       }}
                     >
                       Mark {STATUS_LABEL[next].toLowerCase()}
                     </button>
+                  )}
+                  {needsEta && (
+                    <span style={{ alignSelf: 'center', fontSize: '0.78rem', color: STATUS_COLORS.cancelled }}>
+                      Add an est. delivery date to confirm
+                    </span>
                   )}
                   <button
                     onClick={() => change(o.id, 'cancelled')}

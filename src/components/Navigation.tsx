@@ -212,7 +212,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
     { label: 'Training', to: user ? '/training' : '/', hash: user ? undefined : '#training' },
     { label: 'Merch', to: '/shop' },
     { label: 'Races', to: '/', hash: '#races' },
-    { label: 'Join Us', to: '/', hash: '#contact' },
+    ...(user ? [] : [{ label: 'Join Us', to: '/', hash: '#contact' }]),
   ];
 
   return (
@@ -750,6 +750,22 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
               </div>
             </div>
 
+            {/* Signed-in user identity */}
+            {user && (
+              <div
+                className={menuOpen ? 'drawer-item-in' : undefined}
+                style={{ animationDelay: '0.53s', display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 4px', borderBottom: `1px solid ${c.border}` }}
+              >
+                <UserIcon size={18} />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '1rem', color: c.text }}>{user.name}</div>
+                  {user.mobile && (
+                    <div style={{ fontSize: '0.8rem', color: c.textSecondary, marginTop: '2px' }}>{user.mobile}</div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Auth-aware actions */}
             {user ? (
               <>
@@ -781,14 +797,16 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
             )}
 
             {/* Join CTA */}
-            <Link
-              to="/join-team"
-              onClick={closeMenu}
-              className={menuOpen ? 'drawer-item-in' : undefined}
-              style={{ animationDelay: '0.64s', marginTop: '20px', textAlign: 'center', background: brandGradient(brand, theme), color: '#fff', padding: '1rem 1.3rem', borderRadius: '999px', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', letterSpacing: '0.02em', boxShadow: `0 6px 18px ${c.primary}47` }}
-            >
-              Join the Team
-            </Link>
+            {!user && (
+              <Link
+                to="/join-team"
+                onClick={closeMenu}
+                className={menuOpen ? 'drawer-item-in' : undefined}
+                style={{ animationDelay: '0.64s', marginTop: '20px', textAlign: 'center', background: brandGradient(brand, theme), color: '#fff', padding: '1rem 1.3rem', borderRadius: '999px', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', letterSpacing: '0.02em', boxShadow: `0 6px 18px ${c.primary}47` }}
+              >
+                Join the Team
+              </Link>
+            )}
 
             <div
               className={menuOpen ? 'drawer-item-in' : undefined}

@@ -90,7 +90,7 @@ export const FacebookGlyph: React.FC<{ size?: number }> = ({ size = 20 }) => (
 // Next-race badge styled as a tear-off race ticket: a tinted icon "stub", a dashed
 // perforation, then the event details — the whole thing a link to the join section.
 // Shared by the wide Hero (over the right photo) and mobile HeroPhoto (full-width).
-const NextRaceTicket: React.FC<{
+export const NextRaceTicket: React.FC<{
   event: RaceEvent;
   c: ColorPalette;
   isDark: boolean;

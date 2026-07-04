@@ -71,6 +71,7 @@ export type MerchOrder = {
   deliveryAddress?: string;
   estimatedDelivery?: string; // 'YYYY-MM-DD', set by admin
   createdAt: string;
+  updatedAt: string;
 };
 
 /** Payload for a new order (server fills id / status / createdAt / userId). */
@@ -140,6 +141,7 @@ type OrderRow = {
   delivery_address: string | null;
   estimated_delivery: string | null;
   created_at: string;
+  updated_at: string | null;
 };
 
 const toOrder = (r: OrderRow): MerchOrder => ({
@@ -156,6 +158,7 @@ const toOrder = (r: OrderRow): MerchOrder => ({
   deliveryAddress: r.delivery_address ?? undefined,
   estimatedDelivery: r.estimated_delivery ?? undefined,
   createdAt: r.created_at,
+  updatedAt: r.updated_at ?? r.created_at,
 });
 
 /* ------------------------------ products ------------------------------ */
@@ -340,6 +343,7 @@ export const submitOrder = async (order: NewOrder): Promise<void> => {
       deliveryMethod: order.deliveryMethod,
       deliveryAddress: order.deliveryAddress,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     writeOrderCache([...cachedOrders(), local]);
     return;
@@ -394,7 +398,9 @@ export const fetchOrders = async (): Promise<MerchOrder[]> => {
 /** Move an order to a new status. Admin only (enforced by RLS). */
 export const updateOrderStatus = async (id: string, status: OrderStatus): Promise<void> => {
   if (!isRemote) {
-    writeOrderCache(cachedOrders().map((o) => (o.id === id ? { ...o, status } : o)));
+    writeOrderCache(
+      cachedOrders().map((o) => (o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o)),
+    );
     return;
   }
   const { error } = await supabase.from('merch_orders').update({ status }).eq('id', id);
