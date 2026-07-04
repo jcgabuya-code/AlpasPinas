@@ -78,15 +78,6 @@ const WATER = {
   copy: 'Full-boat pieces, race starts, and crew building. The best place to try paddling. Marina Putrajaya · Beginner friendly.',
 };
 
-const TRAINING_TAGS = [
-  'BEGINNER FRIENDLY',
-  'WEEKEND WATER SESSIONS',
-  'ALL GEAR PROVIDED',
-  'PUTRAJAYA + SUBANG PARC',
-  'RACE DAYS + CREW SOCIALS',
-  'FILIPINO CREW IN MALAYSIA',
-];
-
 const CONTACT_INFO: { label: string; value: string; icon: React.ReactNode }[] = [
   { label: 'Training base', value: 'Marina Putrajaya / Subang PARC', icon: <LocationIcon /> },
   { label: 'Email', value: 'admin@alpaspinas.com', icon: <MailIcon /> },
@@ -504,14 +495,6 @@ export const MobileHome: React.FC = () => {
           {trainingCard(LAND)}
           <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: c.textSecondary, marginTop: '8px' }}>{WATER.label}</div>
           {trainingCard(WATER)}
-        </div>
-
-        <div className="apn-mobile-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px 0 2px', marginTop: '4px' }}>
-          {TRAINING_TAGS.map((t) => (
-            <span key={t} style={{ flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.03em', color: c.textSecondary, border: `1px solid ${c.border}`, padding: '5px 10px', borderRadius: '999px' }}>
-              {t}
-            </span>
-          ))}
         </div>
 
         <div style={{ background: `linear-gradient(135deg, ${c.primary}1a, ${c.primaryDark}0d)`, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '16px', marginTop: '6px' }}>
