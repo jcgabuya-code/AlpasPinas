@@ -276,7 +276,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, onNavigate }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.25rem', minWidth: 0 }}>
           <div style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '1.1rem', padding: isMobile ? '1.1rem' : '1.5rem' }}>
             <div style={{ fontWeight: 600, fontSize: '1rem', color: c.text, marginBottom: '0.85rem' }}>Quick actions</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
               {quickActions.map((a) => (
                 <div
                   key={a.label}
@@ -289,6 +289,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, onNavigate }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.5rem',
+                    minWidth: 0,
                   }}
                 >
                   <a.icon size={18} strokeWidth={1.8} color={c.primary} />

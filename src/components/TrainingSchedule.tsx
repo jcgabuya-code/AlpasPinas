@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -383,8 +384,8 @@ export const TrainingSchedule: React.FC = () => {
               your seat for this week.
             </p>
           </div>
-          <a
-            href="#contact"
+          <Link
+            to="/training"
             onMouseEnter={() => setReserveHover(true)}
             onMouseLeave={() => setReserveHover(false)}
             style={{
@@ -407,7 +408,7 @@ export const TrainingSchedule: React.FC = () => {
             }}
           >
             Reserve a seat →
-          </a>
+          </Link>
         </div>
       </div>
     </section>
