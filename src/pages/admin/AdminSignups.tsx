@@ -259,10 +259,11 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast, theme }) => {
 
                 {isOpen && (
                   <div style={{ padding: isMobile ? '0 1.1rem 1rem' : '0 1.25rem 1.25rem', backgroundColor: c.surfaceAlt }}>
-                    <RosterList
+                    <RosterBoard
                       c={c}
                       event={s.event}
                       rows={roster}
+                      capacity={s.day.capacity}
                       busyKey={busyKey}
                       isMobile={isMobile}
                       onApprove={handleApprove}
@@ -281,84 +282,123 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast, theme }) => {
 
 /* ------------------------------------------------------------------ */
 
-const RosterList: React.FC<{
+type RosterProps = {
   c: ColorPalette;
   event: TrainingEvent;
   rows: Booking[];
+  capacity: number;
   busyKey: string | null;
   isMobile: boolean;
   onApprove: (b: Booking) => void;
   onCancel: (b: Booking) => void;
-}> = ({ c, event, rows, busyKey, isMobile, onApprove, onCancel }) => {
+};
+
+const sideShort: Record<string, string> = { Left: 'Port', Right: 'Starb', Coxswain: 'Cox', Coach: 'Coach' };
+
+/**
+ * OPTION 3 — "Port/Starboard balance board". Splits paddlers into Port /
+ * Starboard columns with running weight totals, mirroring the boat so side
+ * balance is instantly visible. Crew (cox/coach) and any waitlist sit below.
+ */
+const RosterBoard: React.FC<RosterProps> = ({ c, event, rows, capacity, busyKey, isMobile, onApprove, onCancel }) => {
   if (rows.length === 0) {
     return <div style={{ padding: '1rem 0', fontSize: '0.85rem', color: c.textSecondary }}>No one signed up yet.</div>;
   }
+  const confirmed = rows.filter((b) => b.status !== 'waiting');
+  const waiting = rows.filter((b) => b.status === 'waiting');
+  const left = confirmed.filter((b) => b.side === 'Left');
+  const right = confirmed.filter((b) => b.side === 'Right');
+  const crew = confirmed.filter((b) => b.side === 'Coxswain' || b.side === 'Coach');
+  const males = confirmed.filter((b) => b.gender === 'Male').length;
+  const females = confirmed.filter((b) => b.gender === 'Female').length;
+  const gear = confirmed.filter((b) => b.needPFD === 'Yes' || b.needPaddle === 'Yes').length;
+  const sum = (list: Booking[]) => list.reduce((n, b) => n + (b.weight ?? 0), 0);
+  const lKg = sum(left), rKg = sum(right);
+  const diff = Math.abs(lKg - rKg);
+
+  const remove = (b: Booking) => {
+    if (typeof window !== 'undefined' && !window.confirm(`Remove ${b.name} from this session?`)) return;
+    onCancel(b);
+  };
+
+  const person = (b: Booking) => {
+    const busy = busyKey === b.id;
+    // Only surface the day when someone isn't attending the whole weekend —
+    // otherwise every row would repeat the same tag (noise).
+    const exception = b.attending !== 'both' ? attendingLabel(b.attending, event) : null;
+    const gear = b.needPFD === 'Yes' || b.needPaddle === 'Yes';
+    return (
+      <div key={b.id ?? `${b.eventId}::${b.name}`} className="rrow"
+        style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.4rem 0.55rem', borderRadius: '0.4rem', opacity: busy ? 0.5 : 1 }}>
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', minWidth: 0 }}>
+          <span style={{ fontWeight: 600, fontSize: '0.82rem', color: c.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+          {exception && <span style={{ fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.05em', color: '#d97706', flexShrink: 0 }}>{exception}</span>}
+          {gear && <span title="Needs gear" aria-label="Needs gear" style={{ fontSize: '0.62rem', color: '#d97706', flexShrink: 0 }}>◆</span>}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.66rem', color: c.textSecondary, opacity: 0.8 }}>{b.gender === 'Male' ? 'M' : 'F'}</span>
+          <span style={{ fontSize: '0.78rem', color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>{b.weight ?? '–'}</span>
+          <button type="button" aria-label={`Remove ${b.name}`} className="admin-focus rrow-x" onClick={() => remove(b)} disabled={busy}
+            style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.82rem', lineHeight: 1, opacity: isMobile ? 0.6 : 0, transition: 'opacity 0.12s' }}>✕</button>
+        </span>
+      </div>
+    );
+  };
+
+  // A render helper (not a component) so it closes over `person` without
+  // remounting the subtree on every render.
+  const column = (label: string, list: Booking[], kg: number) => (
+    <div style={{ flex: 1, minWidth: 0, border: `1px solid ${c.border}`, borderRadius: '0.6rem', overflow: 'hidden', backgroundColor: c.surface }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.55rem 0.7rem', borderBottom: `1px solid ${c.border}` }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary }}>{label}</span>
+        <span style={{ fontSize: '0.74rem', fontWeight: 700, color: c.text }}>{list.length}</span>
+      </div>
+      <div style={{ padding: '0.4rem' }}>
+        {list.length ? list.map(person) : <div style={{ padding: '0.5rem', fontSize: '0.76rem', color: c.textSecondary, fontStyle: 'italic' }}>None yet</div>}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.7rem', borderTop: `1px solid ${c.border}`, fontSize: '0.76rem', fontWeight: 700, color: c.textSecondary }}>
+        <span>Σ</span><span style={{ color: c.text, fontVariantNumeric: 'tabular-nums' }}>{kg} kg</span>
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingTop: '0.85rem' }}>
-      {rows.map((b) => {
-        const busy = busyKey === b.id;
-        const waiting = b.status === 'waiting';
-        const meta = [
-          b.gender,
-          b.side,
-          b.weight !== undefined ? `${b.weight} kg` : null,
-          ...(b.needPFD === 'Yes' ? ['PFD'] : []),
-          ...(b.needPaddle === 'Yes' ? ['Paddle'] : []),
-        ].filter(Boolean).join(' · ');
-
-        const nameChips = (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', minWidth: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: c.text }}>{b.name}</span>
-            <Chip label={attendingLabel(b.attending, event)} color={c.primary} />
-            {waiting && <Chip label="Waitlist" color="#d97706" />}
-          </div>
-        );
-        const metaText = meta && (
-          <span
-            style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: c.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title={meta}
-          >
-            {meta}
-          </span>
-        );
-        const actions = (
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-            {waiting && <ActionBtn onClick={() => onApprove(b)} disabled={busy} big={isMobile} color="#16a34a" label={busy ? '…' : '✓ Confirm'} />}
-            <ActionBtn onClick={() => onCancel(b)} disabled={busy} big={isMobile} color="#ef4444" label={busy ? '…' : 'Remove'} outline />
-          </div>
-        );
-
-        // Mobile: stack name+chips on top, meta+actions on a second row so the
-        // buttons never overflow the card. Desktop: everything on one line.
-        return (
-          <div
-            key={b.id ?? `${b.eventId}::${b.name}`}
-            style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              alignItems: isMobile ? 'stretch' : 'center',
-              gap: isMobile ? '0.5rem' : '0.6rem',
-              padding: '0.55rem 0.7rem',
-              borderRadius: '0.5rem',
-              backgroundColor: c.surface,
-              border: `1px solid ${c.border}`,
-            }}
-          >
-            {nameChips}
-            {isMobile ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: metaText ? 'space-between' : 'flex-end', gap: '0.6rem' }}>
-                {metaText}
-                {actions}
+    <div style={{ paddingTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+      <style>{`.rrow:hover { background: ${c.surfaceAlt}; } .rrow:hover .rrow-x { opacity: 1 !important; }`}</style>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem 0.7rem', fontSize: '0.78rem', color: c.textSecondary }}>
+        <span style={{ fontWeight: 700, color: c.text }}>{confirmed.length}/{capacity}</span>
+        <span>·</span>
+        <span>{males}M · {females}F</span>
+        <span>·</span>
+        <span style={{ color: diff > 8 ? '#d97706' : '#16a34a', fontWeight: 700 }}>
+          {diff === 0 ? 'Sides balanced' : `${diff} kg ${lKg > rKg ? 'port-heavy' : 'starboard-heavy'}`}
+        </span>
+        {gear > 0 && <><span>·</span><span style={{ color: '#d97706' }}>{gear} need gear ◆</span></>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '0.9rem' }}>
+        {column('Port', left, lKg)}
+        {column('Starboard', right, rKg)}
+      </div>
+      {crew.length > 0 && (
+        <div style={{ border: `1px solid ${c.border}`, borderRadius: '0.6rem', backgroundColor: c.surface, padding: '0.4rem 0.55rem' }}>
+          <div style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary, padding: '0.15rem 0.15rem 0.35rem' }}>Crew</div>
+          {crew.map(person)}
+        </div>
+      )}
+      {waiting.length > 0 && (
+        <div>
+          <div style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#d97706', margin: '0 0 0.4rem' }}>Waitlist · {waiting.length}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {waiting.map((b) => (
+              <div key={b.id ?? `${b.eventId}::${b.name}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.6rem', borderRadius: '0.45rem', border: `1px solid ${c.border}`, backgroundColor: c.surface, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.82rem', color: c.text, flex: 1, minWidth: 80 }}>{b.name} <span style={{ color: c.textSecondary, fontWeight: 400 }}>{sideShort[b.side ?? ''] ?? b.side} · {b.weight ?? '–'}kg</span></span>
+                <ActionBtn onClick={() => onApprove(b)} disabled={busyKey === b.id} big={isMobile} color="#16a34a" label={busyKey === b.id ? '…' : '✓ Confirm'} />
+                <ActionBtn onClick={() => remove(b)} disabled={busyKey === b.id} big={isMobile} color="#ef4444" label="Remove" outline />
               </div>
-            ) : (
-              <>
-                {metaText || <span style={{ flex: 1 }} />}
-                {actions}
-              </>
-            )}
+            ))}
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 };
@@ -392,12 +432,6 @@ const VenueTab: React.FC<{ label: string; count: number; active: boolean; onClic
 
 const Pill: React.FC<{ bg: string; fg: string; label: string }> = ({ bg, fg, label }) => (
   <span style={{ display: 'inline-flex', padding: '0.25rem 0.65rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: bg, color: fg, whiteSpace: 'nowrap' }}>
-    {label}
-  </span>
-);
-
-const Chip: React.FC<{ label: string; color: string }> = ({ label, color }) => (
-  <span style={{ padding: '0.12rem 0.5rem', borderRadius: '999px', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', backgroundColor: color + '20', color, border: `1px solid ${color}44`, whiteSpace: 'nowrap', flexShrink: 0 }}>
     {label}
   </span>
 );
