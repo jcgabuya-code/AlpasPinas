@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, AlertTriangle, Scale, Wand2, ChevronDown, ChevronRight, Eraser, Share2, Printer, Check, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Wand2, ChevronDown, ChevronRight, Eraser, Share2, Printer, Check, Image as ImageIcon } from 'lucide-react';
 import { brandGradient, type ColorPalette } from '../../styles/colors';
 import { useTheme } from '../../context/ThemeContext';
 import { type ShowToast } from '../Admin';
@@ -44,6 +44,13 @@ const presetMismatchLabel = (preset: CrewPreset | undefined, info?: AthleteInfo)
 
 const ROWS = 10;
 
+/**
+ * Desktop paddler-seat width. The boat draws at 2·SEAT_W + gaps + padding ≈
+ * 330px, matching the reference so the rounded "bow" dome (150px radius) has a
+ * wide-enough top to clear the "↑ Bow" caption instead of clipping it.
+ */
+const SEAT_W = 150;
+
 /** Bench list sizing — how many cards are visible before it scrolls. */
 const BENCH_ROW_PX = 40; // approx height of one compact card + gap
 const BENCH_VISIBLE_ROWS = 5;
@@ -86,6 +93,88 @@ const middleOutOrder = (n: number): number[] => {
 /** drag payload moved through dataTransfer */
 type DragData = { name: string; fromSeat: SeatId | null };
 const DRAG_MIME = 'application/x-alpas-athlete';
+
+/* ------------------------------------------------------------------ */
+/* Cockpit readiness — aggregate stats + status derived from the boat.  */
+
+const PAD_SEATS = ROWS * 2;
+
+type BoatStats = {
+  left: number; right: number; bow: number; stern: number;
+  paddlers: number; total: number; missing: number;
+  males: number; females: number; offPreset: number; offSide: number;
+  openSeats: number; flags: number;
+  sideDelta: number; trimDelta: number;
+  trimX: number; trimY: number; // 0–100 dot position on the trim plot
+  trimOk: boolean; ready: boolean;
+  issues: string[];
+};
+
+/** Keep the trim dot inside the plot frame. */
+const clampPct = (n: number) => Math.max(9, Math.min(91, n));
+
+/** Everything the cockpit banner, gauges + launch panel read off one boat. */
+const computeBoatStats = (boat: Boat, infoByName: Map<string, AthleteInfo>): BoatStats => {
+  let left = 0, right = 0, bow = 0, stern = 0, paddlers = 0, total = 0, missing = 0;
+  let males = 0, females = 0, offPreset = 0, offSide = 0, flags = 0;
+  for (const [seatId, name] of Object.entries(boat.seats) as [SeatId, string][]) {
+    const info = infoByName.get(name);
+    const w = info?.weight ?? 0;
+    const noWeight = !info || !info.weight;
+    if (noWeight) missing++;
+    if (info?.gender === 'Male') males++;
+    else if (info?.gender === 'Female') females++;
+    const op = !fitsPreset(boat.preset, info);
+    if (op) offPreset++;
+    total += w;
+    let os = false;
+    if (isPaddlerSeat(seatId)) {
+      paddlers++;
+      const rowNum = parseInt(seatId, 10);
+      if (seatId.endsWith('L')) left += w;
+      else if (seatId.endsWith('R')) right += w;
+      if (rowNum <= ROWS / 2) bow += w; else stern += w;
+      os = isOffSide(seatId, info?.side);
+      if (os) offSide++;
+    }
+    if (noWeight || op || os) flags++;
+  }
+  const openSeats = PAD_SEATS - paddlers;
+  const sideDelta = Math.abs(left - right);
+  const trimDelta = Math.abs(bow - stern);
+  const trimX = left + right > 0 ? clampPct(50 + ((right - left) / (left + right)) * 45) : 50;
+  const trimY = bow + stern > 0 ? clampPct(50 + ((stern - bow) / (bow + stern)) * 45) : 50;
+  const presetLabel = CREW_PRESETS.find((p) => p.id === (boat.preset ?? 'open'))?.label ?? 'Open';
+  const issues: string[] = [];
+  if (openSeats > 0) issues.push(`${openSeats} paddler seat${openSeats > 1 ? 's' : ''} still open.`);
+  if (offSide > 0) issues.push(`${offSide} paddler${offSide > 1 ? 's' : ''} seated off their preferred side.`);
+  if (offPreset > 0) issues.push(`${offPreset} seated off-preset for ${presetLabel}.`);
+  if (missing > 0) issues.push(`${missing} seated without a weight on file — trim estimated.`);
+  return {
+    left, right, bow, stern, paddlers, total, missing, males, females,
+    offPreset, offSide, openSeats, flags, sideDelta, trimDelta, trimX, trimY,
+    trimOk: sideDelta <= 10 && trimDelta <= 20,
+    ready: openSeats === 0 && flags === 0,
+    issues,
+  };
+};
+
+/** Theme-aware good/warn tokens layered on the app palette (cockpit look). */
+type CkTokens = {
+  good: string; warn: string;
+  goodSoft: string; goodBorder: string;
+  warnSoft: string; warnBorder: string;
+  accentSoft: string;
+};
+const ckTokens = (c: ColorPalette, theme: 'dark' | 'light'): CkTokens => ({
+  good: '#16a34a',
+  warn: '#f59e0b',
+  goodSoft: theme === 'dark' ? 'rgba(22,163,74,0.18)' : 'rgba(22,163,74,0.10)',
+  goodBorder: 'rgba(22,163,74,0.42)',
+  warnSoft: theme === 'dark' ? 'rgba(245,158,11,0.16)' : 'rgba(245,158,11,0.11)',
+  warnBorder: 'rgba(245,158,11,0.42)',
+  accentSoft: `${c.primary}${theme === 'dark' ? '26' : '18'}`,
+});
 
 /* ------------------------------------------------------------------ */
 
@@ -202,24 +291,6 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
     [activeBoat],
   );
   const unassigned = athletes.filter((b) => !seatedInActiveBoat.has(b.name));
-
-  // Bench list filtered by the search box (case-insensitive name match).
-  const benchAthletes = useMemo(() => {
-    const q = benchQuery.trim().toLowerCase();
-    return q ? athletes.filter((b) => b.name.toLowerCase().includes(q)) : athletes;
-  }, [athletes, benchQuery]);
-
-  // name → other boats they're already seated in (shown as a hint on the bench).
-  const otherBoatsByName = useMemo(() => {
-    const m = new Map<string, string[]>();
-    boats.forEach((boat) => {
-      if (boat.id === activeBoatId) return;
-      new Set(Object.values(boat.seats)).forEach((name) => {
-        m.set(name, [...(m.get(name) ?? []), boat.name]);
-      });
-    });
-    return m;
-  }, [boats, activeBoatId]);
 
   /* ----------------------------- seat ops --------------------------- */
 
@@ -454,401 +525,270 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   };
 
   const currentEvent = events.find((e) => e.id === eventId);
+  const dayLabel = currentEvent?.days.find((d) => d.key === dayKey)?.label ?? '';
+
+  // Cockpit tokens + live readiness for the active boat.
+  const CK = useMemo(() => ckTokens(c, theme), [c, theme]);
+  const stats = useMemo(
+    () => (activeBoat ? computeBoatStats(activeBoat, infoByName) : null),
+    [activeBoat, infoByName],
+  );
+
+  // Bench list filtered by the search box (case-insensitive name match).
+  const dockAthletes = useMemo(() => {
+    const q = benchQuery.trim().toLowerCase();
+    return q ? unassigned.filter((b) => b.name.toLowerCase().includes(q)) : unassigned;
+  }, [unassigned, benchQuery]);
 
   return (
-    <div style={{ padding: '2rem 1.5rem 4rem', maxWidth: 1180, margin: '0 auto' }}>
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
-        BOAT ASSIGNMENTS
-      </h1>
-      <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: '0 0 1.5rem' }}>
-        {isMobile
-          ? 'Tap a seat to assign or change its paddler, or use Auto-seat to fill the boat instantly. Changes auto-save.'
-          : 'Click a seat to pick a paddler, or drag athletes from the bench onto seats. Changes auto-save.'}
-      </p>
-
-      {/* Event + Day selectors. On mobile they share one no-wrap row to save
-          vertical space: the event select flexes/shrinks (its long title truncates),
-          the day select keeps its natural width, and "Saved" tucks in at the end. */}
-      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: isMobile ? 'nowrap' : 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
-        <select
-          value={eventId}
-          onChange={(e) => {
-            const ev = events.find((x) => x.id === e.target.value);
-            setEventId(e.target.value);
-            setDayKey(ev?.days[0]?.key ?? '');
-          }}
-          style={{ ...selectStyle(c), ...(isMobile ? { flex: 1, minWidth: 0, padding: '0.5rem 0.6rem' } : {}) }}
-        >
-          {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
-        </select>
-
-        {currentEvent && (
+    <div style={{ padding: isMobile ? '1.25rem 1rem 4rem' : '2rem 1.5rem 4rem', maxWidth: 1180, margin: '0 auto' }}>
+      {/* Header — title + session summary, with the event/day selectors and
+          save state pushed to the right (matches the cockpit reference). */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '1.6rem' : 'clamp(1.7rem, 3.5vw, 2.2rem)', color: c.text, margin: 0, letterSpacing: '0.01em', lineHeight: 1 }}>
+            Boat Assignments
+          </h1>
+          <div style={{ color: c.textSecondary, fontSize: '0.85rem', marginTop: '0.4rem' }}>
+            {currentEvent ? `${currentEvent.title}${dayLabel ? ` · ${dayLabel}` : ''}` : 'Select an event and day'}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: isMobile ? 'nowrap' : 'wrap', alignItems: 'center', width: isMobile ? '100%' : undefined }}>
           <select
-            value={dayKey}
-            onChange={(e) => setDayKey(e.target.value)}
-            style={{ ...selectStyle(c), ...(isMobile ? { flexShrink: 0, padding: '0.5rem 0.6rem' } : {}) }}
+            value={eventId}
+            onChange={(e) => {
+              const ev = events.find((x) => x.id === e.target.value);
+              setEventId(e.target.value);
+              setDayKey(ev?.days[0]?.key ?? '');
+            }}
+            className="admin-focus"
+            style={{ ...selectStyle(c), ...(isMobile ? { flex: 1, minWidth: 0, padding: '0.5rem 0.6rem' } : {}) }}
           >
-            {currentEvent.days.map((d) => (
-              <option key={d.key} value={d.key}>{d.label}</option>
-            ))}
+            {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
           </select>
-        )}
-
-        <SaveIndicator status={saveStatus} c={c} />
+          {currentEvent && (
+            <select
+              value={dayKey}
+              onChange={(e) => setDayKey(e.target.value)}
+              className="admin-focus"
+              style={{ ...selectStyle(c), ...(isMobile ? { flexShrink: 0, padding: '0.5rem 0.6rem' } : {}) }}
+            >
+              {currentEvent.days.map((d) => (
+                <option key={d.key} value={d.key}>{d.label}</option>
+              ))}
+            </select>
+          )}
+          <SaveIndicator status={saveStatus} c={c} />
+        </div>
       </div>
 
       {!eventId || !dayKey ? (
         <p style={{ color: c.textSecondary }}>Select an event and day above.</p>
+      ) : !activeBoat || !stats ? (
+        <p style={{ color: c.textSecondary }}>Loading…</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', flexWrap: isMobile ? 'nowrap' : 'wrap', alignItems: isMobile ? 'stretch' : 'flex-start' }}>
-          {/* Left sidebar — bench + (desktop) trim & balance stacked together. */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: isMobile ? '100%' : 'min(240px, 100%)', flexShrink: 0 }}>
-          {/* Bench — also a drop target to un-seat an athlete. On mobile the seat
-              picker handles assignment, so it's collapsed by default (kept just
-              for reference). */}
-          {(() => {
-          const benchListOpen = !isMobile || benchOpen;
-          return (
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={onBenchDrop}
-            style={{
-              width: '100%',
-              flexShrink: 0,
-              backgroundColor: c.surface,
-              border: `1px solid ${c.border}`,
-              borderRadius: '0.85rem',
-              padding: '1rem',
-            }}
-          >
-            {isMobile ? (
-              <button
-                type="button"
-                onClick={() => setBenchOpen((o) => !o)}
-                aria-expanded={benchOpen}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
-                  background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-                  fontFamily: 'inherit', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: c.textSecondary,
-                }}
-              >
-                {benchOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                Bench ({unassigned.length})
-              </button>
-            ) : (
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary, marginBottom: '0.75rem' }}>
-                Bench ({unassigned.length})
+        <>
+          {/* Readiness bar (desktop) / pinned balance card (mobile) — quick-glance
+              chips for trim, seat count and open flags, plus the auto-seat shortcut. */}
+          {!isMobile && (
+            <ReadinessBar stats={stats} c={c} CK={CK} onAutoSeat={autoFillBoat} gradient={brandGradient(brand, theme)} />
+          )}
+
+          {/* Boat tabs */}
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.25rem 0 0.9rem', alignItems: 'center' }}>
+            {boats.map((boat) => (
+              <div key={boat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveBoatId(boat.id)}
+                  aria-pressed={boat.id === activeBoatId}
+                  className="admin-focus"
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '999px',
+                    border: `1px solid ${boat.id === activeBoatId ? c.primary : c.border}`,
+                    background: boat.id === activeBoatId ? CK.accentSoft : 'transparent',
+                    color: boat.id === activeBoatId ? c.primary : c.textSecondary,
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {boat.name}
+                </button>
+                {boats.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeBoat(boat.id)}
+                    aria-label={`Remove ${boat.name}`}
+                    className="admin-focus"
+                    style={{ background: 'transparent', border: 'none', color: c.textSecondary, cursor: 'pointer', padding: '0.2rem', lineHeight: 1 }}
+                  >
+                    <Trash2 size={12} aria-hidden />
+                  </button>
+                )}
               </div>
-            )}
-            {benchListOpen && athletes.length === 0 && (
-              <p style={{ fontSize: '0.8rem', color: c.textSecondary, marginTop: isMobile ? '0.75rem' : 0 }}>No sign-ups for this day.</p>
-            )}
-            {benchListOpen && athletes.length > 0 && (
-              <input
-                value={benchQuery}
-                onChange={(e) => setBenchQuery(e.target.value)}
-                placeholder="Search bench…"
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginTop: '0.75rem',
-                  padding: '0.4rem 0.65rem',
-                  borderRadius: '0.45rem',
-                  border: `1px solid ${c.border}`,
-                  backgroundColor: c.surfaceAlt,
-                  color: c.text,
-                  fontSize: '0.8rem',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                }}
-              />
-            )}
-            {benchListOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem', maxHeight: BENCH_MAX_HEIGHT, overflowY: 'auto' }}>
-              {benchAthletes.length === 0 && (
-                <p style={{ fontSize: '0.78rem', color: c.textSecondary, margin: '0.25rem 0' }}>No one matches “{benchQuery}”.</p>
-              )}
-              {benchAthletes.map((b) => {
-                // "Assigned" here = already in THIS boat (a person may be in others).
-                const isAssigned = seatedInActiveBoat.has(b.name);
-                const isSel = selected === b.name;
-                const elsewhere = otherBoatsByName.get(b.name);
-                const offPreset = !!activeBoat && !fitsPreset(activeBoat.preset, infoByName.get(b.name));
-                // Off-preset paddlers can't join this boat (strict crew preset), so
-                // they're shown but non-interactive — same as ones already seated here.
-                const blocked = isAssigned || offPreset;
+            ))}
+            <button
+              type="button"
+              onClick={addBoat}
+              className="admin-focus"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.8rem', borderRadius: '999px', border: `1px dashed ${c.border}`, background: 'transparent', color: c.textSecondary, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              <Plus size={12} aria-hidden /> Add boat
+            </button>
+          </div>
+
+          {/* Boat toolbar — rename, crew preset, and the per-boat actions.
+              Auto-seat lives in the banner on desktop; on mobile it joins this row. */}
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '0.6rem', alignItems: isMobile ? 'stretch' : 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <input
+              value={activeBoat.name}
+              onChange={(e) => renameBoat(activeBoat.id, e.target.value)}
+              placeholder="Boat name"
+              aria-label="Boat name"
+              className="admin-focus"
+              style={{ ...selectStyle(c), cursor: 'text', width: isMobile ? '100%' : undefined, maxWidth: isMobile ? '100%' : 180, boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap', overflowX: isMobile ? 'auto' : 'visible' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: c.textSecondary, flexShrink: 0 }}>Crew</span>
+              {CREW_PRESETS.map((p) => {
+                const active = (activeBoat.preset ?? 'open') === p.id;
                 return (
                   <button
-                    key={b.name}
+                    key={p.id}
                     type="button"
-                    draggable={!blocked}
-                    onDragStart={(e) => !blocked && writeDrag(e, { name: b.name, fromSeat: null })}
-                    onClick={() => !blocked && handleBenchClick(b.name)}
-                    title={offPreset ? `Can't join ${activeBoat?.name} — ${presetMismatchLabel(activeBoat?.preset, infoByName.get(b.name))}` : undefined}
+                    onClick={() => setPreset(activeBoat.id, p.id)}
+                    aria-pressed={active}
+                    className="admin-focus"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '0.5rem',
-                      width: '100%',
-                      padding: '0.35rem 0.6rem',
-                      borderRadius: '0.4rem',
-                      border: `1px solid ${isSel ? c.primary : offPreset ? '#f59e0b66' : c.border}`,
-                      backgroundColor: isSel ? `${c.primary}22` : isAssigned ? c.background : c.surfaceAlt,
-                      color: blocked ? c.textSecondary : c.text,
-                      fontSize: '0.82rem',
-                      fontWeight: isSel ? 700 : 500,
-                      textAlign: 'left',
-                      cursor: blocked ? 'not-allowed' : 'grab',
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '999px',
+                      border: `1px solid ${active ? c.primary : c.border}`,
+                      background: active ? CK.accentSoft : 'transparent',
+                      color: active ? c.primary : c.textSecondary,
+                      fontWeight: active ? 700 : 500,
+                      fontSize: '0.78rem',
+                      cursor: 'pointer',
                       fontFamily: 'inherit',
-                      opacity: blocked ? 0.5 : 1,
-                      transition: 'background-color 0.1s, border-color 0.1s',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                     }}
                   >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', minWidth: 0 }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
-                      {offPreset && <AlertTriangle size={11} color="#f59e0b" style={{ flexShrink: 0 }} />}
-                    </span>
-                    <span style={{ fontSize: '0.68rem', color: c.textSecondary, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      {sideLabel(b.side)} · {b.weight}kg
-                      {elsewhere && elsewhere.length > 0 && (
-                        <span style={{ color: c.primary }}> · {elsewhere.join(', ')}</span>
-                      )}
-                    </span>
+                    {p.label}
                   </button>
                 );
               })}
             </div>
-            )}
-            {benchListOpen && selected && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: isMobile ? 0 : 'auto' }}>
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={autoFillBoat}
+                  className="admin-focus"
+                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', padding: '0.6rem 0.8rem', borderRadius: '0.6rem', border: 'none', background: brandGradient(brand, theme), color: '#fff', fontWeight: 700, fontSize: '0.84rem', cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 4px 14px ${c.primary}33` }}
+                >
+                  <Wand2 size={15} aria-hidden /> Auto-seat
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setSelected(null)}
-                style={{ marginTop: '0.75rem', width: '100%', padding: '0.4rem', borderRadius: '0.45rem', border: `1px solid ${c.border}`, background: 'transparent', color: c.textSecondary, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                onClick={clearBoat}
+                title="Empty every seat in this boat — everyone returns to the bench"
+                className="admin-focus"
+                style={{ flex: isMobile ? 1 : undefined, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', padding: '0.55rem 0.85rem', borderRadius: '0.6rem', border: `1px solid ${c.border}`, background: 'transparent', color: c.textSecondary, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
               >
-                Deselect
+                <Eraser size={15} aria-hidden /> Clear
               </button>
-            )}
-          </div>
-          );
-          })()}
-
-          {/* Trim & balance lives under the bench on desktop; on mobile it sits
-              above the grid (rendered inside the grid row instead). */}
-          {!isMobile && activeBoat && (
-            <BalancePanel boat={activeBoat} infoByName={infoByName} c={c} />
-          )}
-          </div>
-
-          {/* Boat area */}
-          <div style={{ flex: isMobile ? 'unset' : 1, width: isMobile ? '100%' : 'auto', minWidth: 0 }}>
-            {/* Boat tabs */}
-            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
-              {boats.map((boat) => (
-                <div key={boat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.1rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveBoatId(boat.id)}
-                    style={{
-                      padding: '0.4rem 0.85rem',
-                      borderRadius: '999px',
-                      border: `1px solid ${boat.id === activeBoatId ? c.primary : c.border}`,
-                      background: boat.id === activeBoatId ? `${c.primary}18` : 'transparent',
-                      color: boat.id === activeBoatId ? c.primary : c.textSecondary,
-                      fontWeight: 600,
-                      fontSize: '0.82rem',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {boat.name}
-                  </button>
-                  {boats.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeBoat(boat.id)}
-                      style={{ background: 'transparent', border: 'none', color: c.textSecondary, cursor: 'pointer', padding: '0.2rem', lineHeight: 1 }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
-                </div>
-              ))}
               <button
                 type="button"
-                onClick={addBoat}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', borderRadius: '999px', border: `1px dashed ${c.border}`, background: 'transparent', color: c.textSecondary, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                onClick={() => setExportOpen(true)}
+                title="Preview the lineup, copy it as an image, or print a boat sheet"
+                className="admin-focus"
+                style={{ flex: isMobile ? 1 : undefined, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', padding: '0.55rem 0.85rem', borderRadius: '0.6rem', border: `1px solid ${c.border}`, background: 'transparent', color: c.textSecondary, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
               >
-                <Plus size={12} /> Add boat
+                <Share2 size={15} aria-hidden /> Share
               </button>
             </div>
-
-            {/* Rename + boat actions (auto-seat, clear, share on one line) */}
-            {activeBoat && (
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '0.6rem', alignItems: isMobile ? 'stretch' : 'center', flexWrap: isMobile ? 'nowrap' : 'wrap', marginBottom: '1rem' }}>
+            {boats.length > 1 && (
+              <label
+                title="When on, auto-seat skips anyone already seated in another boat — useful for splitting a squad across boats"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: c.textSecondary, cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : undefined }}
+              >
                 <input
-                  value={activeBoat.name}
-                  onChange={(e) => renameBoat(activeBoat.id, e.target.value)}
-                  placeholder="Boat name"
-                  style={{ ...selectStyle(c), width: isMobile ? '100%' : undefined, maxWidth: isMobile ? '100%' : '200px', boxSizing: 'border-box' }}
+                  type="checkbox"
+                  checked={excludeOtherBoats}
+                  onChange={(e) => setExcludeOtherBoats(e.target.checked)}
+                  style={{ accentColor: c.primary, cursor: 'pointer' }}
                 />
-                {/* The three actions share a row; on mobile they split evenly. */}
-                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={autoFillBoat}
-                    title="Seat everyone signed up by their side and balance the weight"
-                    style={{
-                      flex: isMobile ? 1 : undefined,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
-                      padding: '0.5rem 0.8rem',
-                      borderRadius: '0.5rem',
-                      border: 'none',
-                      background: brandGradient(brand, theme),
-                      color: '#fff',
-                      fontWeight: 700,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      boxShadow: `0 4px 14px ${c.primary}33`,
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Wand2 size={15} /> Auto-seat
-                  </button>
-                  <button
-                    type="button"
-                    onClick={clearBoat}
-                    title="Empty every seat in this boat — everyone returns to the bench"
-                    style={{
-                      flex: isMobile ? 1 : undefined,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
-                      padding: '0.5rem 0.8rem',
-                      borderRadius: '0.5rem',
-                      border: `1px solid ${c.border}`,
-                      background: 'transparent',
-                      color: c.textSecondary,
-                      fontWeight: 600,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Eraser size={15} /> Clear
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExportOpen(true)}
-                    title="Preview the lineup, copy it as an image, or print a boat sheet"
-                    style={{
-                      flex: isMobile ? 1 : undefined,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
-                      padding: '0.5rem 0.8rem',
-                      borderRadius: '0.5rem',
-                      border: `1px solid ${c.border}`,
-                      background: 'transparent',
-                      color: c.textSecondary,
-                      fontWeight: 600,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Share2 size={15} /> Share
-                  </button>
-                </div>
-                {boats.length > 1 && (
-                  <label
-                    title="When on, auto-seat skips anyone already seated in another boat — useful for splitting a squad across boats"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: c.textSecondary, cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={excludeOtherBoats}
-                      onChange={(e) => setExcludeOtherBoats(e.target.checked)}
-                      style={{ accentColor: c.primary, cursor: 'pointer' }}
-                    />
-                    Exclude paddlers already in another boat
-                  </label>
-                )}
-              </div>
-            )}
-
-            {/* Crew preset — drives auto-seat eligibility + off-preset warnings. */}
-            {activeBoat && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: c.textSecondary }}>
-                  Crew
-                </span>
-                {CREW_PRESETS.map((p) => {
-                  const active = (activeBoat.preset ?? 'open') === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPreset(activeBoat.id, p.id)}
-                      style={{
-                        padding: '0.35rem 0.8rem',
-                        borderRadius: '999px',
-                        border: `1px solid ${active ? c.primary : c.border}`,
-                        background: active ? `${c.primary}18` : 'transparent',
-                        color: active ? c.primary : c.textSecondary,
-                        fontWeight: active ? 700 : 500,
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Balance summary + grid. On mobile, column-reverse floats the
-                Trim & balance table above the boat grid. */}
-            {activeBoat && (
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', gap: '1.5rem', alignItems: isMobile ? 'stretch' : 'flex-start' }}>
-                {/* Mobile only — trim & balance floats above the grid. */}
-                {isMobile && (
-                  <BalancePanel boat={activeBoat} infoByName={infoByName} c={c} fullWidth />
-                )}
-                <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start', flex: isMobile ? 'unset' : '1 1 0', minWidth: 0 }}>
-                  <BoatGrid
-                    boat={activeBoat}
-                    selected={selected}
-                    selectedSide={selected ? infoByName.get(selected)?.side : undefined}
-                    infoByName={infoByName}
-                    dragOverSeat={dragOverSeat}
-                    onSeatClick={handleSeatClick}
-                    onSeatDrop={onSeatDrop}
-                    onSeatDragOver={(id) => setDragOverSeat(id)}
-                    onSeatDragLeave={() => setDragOverSeat(null)}
-                    onSeatDragStart={(e, name, fromSeat) => writeDrag(e, { name, fromSeat })}
-                    c={c}
-                    fluid={isMobile}
-                  />
-                </div>
-              </div>
+                Exclude paddlers already in another boat
+              </label>
             )}
           </div>
-        </div>
+
+          {/* Mobile pinned balance card — the chip strip the desktop shows in the readiness bar. */}
+          {isMobile && (
+            <MobileBalanceCard stats={stats} c={c} CK={CK} />
+          )}
+
+          {/* Refined body — roster on the left, boat in the middle, trim &
+              balance on the right (stacks boat → roster → trim on mobile). */}
+          <div
+            style={{
+              display: 'grid',
+              // Boat column sizes to its own width; justifyContent centers the
+              // whole roster · boat · trim cluster on wide screens.
+              gridTemplateColumns: isMobile ? '1fr' : '248px auto 296px',
+              gridTemplateAreas: isMobile ? '"boat" "roster" "trim"' : '"roster boat trim"',
+              gap: '1.25rem',
+              alignItems: 'start',
+              justifyContent: isMobile ? undefined : 'center',
+            }}
+          >
+            <div style={{ gridArea: 'roster' }}>
+              <RosterPanel
+                athletes={dockAthletes}
+                total={unassigned.length}
+                boat={activeBoat}
+                selected={selected}
+                infoByName={infoByName}
+                query={benchQuery}
+                onQuery={setBenchQuery}
+                onSelect={handleBenchClick}
+                onDragStart={(e, name) => writeDrag(e, { name, fromSeat: null })}
+                onBenchDrop={onBenchDrop}
+                collapsible={isMobile}
+                open={!isMobile || benchOpen}
+                onToggle={() => setBenchOpen((o) => !o)}
+                c={c}
+                CK={CK}
+              />
+            </div>
+
+            <div style={{ gridArea: 'boat' }}>
+              <BoatGrid
+                boat={activeBoat}
+                selected={selected}
+                selectedSide={selected ? infoByName.get(selected)?.side : undefined}
+                infoByName={infoByName}
+                dragOverSeat={dragOverSeat}
+                onSeatClick={handleSeatClick}
+                onSeatDrop={onSeatDrop}
+                onSeatDragOver={(id) => setDragOverSeat(id)}
+                onSeatDragLeave={() => setDragOverSeat(null)}
+                onSeatDragStart={(e, name, fromSeat) => writeDrag(e, { name, fromSeat })}
+                c={c}
+                CK={CK}
+                fluid={isMobile}
+              />
+            </div>
+
+            <div style={{ gridArea: 'trim' }}>
+              <TrimBalancePanel stats={stats} c={c} CK={CK} />
+            </div>
+          </div>
+        </>
       )}
 
       {selected && (
@@ -897,6 +837,364 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
           showToast={showToast}
           onClose={() => setExportOpen(false)}
         />
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Readiness — a chip-strip banner (desktop), a pinned card (mobile), the   */
+/* roster panel, and the trim & balance panel (matches the refined layout). */
+
+/** One quick-glance chip: a status dot, a label, and an optional bold value. */
+const ReadinessChip: React.FC<{ tone: 'good' | 'warn' | 'neutral'; label: string; bold?: string; c: ColorPalette; CK: CkTokens }> = ({ tone, label, bold, c, CK }) => {
+  const dot = tone === 'good' ? CK.good : tone === 'warn' ? CK.warn : c.textSecondary;
+  const border = tone === 'good' ? CK.goodBorder : tone === 'warn' ? CK.warnBorder : c.border;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        backgroundColor: c.surfaceAlt,
+        border: `1px solid ${border}`,
+        borderRadius: '0.65rem',
+        padding: '0.55rem 0.75rem',
+        fontSize: '0.78rem',
+        fontWeight: 600,
+        color: c.text,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dot, flexShrink: 0 }} />
+      {label}
+      {bold && <span style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: c.textSecondary }}>{bold}</span>}
+    </div>
+  );
+};
+
+/** Shared chip data — same three chips power the desktop bar and the mobile card. */
+const readinessChips = (stats: BoatStats): { tone: 'good' | 'warn' | 'neutral'; label: string; bold?: string }[] => {
+  const reviewLabel = stats.missing > 0 ? 'weight missing' : stats.offSide > 0 ? 'off-side' : stats.offPreset > 0 ? 'off-preset' : '';
+  return [
+    { tone: stats.trimOk ? 'good' : 'warn', label: stats.trimOk ? 'Trim balanced' : 'Trim off', bold: `Δ ${stats.sideDelta} kg` },
+    { tone: 'neutral', label: `${stats.paddlers} / ${PAD_SEATS} seated`, bold: `${stats.openSeats} open` },
+    stats.flags > 0
+      ? { tone: 'warn', label: `${stats.flags} to review`, bold: reviewLabel || undefined }
+      : { tone: 'good', label: 'All clear' },
+  ];
+};
+
+/** Desktop readiness bar — status chips + the auto-seat shortcut in one strip. */
+const ReadinessBar: React.FC<{ stats: BoatStats; c: ColorPalette; CK: CkTokens; onAutoSeat: () => void; gradient: string }> = ({ stats, c, CK, onAutoSeat, gradient }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '1rem',
+      backgroundColor: c.surface,
+      border: `1px solid ${c.border}`,
+      borderRadius: '0.85rem',
+      padding: '0.85rem 1rem',
+      marginBottom: '1rem',
+      flexWrap: 'wrap',
+    }}
+  >
+    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+      {readinessChips(stats).map((chip) => (
+        <ReadinessChip key={chip.label} tone={chip.tone} label={chip.label} bold={chip.bold} c={c} CK={CK} />
+      ))}
+    </div>
+
+    <button
+      type="button"
+      onClick={onAutoSeat}
+      className="admin-focus"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        padding: '0.65rem 1.1rem',
+        borderRadius: '0.6rem',
+        border: 'none',
+        background: gradient,
+        color: '#fff',
+        fontWeight: 700,
+        fontSize: '0.86rem',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        whiteSpace: 'nowrap',
+        boxShadow: `0 4px 14px ${c.primary}33`,
+      }}
+    >
+      <Wand2 size={15} aria-hidden /> Auto-seat
+    </button>
+  </div>
+);
+
+/** Mobile pinned balance card — the same chips, stacked, plus a compact port/starboard readout. */
+const MobileBalanceCard: React.FC<{ stats: BoatStats; c: ColorPalette; CK: CkTokens }> = ({ stats, c, CK }) => (
+  <div style={{ position: 'relative', backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '0.9rem 0.8rem 0.75rem', marginBottom: '0.9rem', marginTop: '0.6rem' }}>
+    <span
+      style={{
+        position: 'absolute',
+        top: -9,
+        left: 13,
+        backgroundColor: c.primary,
+        color: '#fff',
+        fontSize: '0.6rem',
+        fontWeight: 700,
+        letterSpacing: '0.07em',
+        textTransform: 'uppercase',
+        padding: '0.2rem 0.55rem',
+        borderRadius: '999px',
+      }}
+    >
+      Pinned · balance
+    </span>
+    <div style={{ display: 'flex', gap: '0.4rem' }}>
+      {readinessChips(stats).map((chip) => (
+        <div
+          key={chip.label}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.35rem',
+            backgroundColor: c.surfaceAlt,
+            border: `1px solid ${c.border}`,
+            borderRadius: '0.55rem',
+            padding: '0.4rem 0.3rem',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            color: c.text,
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, backgroundColor: chip.tone === 'good' ? CK.good : chip.tone === 'warn' ? CK.warn : c.textSecondary }} />
+          {chip.bold ?? chip.label}
+        </div>
+      ))}
+    </div>
+    <div style={{ marginTop: '0.65rem', paddingTop: '0.55rem', borderTop: `1px solid ${c.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', fontWeight: 700, color: c.text, fontFamily: 'ui-monospace, monospace' }}>
+      <span>Port {stats.left}</span>
+      <span style={{ color: stats.trimOk ? CK.good : CK.warn }}>◆ Δ {stats.sideDelta} kg</span>
+      <span>{stats.right} Stbd</span>
+    </div>
+  </div>
+);
+
+/** Roster panel — everyone not yet seated in the active boat. Drag onto a seat,
+ *  or click a name then click a seat to place it (desktop shortcut); tapping a
+ *  seat directly opens the picker on every view. Collapsible on mobile. */
+const RosterPanel: React.FC<{
+  athletes: Booking[];
+  total: number;
+  boat: Boat;
+  selected: string | null;
+  infoByName: Map<string, AthleteInfo>;
+  query: string;
+  onQuery: (q: string) => void;
+  onSelect: (name: string) => void;
+  onDragStart: (e: React.DragEvent, name: string) => void;
+  onBenchDrop: (e: React.DragEvent) => void;
+  collapsible?: boolean;
+  open: boolean;
+  onToggle: () => void;
+  c: ColorPalette;
+  CK: CkTokens;
+}> = ({ athletes, total, boat, selected, infoByName, query, onQuery, onSelect, onDragStart, onBenchDrop, collapsible, open, onToggle, c, CK }) => (
+  <div
+    style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1rem' }}
+    onDragOver={(e) => e.preventDefault()}
+    onDrop={onBenchDrop}
+  >
+    <button
+      type="button"
+      onClick={collapsible ? onToggle : undefined}
+      aria-expanded={open}
+      className="admin-focus"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        width: '100%',
+        background: 'transparent',
+        border: 'none',
+        padding: 0,
+        cursor: collapsible ? 'pointer' : 'default',
+        fontFamily: 'inherit',
+        marginBottom: open ? '0.75rem' : 0,
+      }}
+    >
+      <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: c.textSecondary }}>
+        Needs a seat
+      </span>
+      <span style={{ backgroundColor: CK.accentSoft, color: c.primary, borderRadius: '999px', padding: '0.1rem 0.55rem', fontSize: '0.7rem', fontWeight: 700 }}>
+        {total}
+      </span>
+      {collapsible && (
+        <span style={{ marginLeft: 'auto', color: c.textSecondary, display: 'flex' }}>
+          {open ? <ChevronDown size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
+        </span>
+      )}
+    </button>
+
+    {open && (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: c.surfaceAlt, border: `1px solid ${c.border}`, borderRadius: '0.5rem', padding: '0.45rem 0.6rem', marginBottom: '0.7rem' }}>
+          <span style={{ color: c.textSecondary, fontSize: '0.85rem' }} aria-hidden>⌕</span>
+          <input
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search roster…"
+            aria-label="Search roster"
+            className="admin-focus"
+            style={{ border: 'none', background: 'transparent', outline: 'none', color: c.text, fontSize: '0.82rem', fontFamily: 'inherit', width: '100%' }}
+          />
+        </div>
+
+        {athletes.length === 0 ? (
+          <p style={{ fontSize: '0.8rem', color: c.textSecondary, textAlign: 'center', padding: '0.5rem 0' }}>
+            Everyone available is seated.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: BENCH_MAX_HEIGHT, overflowY: 'auto' }}>
+            {athletes.map((a) => {
+              const info = infoByName.get(a.name);
+              const noWeight = !info || !info.weight;
+              const offPreset = !fitsPreset(boat.preset, info);
+              const bad = noWeight || offPreset;
+              const isSelected = selected === a.name;
+              return (
+                <button
+                  key={a.name}
+                  type="button"
+                  draggable
+                  onDragStart={(e) => onDragStart(e, a.name)}
+                  onClick={() => onSelect(a.name)}
+                  title={bad ? (offPreset ? `Off-preset for ${boat.name}` : 'No weight on file') : `Select ${a.name}, then tap a seat`}
+                  className="admin-focus"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.6rem',
+                    width: '100%',
+                    backgroundColor: isSelected ? CK.accentSoft : c.surfaceAlt,
+                    border: `1px solid ${isSelected ? c.primary : bad ? CK.warnBorder : c.border}`,
+                    borderRadius: '0.55rem',
+                    padding: '0.55rem 0.7rem',
+                    cursor: 'grab',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: c.text }}>{a.name}</span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, color: bad ? CK.warn : c.textSecondary, whiteSpace: 'nowrap' }}>
+                    {noWeight ? 'no weight' : `${sideLabel(a.side)} · ${a.weight}`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p style={{ fontSize: '0.68rem', color: c.textSecondary, textAlign: 'center', marginTop: '0.6rem', marginBottom: 0 }}>
+          Drag onto a seat, or tap a seat to fill it
+        </p>
+      </>
+    )}
+  </div>
+);
+
+/** Trim & balance panel — port/starboard + bow/stern bars, boat totals, and
+ *  the plain-language issue list (matches the refined reference). */
+const TrimBalancePanel: React.FC<{ stats: BoatStats; c: ColorPalette; CK: CkTokens }> = ({ stats, c, CK }) => {
+  const bar = (a: number, b: number) => {
+    const total = a + b;
+    const aPct = total > 0 ? (a / total) * 100 : 50;
+    return (
+      <div style={{ display: 'flex', height: '0.6rem', borderRadius: '999px', overflow: 'hidden', border: `1px solid ${c.border}`, backgroundColor: c.surfaceAlt }}>
+        <div style={{ width: `${aPct}%`, backgroundColor: c.primary, transition: 'width 0.2s' }} />
+        <div style={{ width: `${100 - aPct}%`, backgroundColor: `${c.primary}55`, transition: 'width 0.2s' }} />
+      </div>
+    );
+  };
+  const avg = stats.paddlers > 0 ? Math.round((stats.left + stats.right) / stats.paddlers) : 0;
+
+  return (
+    <div style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1rem' }}>
+      <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: c.textSecondary, marginBottom: '0.85rem' }}>
+        Trim &amp; balance
+      </div>
+
+      <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginBottom: '0.3rem' }}>Port / Starboard</div>
+      {bar(stats.left, stats.right)}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: c.text, fontWeight: 600, marginTop: '0.25rem' }}>
+        <span>L {stats.left} kg</span>
+        <span>{stats.right} kg R</span>
+      </div>
+      <div style={{ fontSize: '0.72rem', marginTop: '0.2rem', color: stats.sideDelta === 0 ? c.textSecondary : stats.sideDelta <= 10 ? CK.good : CK.warn }}>
+        {stats.sideDelta === 0 ? 'Perfectly even' : `Δ ${stats.sideDelta} kg side-to-side`}
+      </div>
+
+      <div style={{ height: '0.85rem' }} />
+
+      <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginBottom: '0.3rem' }}>Bow / Stern</div>
+      {bar(stats.bow, stats.stern)}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: c.text, fontWeight: 600, marginTop: '0.25rem' }}>
+        <span>Bow {stats.bow} kg</span>
+        <span>{stats.stern} kg Stern</span>
+      </div>
+      <div style={{ fontSize: '0.72rem', marginTop: '0.2rem', color: stats.trimDelta === 0 ? c.textSecondary : stats.trimDelta <= 20 ? CK.good : CK.warn }}>
+        {stats.trimDelta === 0 ? 'Perfectly even' : `Δ ${stats.trimDelta} kg bow-to-stern`}
+      </div>
+
+      <div style={{ borderTop: `1px solid ${c.border}`, marginTop: '0.95rem', paddingTop: '0.7rem', fontSize: '0.78rem', color: c.textSecondary, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Paddlers</span>
+          <span style={{ color: c.text, fontWeight: 600 }}>{stats.paddlers} / {PAD_SEATS}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Gender</span>
+          <span style={{ color: c.text, fontWeight: 600 }}>{stats.males}M · {stats.females}F</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Total weight</span>
+          <span style={{ color: c.text, fontWeight: 600 }}>{stats.total} kg</span>
+        </div>
+        {stats.paddlers > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Avg paddler</span>
+            <span style={{ color: c.text, fontWeight: 600 }}>{avg} kg</span>
+          </div>
+        )}
+      </div>
+
+      {stats.issues.length > 0 && (
+        <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          {stats.issues.map((issue) => (
+            <div
+              key={issue}
+              style={{
+                display: 'flex',
+                gap: '0.5rem',
+                alignItems: 'flex-start',
+                fontSize: '0.76rem',
+                lineHeight: 1.4,
+                color: CK.warn,
+                backgroundColor: CK.warnSoft,
+                border: `1px solid ${CK.warnBorder}`,
+                borderRadius: '0.55rem',
+                padding: '0.5rem 0.65rem',
+              }}
+            >
+              <AlertTriangle size={12} style={{ marginTop: '0.15rem', flexShrink: 0 }} aria-hidden />
+              <span>{issue}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -1627,8 +1925,9 @@ const BoatGrid: React.FC<{
   onSeatDragLeave: () => void;
   onSeatDragStart: (e: React.DragEvent, name: string, fromSeat: SeatId) => void;
   c: ColorPalette;
+  CK: CkTokens;
   fluid?: boolean;
-}> = ({ boat, selected, selectedSide, infoByName, dragOverSeat, onSeatClick, onSeatDrop, onSeatDragOver, onSeatDragLeave, onSeatDragStart, c, fluid }) => {
+}> = ({ boat, selected, selectedSide, infoByName, dragOverSeat, onSeatClick, onSeatDrop, onSeatDragOver, onSeatDragLeave, onSeatDragStart, c, CK, fluid }) => {
   const seatProps = (id: SeatId) => {
     const occupant = boat.seats[id];
     return {
@@ -1646,6 +1945,7 @@ const BoatGrid: React.FC<{
       onDragLeave: onSeatDragLeave,
       onSeatDragStart,
       c,
+      CK,
       fluid,
     };
   };
@@ -1656,10 +1956,13 @@ const BoatGrid: React.FC<{
         display: fluid ? 'flex' : 'inline-flex',
         flexDirection: 'column',
         gap: '0.35rem',
-        padding: '1rem',
+        // Cockpit capsule: rounded bow (top) tapering to a squared stern
+        // (bottom), echoing the shape of the hull. Extra top padding drops the
+        // "↑ Bow" caption below the dome's apex so the curve doesn't clip it.
+        padding: '2.1rem 1rem 1rem',
         backgroundColor: c.surface,
         border: `1px solid ${c.border}`,
-        borderRadius: '0.85rem',
+        borderRadius: '150px 150px 22px 22px',
         // Fluid (mobile): fill the column and never exceed it, so the boat
         // scales down instead of forcing a horizontal scroll.
         ...(fluid ? { width: '100%', maxWidth: '100%', boxSizing: 'border-box' as const } : {}),
@@ -1674,7 +1977,7 @@ const BoatGrid: React.FC<{
       {/* Port / Starboard column headers */}
       <div style={{ display: 'flex', gap: '0.35rem', margin: '0.15rem 0' }}>
         {(['Port', 'Starboard'] as const).map((side) => (
-          <div key={side} style={{ ...(fluid ? { flex: 1, minWidth: 0 } : { width: '96px' }), textAlign: 'center', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.textSecondary }}>
+          <div key={side} style={{ ...(fluid ? { flex: 1, minWidth: 0 } : { width: SEAT_W }), textAlign: 'center', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.textSecondary }}>
             {side}
           </div>
         ))}
@@ -1712,9 +2015,10 @@ const SeatBox: React.FC<{
   onDragLeave: () => void;
   onSeatDragStart: (e: React.DragEvent, name: string, fromSeat: SeatId) => void;
   c: ColorPalette;
+  CK: CkTokens;
   full?: boolean;
   fluid?: boolean;
-}> = ({ id, label, boat, selected, selectedSide, occupantSide, occupantWeight, occupantOffPreset, isDragOver, onClick, onDrop, onDragOver, onDragLeave, onSeatDragStart, c, full, fluid }) => {
+}> = ({ id, label, boat, selected, selectedSide, occupantSide, occupantWeight, occupantOffPreset, isDragOver, onClick, onDrop, onDragOver, onDragLeave, onSeatDragStart, c, CK, full, fluid }) => {
   const occupant = boat.seats[id];
   const isEmpty = !occupant;
   const canPlace = !!selected && isEmpty;
@@ -1726,22 +2030,20 @@ const SeatBox: React.FC<{
   // Would the currently-selected bench athlete be off-side if dropped here?
   const placeOffSide = canPlace && isOffSide(id, selectedSide);
 
-  const amber = '#f59e0b';
-
   let bg = c.surfaceAlt;
   let border = `1px dashed ${c.border}`;
   let textColor = c.textSecondary;
 
   if (occupant) {
-    bg = warned ? `${amber}1f` : '#16a34a18';
-    border = warned ? `1px solid ${amber}` : '1px solid #16a34a55';
-    textColor = warned ? amber : '#16a34a';
+    bg = warned ? CK.warnSoft : CK.goodSoft;
+    border = warned ? `1px solid ${CK.warn}` : `1px solid ${CK.goodBorder}`;
+    textColor = warned ? CK.warn : CK.good;
   } else if (isDragOver) {
     bg = `${c.primary}33`;
     border = `2px solid ${c.primary}`;
   } else if (canPlace) {
-    bg = placeOffSide ? `${amber}1f` : `${c.primary}18`;
-    border = placeOffSide ? `1px dashed ${amber}` : `1px solid ${c.primary}66`;
+    bg = placeOffSide ? CK.warnSoft : CK.accentSoft;
+    border = placeOffSide ? `1px dashed ${CK.warn}` : `1px solid ${c.primary}66`;
   }
 
   const warnReason = [
@@ -1766,13 +2068,13 @@ const SeatBox: React.FC<{
       title={title}
       style={{
         position: 'relative',
-        // Paddler seats: fixed 96px on desktop; on mobile flex to split the
+        // Paddler seats: fixed SEAT_W on desktop; on mobile flex to split the
         // row evenly so the grid fits the viewport without horizontal scroll.
         ...(full
           ? { width: '100%' }
           : fluid
           ? { flex: 1, minWidth: 0 }
-          : { width: '96px' }),
+          : { width: SEAT_W }),
         minHeight: '46px',
         padding: '0.3rem 0.45rem',
         borderRadius: '0.45rem',
@@ -1791,7 +2093,7 @@ const SeatBox: React.FC<{
       {warned && (
         <AlertTriangle
           size={11}
-          color={amber}
+          color={CK.warn}
           style={{ position: 'absolute', top: 3, right: 3 }}
         />
       )}
@@ -1805,125 +2107,11 @@ const SeatBox: React.FC<{
           </div>
         </>
       ) : (
-        <div style={{ color: canPlace ? (placeOffSide ? amber : c.primary) : c.textSecondary }}>{label}</div>
+        <div style={{ color: canPlace ? (placeOffSide ? CK.warn : c.primary) : c.textSecondary }}>{label}</div>
       )}
     </button>
   );
 };
-
-/* ------------------------------------------------------------------ */
-/* Weight balance + trim                                               */
-
-const BalancePanel: React.FC<{
-  boat: Boat;
-  infoByName: Map<string, AthleteInfo>;
-  c: ColorPalette;
-  fullWidth?: boolean;
-}> = ({ boat, infoByName, c, fullWidth }) => {
-  const stats = useMemo(() => {
-    let left = 0, right = 0, bow = 0, stern = 0, paddlers = 0, total = 0, missing = 0;
-    let males = 0, females = 0, offPreset = 0;
-    for (const [seatId, name] of Object.entries(boat.seats)) {
-      const info = infoByName.get(name);
-      const w = info?.weight ?? 0;
-      if (!info || !info.weight) missing++;
-      if (info?.gender === 'Male') males++;
-      else if (info?.gender === 'Female') females++;
-      if (!fitsPreset(boat.preset, info)) offPreset++;
-      total += w;
-      if (!isPaddlerSeat(seatId)) continue;
-      paddlers++;
-      const rowNum = parseInt(seatId, 10);
-      if (seatId.endsWith('L')) left += w;
-      else if (seatId.endsWith('R')) right += w;
-      if (rowNum <= ROWS / 2) bow += w; else stern += w;
-    }
-    return { left, right, bow, stern, paddlers, total, missing, males, females, offPreset };
-  }, [boat.seats, boat.preset, infoByName]);
-
-  const presetLabel = CREW_PRESETS.find((p) => p.id === (boat.preset ?? 'open'))?.label ?? 'Open';
-
-  const sideDelta = Math.abs(stats.left - stats.right);
-  const trimDelta = Math.abs(stats.bow - stats.stern);
-
-  return (
-    <div
-      style={{
-        width: fullWidth ? '100%' : 'min(260px, 100%)',
-        boxSizing: 'border-box',
-        flexShrink: 0,
-        backgroundColor: c.surface,
-        border: `1px solid ${c.border}`,
-        borderRadius: '0.85rem',
-        padding: '1rem',
-        ...(fullWidth ? {} : { position: 'sticky' as const, top: '1rem', alignSelf: 'flex-start' }),
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary, marginBottom: '0.85rem' }}>
-        <Scale size={13} /> Trim &amp; balance
-      </div>
-
-      <BalanceBar label="Port / Starboard" aLabel="L" bLabel="R" a={stats.left} b={stats.right} c={c} />
-      <DeltaLine delta={sideDelta} unit="kg side-to-side" c={c} good={sideDelta <= 10} />
-
-      <div style={{ height: '0.85rem' }} />
-
-      <BalanceBar label="Bow / Stern" aLabel="Bow" bLabel="Stern" a={stats.bow} b={stats.stern} c={c} />
-      <DeltaLine delta={trimDelta} unit="kg bow-to-stern" c={c} good={trimDelta <= 20} />
-
-      <div style={{ borderTop: `1px solid ${c.border}`, marginTop: '0.95rem', paddingTop: '0.7rem', fontSize: '0.78rem', color: c.textSecondary, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <Row k="Crew" v={presetLabel} c={c} />
-        <Row k="Paddlers" v={`${stats.paddlers} / ${ROWS * 2}`} c={c} />
-        <Row k="Gender" v={`${stats.males}M · ${stats.females}F`} c={c} />
-        <Row k="Total weight" v={`${stats.total} kg`} c={c} />
-        {stats.paddlers > 0 && (
-          <Row k="Avg paddler" v={`${Math.round((stats.left + stats.right) / stats.paddlers)} kg`} c={c} />
-        )}
-        {stats.offPreset > 0 && (
-          <div style={{ color: '#f59e0b', fontSize: '0.72rem', marginTop: '0.2rem' }}>
-            {stats.offPreset} off-preset for {presetLabel}
-          </div>
-        )}
-        {stats.missing > 0 && (
-          <div style={{ color: '#f59e0b', fontSize: '0.72rem', marginTop: '0.2rem' }}>
-            {stats.missing} seated without a weight on file
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const BalanceBar: React.FC<{ label: string; aLabel: string; bLabel: string; a: number; b: number; c: ColorPalette }> = ({ label, aLabel, bLabel, a, b, c }) => {
-  const total = a + b;
-  const aPct = total > 0 ? (a / total) * 100 : 50;
-  return (
-    <div>
-      <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginBottom: '0.3rem' }}>{label}</div>
-      <div style={{ display: 'flex', height: '0.85rem', borderRadius: '999px', overflow: 'hidden', border: `1px solid ${c.border}`, backgroundColor: c.surfaceAlt }}>
-        <div style={{ width: `${aPct}%`, backgroundColor: c.primary, transition: 'width 0.2s' }} />
-        <div style={{ width: `${100 - aPct}%`, backgroundColor: `${c.primary}55`, transition: 'width 0.2s' }} />
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: c.text, marginTop: '0.2rem', fontWeight: 600 }}>
-        <span>{aLabel} {a} kg</span>
-        <span>{b} kg {bLabel}</span>
-      </div>
-    </div>
-  );
-};
-
-const DeltaLine: React.FC<{ delta: number; unit: string; good: boolean; c: ColorPalette }> = ({ delta, unit, good, c }) => (
-  <div style={{ fontSize: '0.7rem', marginTop: '0.25rem', color: delta === 0 ? c.textSecondary : good ? '#16a34a' : '#f59e0b' }}>
-    {delta === 0 ? 'Perfectly even' : `Δ ${delta} ${unit}`}
-  </div>
-);
-
-const Row: React.FC<{ k: string; v: string; c: ColorPalette }> = ({ k, v, c }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-    <span>{k}</span>
-    <span style={{ color: c.text, fontWeight: 600 }}>{v}</span>
-  </div>
-);
 
 /* ------------------------------------------------------------------ */
 
