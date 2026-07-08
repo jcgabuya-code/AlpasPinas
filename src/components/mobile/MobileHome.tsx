@@ -58,9 +58,6 @@ const FACTS = [
   { value: 'Malaysia', label: 'Home water' },
 ];
 
-// Keyword tagline under the hero headline — mirrors the desktop hero's cadence
-// row (SPEED · SYNC · STRENGTH), beat-ticked with the shared .cadence-beat class.
-const KEYWORDS = ['SPEED', 'SYNC', 'STRENGTH'];
 
 // The weekly rhythm, grouped land / water — mirrors TrainingSchedule's data.
 const LAND = {
@@ -391,18 +388,16 @@ export const MobileHome: React.FC = () => {
           >
             on every stroke.
           </div>
-          {/* Cadence row — SPEED · SYNC · STRENGTH beat-ticks, matches desktop hero */}
-          <div className="stroke-in" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem 1rem', marginTop: '2px', animationDelay: '0.64s' }}>
-            {KEYWORDS.map((word, i) => (
-              <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span
-                  aria-hidden="true"
-                  className="cadence-beat"
-                  style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0, animationDelay: `${i * 0.18}s` }}
-                />
-                <span style={{ color: isDark ? c.text : heroTextLight, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.15em', textShadow: isDark ? 'none' : heroShadowLight }}>{word}</span>
-              </span>
-            ))}
+          {/* Eyebrow tagline with a leading cadence beat — matches the desktop hero */}
+          <div className="stroke-in" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2px', animationDelay: '0.64s' }}>
+            <span
+              aria-hidden="true"
+              className="cadence-beat"
+              style={{ width: '7px', height: '7px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
+            />
+            <span style={{ color: isDark ? c.text : heroTextLight, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textShadow: isDark ? 'none' : heroShadowLight }}>
+              Filipino Dragon Boat Team · Malaysia
+            </span>
           </div>
           {/* <div className="stroke-in" style={{ fontSize: '0.9rem', lineHeight: 1.5, color: isDark ? c.textSecondary : heroSubLight, maxWidth: '300px', animationDelay: '0.72s', textShadow: isDark ? 'none' : heroShadowLight }}>
             Start with a weekend session. No experience needed, all gear provided, and a crew that will get you on the water fast.
