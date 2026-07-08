@@ -59,7 +59,7 @@ function fromEnvLocal(key) {
   }
 }
 
-const isAdmin = path.startsWith('/admin');
+const isAdmin = path.startsWith('/admin') || flag('login');
 
 // ---- drive ----------------------------------------------------------------
 const browser = await chromium.launch();

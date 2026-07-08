@@ -72,7 +72,7 @@ const WATER = {
   cadence: 'SAT & SUN · 7–10 AM',
   spots: '8 spots left',
   title: 'Full Crew Session',
-  copy: 'Full-boat pieces, race starts, and crew building. The best place to try paddling. Marina Putrajaya · Beginner friendly.',
+  copy: 'Full-boat pieces, race starts, and crew building. The best place to try paddling. Marina Putrajaya / Subang PARC · Beginner friendly.',
 };
 
 const CONTACT_INFO: { label: string; value: string; icon: React.ReactNode }[] = [

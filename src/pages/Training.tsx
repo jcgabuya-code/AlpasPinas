@@ -137,13 +137,82 @@ export const Training: React.FC = () => {
   const [landRef, landInView] = useInView<HTMLDivElement>();
   const [lakeRef, lakeInView] = useInView<HTMLDivElement>();
 
+  // Shared lane pieces so the mobile stack and the desktop split-waterline layout
+  // render from one source instead of duplicating the header/grid markup.
+  const chipStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    flexShrink: 0,
+    borderRadius: '0.7rem',
+    background: `${c.primary}1f`,
+    border: `1px solid ${c.primary}59`,
+  };
+
+  const renderLaneHeader = (glyph: React.ReactNode, label: string, inView: boolean) => (
+    <div
+      className={`reveal${inView ? ' is-visible' : ''}`}
+      style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: isMobile ? '1.5rem' : '2rem' }}
+    >
+      <span aria-hidden="true" style={chipStyle}>
+        {glyph}
+      </span>
+      <SectionHeader style={{ margin: 0 }}>{label}</SectionHeader>
+    </div>
+  );
+
+  const renderLaneCards = (laneEvents: TrainingEvent[], inView: boolean, emptyText: string) =>
+    laneEvents.length > 0 ? (
+      <div
+        className={`reveal${inView ? ' is-visible' : ''}`}
+        style={{
+          animationDelay: '0.08s',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: '1.25rem',
+          alignContent: 'start',
+        }}
+      >
+        {laneEvents.map((ev) => (
+          <TrainingCard
+            key={ev.id}
+            event={ev}
+            counts={counts}
+            onBook={setModalEvent}
+            myBooking={myBookingByEventId.get(ev.id)}
+          />
+        ))}
+      </div>
+    ) : (
+      <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: '0.5rem 0' }}>{emptyText}</p>
+    );
+
+  const landHeader = renderLaneHeader(<LandGlyph color={accent} size={19} />, 'ON LAND', landInView);
+  const lakeHeader = renderLaneHeader(<WaveGlyph color={accent} size={19} />, 'ON THE WATER', lakeInView);
+  const landBody = renderLaneCards(landEvents, landInView, 'No land sessions scheduled right now — check back soon.');
+  const lakeBody = renderLaneCards(lakeEvents, lakeInView, 'No upcoming weekends scheduled right now — check back soon.');
+  const adminNote = (
+    <p
+      style={{
+        color: c.textSecondary,
+        fontSize: '0.78rem',
+        textAlign: 'center',
+        opacity: 0.6,
+      }}
+    >
+      Manage sessions from the admin Events panel.
+    </p>
+  );
+
   return (
     <>
       {/* Header — Shop.tsx's already-v2 pattern: back-link, display h1 with the
           wake-underline motif on the accent word. No image hero, no eyebrow chip. */}
       <section
         style={{
-          paddingBlock: 'clamp(2.5rem, 6vw, 4rem) clamp(1rem, 3vw, 1.75rem)',
+          paddingBlock: isMobile ? 'clamp(2.5rem, 6vw, 4rem) 2rem' : 'clamp(3rem, 6vw, 5rem) clamp(2rem, 4vw, 3.5rem)',
           paddingInline: 'clamp(1rem, 4vw, 2rem)',
           backgroundColor: c.background,
         }}
@@ -151,53 +220,69 @@ export const Training: React.FC = () => {
         <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
           <Link
             to="/"
-            style={{ display: 'inline-block', color: c.textSecondary, textDecoration: 'none', fontSize: '0.85rem', marginBottom: '1.25rem' }}
+            style={{ display: 'inline-block', color: c.textSecondary, textDecoration: 'none', fontSize: '0.85rem', marginBottom: isMobile ? '1.25rem' : '2rem' }}
           >
             ← Back to home
           </Link>
 
-          <h1
+          {/* Masthead — on desktop the display headline and the intro sit as two
+              columns of one editorial band so the line fills the width instead of
+              a narrow left-stacked (mobile) column with dead space to the right. */}
+          <div
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
-              color: c.text,
-              margin: '0 0 0.9rem 0',
-              letterSpacing: '0.02em',
-              lineHeight: 0.98,
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.55fr) minmax(0, 1fr)',
+              columnGap: 'clamp(2rem, 5vw, 4.5rem)',
+              rowGap: '1.1rem',
+              alignItems: 'end',
             }}
           >
-            TRAIN WITH{' '}
-            <span style={{ position: 'relative', display: 'inline-block', color: c.primary }}>
-              US
-              <span
-                aria-hidden="true"
-                className="wake-underline"
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: '0.02em',
-                  height: '0.07em',
-                  borderRadius: '999px',
-                  background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
-                }}
-              />
-            </span>
-          </h1>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: isMobile ? 'clamp(2.5rem, 12vw, 3.5rem)' : 'clamp(3.5rem, 7vw, 5.5rem)',
+                color: c.text,
+                margin: 0,
+                letterSpacing: '0.01em',
+                lineHeight: 0.92,
+                textWrap: 'balance' as const,
+              }}
+            >
+              TRAIN WITH{' '}
+              <span style={{ position: 'relative', display: 'inline-block', color: c.primary }}>
+                US
+                <span
+                  aria-hidden="true"
+                  className="wake-underline"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: '0.02em',
+                    height: '0.07em',
+                    borderRadius: '999px',
+                    background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                  }}
+                />
+              </span>
+            </h1>
 
-          <p
-            style={{
-              color: c.textSecondary,
-              fontSize: '1rem',
-              maxWidth: '640px',
-              lineHeight: 1.6,
-              margin: 0,
-            }}
-          >
-            Two disciplines, one crew: weeknight land conditioning to build the engine, weekend
-            lake sessions to put it in the boat. Sign up below — all sessions save to your team
-            account.
-          </p>
+            <p
+              style={{
+                color: c.textSecondary,
+                fontSize: isMobile ? '1rem' : '1.05rem',
+                maxWidth: isMobile ? '640px' : 'none',
+                lineHeight: 1.65,
+                margin: 0,
+                paddingTop: isMobile ? 0 : '1.1rem',
+                borderTop: isMobile ? 'none' : `1px solid ${c.border}`,
+              }}
+            >
+              Two disciplines, one crew: weeknight land conditioning to build the engine, weekend
+              lake sessions to put it in the boat. Sign up below — all sessions save to your team
+              account.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -210,139 +295,55 @@ export const Training: React.FC = () => {
         />
       )}
 
-      {/* On Land — weeknight conditioning */}
-      <section
-        ref={landRef}
-        style={{
-          backgroundColor: c.sand,
-          borderTop: `1px solid ${c.border}`,
-          ...sectionShell,
-        }}
-      >
-        <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
-          <div
-            className={`reveal${landInView ? ' is-visible' : ''}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: isMobile ? '1.5rem' : '2rem' }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                flexShrink: 0,
-                borderRadius: '0.7rem',
-                background: `${c.primary}1f`,
-                border: `1px solid ${c.primary}59`,
-              }}
-            >
-              <LandGlyph color={accent} size={19} />
-            </span>
-            <SectionHeader style={{ margin: 0 }}>ON LAND</SectionHeader>
-          </div>
-
-          {landEvents.length > 0 ? (
-            <div
-              className={`reveal${landInView ? ' is-visible' : ''}`}
-              style={{
-                animationDelay: '0.08s',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '1.25rem',
-              }}
-            >
-              {landEvents.map((ev) => (
-                <TrainingCard
-                  key={ev.id}
-                  event={ev}
-                  counts={counts}
-                  onBook={setModalEvent}
-                  myBooking={myBookingByEventId.get(ev.id)}
-                />
-              ))}
+      {isMobile ? (
+        <>
+          {/* On Land — weeknight conditioning */}
+          <section ref={landRef} style={{ backgroundColor: c.sand, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
+            <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
+              {landHeader}
+              {landBody}
             </div>
-          ) : (
-            <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: '0.5rem 0' }}>
-              No land sessions scheduled right now — check back soon.
-            </p>
-          )}
-        </div>
-      </section>
+          </section>
 
-      {/* On the Water — weekend lake crew time */}
-      <section
-        ref={lakeRef}
-        style={{
-          backgroundColor: c.background,
-          borderTop: `1px solid ${c.border}`,
-          ...sectionShell,
-        }}
-      >
-        <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
-          <div
-            className={`reveal${lakeInView ? ' is-visible' : ''}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: isMobile ? '1.5rem' : '2rem' }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                flexShrink: 0,
-                borderRadius: '0.7rem',
-                background: `${c.primary}1f`,
-                border: `1px solid ${c.primary}59`,
-              }}
-            >
-              <WaveGlyph color={accent} size={19} />
-            </span>
-            <SectionHeader style={{ margin: 0 }}>ON THE WATER</SectionHeader>
-          </div>
-
-          {lakeEvents.length > 0 ? (
-            <div
-              className={`reveal${lakeInView ? ' is-visible' : ''}`}
-              style={{
-                animationDelay: '0.08s',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '1.25rem',
-              }}
-            >
-              {lakeEvents.map((ev) => (
-                <TrainingCard
-                  key={ev.id}
-                  event={ev}
-                  counts={counts}
-                  onBook={setModalEvent}
-                  myBooking={myBookingByEventId.get(ev.id)}
-                />
-              ))}
+          {/* On the Water — weekend lake crew time */}
+          <section ref={lakeRef} style={{ backgroundColor: c.background, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
+            <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
+              {lakeHeader}
+              {lakeBody}
+              <div style={{ marginTop: '2.5rem' }}>{adminNote}</div>
             </div>
-          ) : (
-            <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: '0.5rem 0' }}>
-              No upcoming weekends scheduled right now — check back soon.
-            </p>
-          )}
-
-          <p
+          </section>
+        </>
+      ) : (
+        /* Desktop — Land and Water run as two equal lanes side by side on one
+           unified background. The lane headers (glyph + label) carry the split;
+           no divider, no tinted halves. Fills the width the old stacked single-
+           column grids left empty. */
+        <section style={{ borderTop: `1px solid ${c.border}`, backgroundColor: c.background, ...sectionShell }}>
+          <div
             style={{
-              marginTop: '2.5rem',
-              color: c.textSecondary,
-              fontSize: '0.78rem',
-              textAlign: 'center',
-              opacity: 0.6,
+              maxWidth: contentMaxWidth,
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+              columnGap: 'clamp(1.5rem, 3vw, 2.5rem)',
+              alignItems: 'start',
             }}
           >
-            Manage sessions from the admin Events panel.
-          </p>
-        </div>
-      </section>
+            <div ref={landRef} style={{ display: 'flex', flexDirection: 'column' }}>
+              {landHeader}
+              {landBody}
+            </div>
+
+            <div ref={lakeRef} style={{ display: 'flex', flexDirection: 'column' }}>
+              {lakeHeader}
+              {lakeBody}
+            </div>
+          </div>
+
+          <div style={{ maxWidth: contentMaxWidth, margin: '3rem auto 0' }}>{adminNote}</div>
+        </section>
+      )}
 
       {confirmedNotices.length > 0 && (
         <ConfirmedNotification

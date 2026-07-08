@@ -4,6 +4,19 @@ import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { SectionHeader } from './SectionHeader';
 import { sectionShell, cadenceAccentUri } from '../styles/tokens';
+import { submitApplication, type ApplicationResult } from '../utils/users';
+
+// Country dialing codes for the mobile field — mirrors JoinTeam's list so the
+// "claim a seat" application carries the same mobile format the account is keyed on.
+const COUNTRY_CODES = [
+  { code: '+60', flag: '🇲🇾' },
+  { code: '+63', flag: '🇵🇭' },
+  { code: '+65', flag: '🇸🇬' },
+  { code: '+1', flag: '🇺🇸' },
+  { code: '+44', flag: '🇬🇧' },
+  { code: '+61', flag: '🇦🇺' },
+  { code: '+81', flag: '🇯🇵' },
+];
 
 // Line-art glyphs (handmade) to match the site's icon system.
 const IconBase: React.FC<{ children: React.ReactNode; size?: number }> = ({ children, size = 20 }) => (
@@ -50,18 +63,9 @@ const AlertIcon = ({ size = 18 }: { size?: number }) => (
   </IconBase>
 );
 
-type Values = { name: string; email: string; exp: string; message: string };
-type Errors = { name?: string; email?: string };
+type Values = { name: string; email: string; countryCode: string; mobile: string };
+type Errors = { name?: string; email?: string; mobile?: string };
 type Status = 'idle' | 'submitting' | 'success' | 'error';
-
-// INTEGRATION POINT — swap this stub for the real submission: a Supabase
-// `applications` insert or an email relay. Resolve on success, throw on failure,
-// and the loading/error states below stay wired with no further changes. The
-// simulated delay only exists so the "submitting" state is visible until then.
-async function submitApplication(_values: Values): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 900));
-  // throw new Error('not wired'); // ← uncomment to preview the error state
-}
 
 export const Contact: React.FC = () => {
   const { theme, brand } = useTheme();
@@ -69,10 +73,12 @@ export const Contact: React.FC = () => {
   const isMobile = useIsMobile();
   const accent = theme === 'dark' ? c.primaryLight : c.primary;
 
-  const [values, setValues] = useState<Values>({ name: '', email: '', exp: 'any', message: '' });
+  const [values, setValues] = useState<Values>({ name: '', email: '', countryCode: '+60', mobile: '' });
   const [errors, setErrors] = useState<Errors>({});
   const [focused, setFocused] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
+  const [result, setResult] = useState<ApplicationResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const set = (k: keyof Values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
@@ -82,6 +88,7 @@ export const Contact: React.FC = () => {
     if (!values.name.trim()) next.name = 'Tell us your name';
     if (!values.email.trim()) next.email = 'We need an email to reach you';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) next.email = 'That email looks off';
+    if (!values.mobile.trim()) next.mobile = 'We need a mobile number for your account';
     return next;
   };
 
@@ -92,15 +99,22 @@ export const Contact: React.FC = () => {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
     setStatus('submitting');
+    setErrorMsg(null);
     try {
-      await submitApplication(values);
+      // Same flow as "Join the Team": inserts the application and — while
+      // self-service approval is on — mints a registration token, which fires the
+      // DB trigger that emails the step-2 registration link.
+      const fullMobile = `${values.countryCode}${values.mobile.trim()}`;
+      const res = await submitApplication(fullMobile, values.name.trim(), values.email.trim());
+      setResult(res);
       setStatus('success');
-    } catch {
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : null);
       setStatus('error');
     }
   };
 
-  const inputStyle = (id: keyof Errors | 'exp' | 'message', hasError?: boolean): React.CSSProperties => ({
+  const inputStyle = (id: keyof Errors | 'countryCode', hasError?: boolean): React.CSSProperties => ({
     width: '100%',
     padding: '0.85rem 1rem',
     borderRadius: '0.55rem',
@@ -214,16 +228,23 @@ export const Contact: React.FC = () => {
                 <CheckIcon size={28} />
               </span>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', letterSpacing: '0.02em', color: c.text, margin: 0 }}>
-                Seat saved.
+                {result?.autoApproved ? 'Check your email.' : 'Seat saved.'}
               </h3>
-              <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: 0, maxWidth: '320px' }}>
-                Thanks{values.name.trim() ? `, ${values.name.trim().split(/\s+/)[0]}` : ''}! We'll be in touch within a day or two about your first session.
+              <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: 0, maxWidth: '340px' }}>
+                Thanks{values.name.trim() ? `, ${values.name.trim().split(/\s+/)[0]}` : ''}!{' '}
+                {result?.autoApproved
+                  ? result.emailSent
+                    ? `We've emailed a registration link to ${values.email.trim()}. Open it to set your password and finish creating your account — it's valid for 7 days.`
+                    : "Your registration link is ready, but the email didn't go through. Please email the team admin to have it re-sent."
+                  : "We've got your application — our admin team will review it and email you a registration link shortly."}
               </p>
               <button
                 type="button"
                 onClick={() => {
-                  setValues({ name: '', email: '', exp: 'any', message: '' });
+                  setValues({ name: '', email: '', countryCode: '+60', mobile: '' });
                   setErrors({});
+                  setResult(null);
+                  setErrorMsg(null);
                   setStatus('idle');
                 }}
                 style={{ marginTop: '0.6rem', background: 'none', border: 'none', color: c.primary, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit' }}
@@ -253,7 +274,7 @@ export const Contact: React.FC = () => {
                     <AlertIcon size={18} />
                   </span>
                   <span>
-                    We couldn't send that just now. Please try again — if it keeps happening, email{' '}
+                    {errorMsg ?? "We couldn't send that just now. Please try again"} — if it keeps happening, email{' '}
                     <a href="mailto:admin@alpaspinas.com" style={{ color: accent, fontWeight: 600 }}>admin@alpaspinas.com</a>.
                   </span>
                 </div>
@@ -285,26 +306,33 @@ export const Contact: React.FC = () => {
                 />
               </Field>
 
-              <Field label="Paddling experience" htmlFor="exp" color={c.text}>
-                <select id="exp" value={values.exp} onChange={set('exp')} onFocus={() => setFocused('exp')} onBlur={() => setFocused(null)} style={inputStyle('exp')}>
-                  <option value="any">Pick one…</option>
-                  <option value="none">Never paddled before</option>
-                  <option value="some">A bit — kayak / outrigger / etc.</option>
-                  <option value="dragon">Done dragon boat before</option>
-                </select>
-              </Field>
-
-              <Field label="Message" htmlFor="msg" color={c.text}>
-                <textarea
-                  id="msg"
-                  placeholder="Tell us a bit about yourself…"
-                  rows={4}
-                  value={values.message}
-                  onChange={set('message')}
-                  onFocus={() => setFocused('message')}
-                  onBlur={() => setFocused(null)}
-                  style={{ ...inputStyle('message'), resize: 'vertical', minHeight: '110px' }}
-                />
+              <Field label="Mobile number" htmlFor="mobile" color={c.text} error={errors.mobile}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select
+                    aria-label="Country code"
+                    value={values.countryCode}
+                    onChange={set('countryCode')}
+                    onFocus={() => setFocused('countryCode')}
+                    onBlur={() => setFocused(null)}
+                    style={{ ...inputStyle('countryCode'), flex: '0 0 108px', padding: '0.85rem 0.6rem' }}
+                  >
+                    {COUNTRY_CODES.map((cc) => (
+                      <option key={cc.code} value={cc.code}>
+                        {cc.flag} {cc.code}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    id="mobile"
+                    type="tel"
+                    placeholder="12 345 6789"
+                    value={values.mobile}
+                    onChange={set('mobile')}
+                    onFocus={() => setFocused('mobile')}
+                    onBlur={() => setFocused(null)}
+                    style={{ ...inputStyle('mobile', Boolean(errors.mobile)), flex: 1 }}
+                  />
+                </div>
               </Field>
 
               <button
@@ -327,6 +355,7 @@ export const Contact: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.6rem',
+                  marginTop: '0.75rem',
                   opacity: status === 'submitting' ? 0.9 : 1,
                   transition: 'opacity 0.2s ease',
                 }}

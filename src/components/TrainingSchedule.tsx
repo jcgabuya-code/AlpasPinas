@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { colors } from '../styles/colors';
+import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useInView } from '../hooks/useInView';
 import { SectionHeader } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
-import { PinGlyph, StarGlyph, LandGlyph, WaveGlyph, WhatsAppGlyph } from './icons/trainingGlyphs';
+import { PinGlyph, StarGlyph, LandGlyph, WaveGlyph } from './icons/trainingGlyphs';
+import { CalendarCheck } from 'lucide-react';
 
 // The weekly training rhythm — two weeknight land/technique sessions plus the
 // weekend full-crew water time. `open` sessions welcome drop-ins; the closed one
@@ -30,21 +31,8 @@ type Session = {
 const SCHEDULE: Session[] = [
   {
     venue: 'land',
-    day: 'TUE',
-    cadence: 'Weeknight',
-    time: '7:00 – 9:00 PM',
-    title: 'Land & Erg Conditioning',
-    focus: 'Strength circuit, paddle ergs, and core work to build the engine off the water.',
-    loc: 'Subang PARC',
-    level: 'All levels',
-    open: true,
-    openLabel: 'Drop-ins welcome',
-    spots: 'Open',
-  },
-  {
-    venue: 'land',
-    day: 'THU',
-    cadence: 'Weeknight',
+    day: 'TUE & THU',
+    cadence: 'Weeknights',
     time: '7:00 – 9:00 PM',
     title: 'Land & Erg Conditioning',
     focus: 'Strength circuit, paddle ergs, and core work to build the engine off the water.',
@@ -56,25 +44,12 @@ const SCHEDULE: Session[] = [
   },
   {
     venue: 'lake',
-    day: 'SAT',
-    cadence: 'Weekend',
+    day: 'SAT & SUN',
+    cadence: 'Weekends',
     time: '7:00 – 10:00 AM',
     title: 'Full Crew Session',
     focus: 'Full-boat pieces, race starts, and crew building. The best place to try paddling.',
-    loc: 'Marina Putrajaya',
-    level: 'All levels',
-    open: true,
-    openLabel: 'Beginner friendly',
-    spots: '8 spots left',
-  },
-  {
-    venue: 'lake',
-    day: 'SUN',
-    cadence: 'Weekend',
-    time: '7:00 – 10:00 AM',
-    title: 'Full Crew Session',
-    focus: 'Full-boat pieces, race starts, and crew building. The best place to try paddling.',
-    loc: 'Marina Putrajaya',
+    loc: 'Marina Putrajaya / Subang PARC',
     level: 'All levels',
     open: true,
     openLabel: 'Beginner friendly',
@@ -91,9 +66,6 @@ const GROUPS: Group[] = [
   { venue: 'lake', label: 'On the Water', tag: 'Boat time' },
 ];
 
-// "Book a Session" / "Reserve a seat" message the crew, so they carry the WhatsApp
-// green + glyph — consistent with the hero CTA.
-const WA_GRADIENT = 'linear-gradient(135deg, #1faa4d, #25D366)';
 
 export const TrainingSchedule: React.FC = () => {
   const { theme, brand } = useTheme();
@@ -366,14 +338,15 @@ export const TrainingSchedule: React.FC = () => {
               height: 52,
               borderRadius: '0.75rem',
               flexShrink: 0,
-              background: WA_GRADIENT,
+              background: brandGradient(brand, theme),
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: `0 8px 22px ${c.primary}33`,
             }}
           >
-            <WhatsAppGlyph />
+            <CalendarCheck size={24} strokeWidth={2.2} />
           </div>
           <div style={{ flex: 1 }}>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: c.text, margin: '0 0 0.25rem' }}>
@@ -393,7 +366,7 @@ export const TrainingSchedule: React.FC = () => {
               alignSelf: isMobile ? 'stretch' : 'auto',
               textAlign: 'center',
               textDecoration: 'none',
-              background: WA_GRADIENT,
+              background: brandGradient(brand, theme),
               color: '#fff',
               fontWeight: 800,
               fontSize: '0.9rem',
@@ -402,8 +375,8 @@ export const TrainingSchedule: React.FC = () => {
               whiteSpace: 'nowrap',
               transform: reserveHover ? 'translateY(-2px)' : 'translateY(0)',
               boxShadow: reserveHover
-                ? '0 16px 34px rgba(37,211,102,0.46)'
-                : '0 10px 26px rgba(37,211,102,0.34)',
+                ? `0 16px 34px ${c.primary}55`
+                : `0 10px 26px ${c.primary}3d`,
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             }}
           >

@@ -262,6 +262,18 @@ export const Hero: React.FC = () => {
   // it blends seamlessly into this stage.
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
   const panel = `rgb(${panelRgb})`;
+
+  // Left-weighted legibility scrim over the photo. Light mode gets a much softer,
+  // shorter wash: a full-strength near-white gradient reads as a heavy fog over the
+  // image, whereas the same stops in dark mode blend into the water as a vignette.
+  const heroScrim = isDark
+    ? `linear-gradient(96deg, rgba(${panelRgb},0.92) 0%, rgba(${panelRgb},0.8) 22%, rgba(${panelRgb},0.3) 42%, rgba(${panelRgb},0.05) 55%, rgba(${panelRgb},0) 70%)`
+    : `linear-gradient(96deg, rgba(${panelRgb},0.82) 0%, rgba(${panelRgb},0.62) 20%, rgba(${panelRgb},0.28) 38%, rgba(${panelRgb},0.08) 52%, rgba(${panelRgb},0) 66%)`;
+  // Light-mode copy sits over a busier, brighter photo — a faint panel-colored halo
+  // keeps it legible without reaching back for the heavy scrim we just trimmed.
+  const heroTextHalo = isDark ? undefined : `0 1px 12px rgba(${panelRgb},0.72)`;
+  const heroTopFade = `linear-gradient(180deg, rgba(${panelRgb},${isDark ? 0.6 : 0.34}), transparent)`;
+
   const heroText = c.text;
   const heroSub = isDark ? 'rgba(245, 247, 245, 0.82)' : c.textSecondary;
   const heroAccent = isDark ? c.primaryLight : c.primary;
@@ -322,6 +334,7 @@ export const Hero: React.FC = () => {
         maxWidth: '440px',
         lineHeight: 1.42,
         animationDelay: delay,
+        textShadow: isMobile ? undefined : heroTextHalo,
       }}
     >
       Start with a weekend session. No experience needed, all gear provided,
@@ -572,7 +585,7 @@ export const Hero: React.FC = () => {
             position: 'absolute',
             inset: 0,
             pointerEvents: 'none',
-            background: `linear-gradient(96deg, rgba(${panelRgb},0.92) 0%, rgba(${panelRgb},0.8) 22%, rgba(${panelRgb},0.3) 42%, rgba(${panelRgb},0.05) 55%, rgba(${panelRgb},0) 70%)`,
+            background: heroScrim,
           }}
         />
         {/* Top fade — grounds the transparent nav over the photo */}
@@ -584,7 +597,7 @@ export const Hero: React.FC = () => {
             top: 0,
             height: '170px',
             pointerEvents: 'none',
-            background: `linear-gradient(180deg, rgba(${panelRgb},0.6), transparent)`,
+            background: heroTopFade,
           }}
         />
         <div
@@ -626,7 +639,7 @@ export const Hero: React.FC = () => {
               className="cadence-beat"
               style={{ width: '8px', height: '8px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
             />
-            <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: heroSub }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: heroSub, textShadow: heroTextHalo }}>
               Filipino Dragon Boat Team · Malaysia
             </span>
           </div>
