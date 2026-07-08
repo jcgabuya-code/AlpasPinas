@@ -342,15 +342,17 @@ export const MobileHome: React.FC = () => {
               : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.12)} 40%, ${hexToRgba(c.surface, 0.32)} 70%, ${hexToRgba(c.surface, 0.5)} 100%)`,
           }}
         />
-        <div style={{ position: 'relative', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Next Race — pinned to the top of the hero photo, above the scrim, so it
+            uses the empty upper space while the headline block stays bottom-anchored. */}
+        <div style={{ position: 'absolute', top: '20px', left: '22px', right: '22px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <span
             className="stroke-in"
             style={{
               animationDelay: '0.04s',
               alignSelf: 'flex-start',
               background: isDark ? `${c.primary}24` : 'rgba(8,13,20,0.5)',
-              backdropFilter: isDark ? undefined : 'blur(6px)',
-              WebkitBackdropFilter: isDark ? undefined : 'blur(6px)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
               border: isDark ? 'none' : '1px solid rgba(255,255,255,0.18)',
               color: isDark ? accent : heroAccentLight,
               fontSize: '0.7rem',
@@ -364,10 +366,12 @@ export const MobileHome: React.FC = () => {
             Next Race · Join Us
           </span>
           {nextRace && (
-            <div className="stroke-in" style={{ animationDelay: '0.1s', fontSize: '0.85rem', color: isDark ? c.textSecondary : heroSubLight, fontWeight: 600, textShadow: isDark ? 'none' : heroShadowLight }}>
+            <div className="stroke-in" style={{ animationDelay: '0.1s', fontSize: '0.85rem', color: isDark ? c.text : heroSubLight, fontWeight: 600, textShadow: '0 1px 10px rgba(0,0,0,0.6)' }}>
               {nextRace.name} — {nextRace.when}
             </div>
           )}
+        </div>
+        <div style={{ position: 'relative', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', lineHeight: 0.98, color: isDark ? c.text : heroTextLight, letterSpacing: '0.01em', textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight }}>
             <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', animationDelay: '0.16s' }}>
               BREAK
