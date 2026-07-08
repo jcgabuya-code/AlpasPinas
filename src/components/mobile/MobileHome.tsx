@@ -112,13 +112,14 @@ export const MobileHome: React.FC = () => {
   const accent = isDark ? c.primaryLight : c.primary;
   const grad = brandGradient(brand, theme);
 
-  // Hero text follows the theme like the desktop hero: c.text goes white in dark
-  // mode and dark navy in light mode. Light mode uses NO text shadow (any light
-  // shadow behind the dark glyphs reads as a glow) — legibility comes from the
-  // scrim instead. Dark mode keeps its own dark drop shadow. The Next Race chip
-  // keeps a light accent because it rides its own dark pill.
+  // Light-mode-only hero overrides: the hero sits over a full-bleed photo, so the
+  // page's dark navy text has no reliable contrast there. Both themes therefore use
+  // light text over the photo (white in dark mode via c.text, forced light here),
+  // with a dark drop shadow for legibility.
+  const heroTextLight = '#f7f9f7';
+  const heroSubLight = 'rgba(247, 249, 247, 0.92)';
   const heroAccentLight = c.primaryLight;
-  const heroShadowLight = 'none';
+  const heroShadowLight = '0 2px 14px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.5)';
 
   // Section refs so the pill bar and hero CTAs can jump to each band.
   const refs: Record<SectionKey, React.RefObject<HTMLElement | null>> = {
@@ -321,7 +322,7 @@ export const MobileHome: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
-          paddingBottom: '25%',
+          paddingBottom: '20%',
           overflow: 'hidden',
           background: c.surface,
           scrollMarginTop: `${scrollMargin}px`,
@@ -338,7 +339,7 @@ export const MobileHome: React.FC = () => {
             inset: 0,
             background: isDark
               ? `linear-gradient(180deg, ${hexToRgba(c.surface, 0.4)} 0%, ${hexToRgba(c.surface, 0.56)} 30%, ${hexToRgba(c.surface, 0.8)} 60%, ${hexToRgba(c.surface, 0.93)} 100%)`
-              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.2)} 0%, ${hexToRgba(c.surface, 0.12)} 22%, ${hexToRgba(c.surface, 0.4)} 68%, ${hexToRgba(c.surface, 0.72)} 100%)`,
+              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.12)} 40%, ${hexToRgba(c.surface, 0.32)} 70%, ${hexToRgba(c.surface, 0.5)} 100%)`,
           }}
         />
         {/* Next Race — pinned to the top of the hero photo, above the scrim, so it
@@ -365,17 +366,17 @@ export const MobileHome: React.FC = () => {
             Next Race · Join Us
           </span>
           {nextRace && (
-            <div className="stroke-in" style={{ animationDelay: '0.1s', fontSize: '0.85rem', color: c.text, fontWeight: 600, textShadow: isDark ? '0 1px 10px rgba(0,0,0,0.6)' : heroShadowLight }}>
+            <div className="stroke-in" style={{ animationDelay: '0.1s', fontSize: '0.85rem', color: isDark ? c.text : heroSubLight, fontWeight: 600, textShadow: isDark ? '0 1px 10px rgba(0,0,0,0.6)' : heroShadowLight }}>
               {nextRace.name} — {nextRace.when}
             </div>
           )}
         </div>
         <div style={{ position: 'relative', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', lineHeight: 0.98, color: c.text, letterSpacing: '0.01em', textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', lineHeight: 0.98, color: isDark ? c.text : heroTextLight, letterSpacing: '0.01em', textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight }}>
             <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', animationDelay: '0.16s' }}>
               BREAK
             </span>
-            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: accent, animationDelay: '0.42s' }}>
+            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: isDark ? accent : heroAccentLight, animationDelay: '0.42s' }}>
               AWAY
               <span
                 aria-hidden="true"
@@ -386,7 +387,7 @@ export const MobileHome: React.FC = () => {
           </div>
           <div
             className="stroke-in"
-            style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 400, color: accent, letterSpacing: '0.02em', lineHeight: 1, animationDelay: '0.56s', textShadow: isDark ? 'none' : heroShadowLight }}
+            style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 400, color: isDark ? accent : heroAccentLight, letterSpacing: '0.02em', lineHeight: 1, animationDelay: '0.56s', textShadow: isDark ? 'none' : heroShadowLight }}
           >
             on every stroke.
           </div>
@@ -399,7 +400,7 @@ export const MobileHome: React.FC = () => {
                   className="cadence-beat"
                   style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0, animationDelay: `${i * 0.18}s` }}
                 />
-                <span style={{ color: c.text, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.15em', textShadow: isDark ? 'none' : heroShadowLight }}>{word}</span>
+                <span style={{ color: isDark ? c.text : heroTextLight, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.15em', textShadow: isDark ? 'none' : heroShadowLight }}>{word}</span>
               </span>
             ))}
           </div>
