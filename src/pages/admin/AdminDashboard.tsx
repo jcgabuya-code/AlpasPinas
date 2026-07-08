@@ -134,52 +134,55 @@ export const AdminDashboard: React.FC<Props> = ({ c, onNavigate }) => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 150 : 200}px, 1fr))`,
-          gap: isMobile ? '0.75rem' : '1rem',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${stats.length}, 1fr)`,
+          gap: isMobile ? '0.75rem' : '0.85rem',
         }}
       >
         {stats.map((s) => (
           <div
             key={s.label}
             style={{
-              padding: isMobile ? '1rem' : '1.25rem',
+              padding: isMobile ? '0.9rem' : '1rem',
               borderRadius: '0.85rem',
               border: `1px solid ${c.border}`,
               backgroundColor: c.surface,
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.7rem',
+              gap: '0.55rem',
               minWidth: 0,
             }}
           >
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: '0.6rem',
-                backgroundColor: s.bg,
-                color: s.fg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <s.icon size={19} strokeWidth={1.8} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  flexShrink: 0,
+                  borderRadius: '0.55rem',
+                  backgroundColor: s.bg,
+                  color: s.fg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <s.icon size={18} strokeWidth={1.8} />
+              </div>
+              <div
+                style={{
+                  fontSize: 'clamp(1.6rem, 3vw, 2rem)',
+                  fontFamily: 'var(--font-display)',
+                  color: c.text,
+                  letterSpacing: '0.02em',
+                  lineHeight: 1,
+                }}
+              >
+                {s.value}
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: 'clamp(1.8rem, 4vw, 2.2rem)',
-                fontFamily: 'var(--font-display)',
-                color: c.text,
-                letterSpacing: '0.02em',
-                lineHeight: 1,
-              }}
-            >
-              {s.value}
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: c.text }}>{s.label}</div>
-              <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.15rem' }}>{s.sub}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: '0.85rem', color: c.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</div>
+              <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.sub}</div>
             </div>
           </div>
         ))}
