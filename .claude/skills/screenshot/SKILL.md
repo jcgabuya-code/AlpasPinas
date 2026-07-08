@@ -9,14 +9,12 @@ Drive the real app in a headless Chromium and capture what a user sees.
 Playwright + Chromium are already installed (`playwright` dep, browser in
 `~/Library/Caches/ms-playwright`). The driver is `scripts/shot.mjs`.
 
-## 1. Make sure the dev server is running
+## 1. Dev server — JC runs it himself on port 5173
 
-```bash
-curl -sf -o /dev/null http://localhost:5174 && echo up || (npm run dev >/tmp/vite.log 2>&1 &)
-```
-
-Vite picks the first free port from 5173; it commonly lands on **5174** here.
-Check `/tmp/vite.log` for the actual `Local:` URL and pass `--base` if it differs.
+JC keeps his own Vite dev server running on **http://localhost:5173**. Do NOT
+auto-start it or run a curl "is it up" check — assume it's up and pass
+`--base http://localhost:5173`. If a shot fails to connect, ask him once to
+confirm the server is running instead of starting it yourself.
 
 ## 2. Take shots
 
