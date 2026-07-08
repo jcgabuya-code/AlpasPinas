@@ -508,18 +508,66 @@ export const rejectApplication = async (mobile: string, reason: string): Promise
   if (error) throw new Error(error.message);
 };
 
+/* -------------------- self-service registration toggle ---------------- */
+
+/**
+ * Read the server-side `auto_approve_registrations` flag. When true, join
+ * applications are approved on submit (token minted + link emailed) instead of
+ * waiting for an admin. Falls back to `false` (the safe, admin-gated default)
+ * if the flag can't be read.
+ */
+export const isAutoApproveEnabled = async (): Promise<boolean> => {
+  const { data, error } = await supabase.rpc('auto_approve_enabled');
+  if (error) return false;
+  return Boolean(data);
+};
+
+/** Admin-only: flip the auto-approve flag. RLS enforces admin server-side. */
+export const setAutoApprove = async (enabled: boolean): Promise<boolean> => {
+  const { data, error } = await supabase.rpc('set_auto_approve', { enabled });
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+};
+
+/**
+ * Anon-callable approval used during the trial: mints a registration token for
+ * an application the caller just submitted. Only succeeds while the server flag
+ * is on (the RPC enforces it). Returns what the mailer needs.
+ */
+const selfApproveApplication = async (
+  mobile: string,
+  email: string,
+): Promise<{ token: string; email: string; name: string }> => {
+  const { data, error } = await supabase.rpc('self_approve_application', {
+    app_mobile: mobile,
+    app_email: email,
+  });
+  if (error) throw new Error(error.message);
+  const row = (data as { reg_token: string; out_email: string; out_name: string }[])?.[0];
+  if (!row) throw new Error('Could not generate your registration link.');
+  return { token: row.reg_token, email: row.out_email, name: row.out_name };
+};
+
 /* ----------------------- application workflow ---------------------- */
+
+/** Outcome of a join submission — lets the UI show the right next step. */
+export type ApplicationResult =
+  | { autoApproved: false }
+  | { autoApproved: true; emailSent: boolean };
 
 /**
  * Public: submit a join application. BARE insert (no .select()) — the only
  * SELECT policy on applications is admin-only, so reading the row back would
  * fail RLS. Status defaults to 'pending' (and the insert policy enforces it).
+ *
+ * While `auto_approve_registrations` is on (trial period), the application is
+ * immediately approved and the registration link emailed — no admin step.
  */
 export const submitApplication = async (
   mobile: string,
   name: string,
   email: string,
-): Promise<void> => {
+): Promise<ApplicationResult> => {
   const fullMobile = mobile.trim();
   const cleanEmail = email.trim();
   const conflict = await checkApplicationConflict(fullMobile, cleanEmail);
@@ -543,6 +591,15 @@ export const submitApplication = async (
     }
     throw new Error(error.message);
   }
+
+  // Trial: skip the admin queue — mint the token and email the link now.
+  if (await isAutoApproveEnabled()) {
+    const { token, email: approvedEmail, name: approvedName } = await selfApproveApplication(fullMobile, cleanEmail);
+    const emailSent = await sendRegistrationEmail(approvedEmail, approvedName, token);
+    return { autoApproved: true, emailSent };
+  }
+
+  return { autoApproved: false };
 };
 
 /* --------------------------- subscriptions -------------------------- */

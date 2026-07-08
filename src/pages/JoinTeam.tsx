@@ -23,7 +23,7 @@ export const JoinTeam: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<null | { autoApproved: boolean; emailSent: boolean }>(null);
   const [loading, setLoading] = useState(false);
 
   const c = colors[brand][theme];
@@ -68,9 +68,13 @@ export const JoinTeam: React.FC = () => {
     setLoading(true);
     try {
       const fullMobile = `${countryCode}${mobile.trim()}`;
-      await submitApplication(fullMobile, name.trim(), email.trim());
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 3000);
+      const result = await submitApplication(fullMobile, name.trim(), email.trim());
+      setSuccess(
+        result.autoApproved
+          ? { autoApproved: true, emailSent: result.emailSent }
+          : { autoApproved: false, emailSent: false },
+      );
+      setTimeout(() => navigate('/'), 5000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Submission failed.';
       setError(msg);
@@ -109,9 +113,15 @@ export const JoinTeam: React.FC = () => {
           }}
         >
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✓</div>
-          <h2 style={{ color: c.text, marginBottom: '0.5rem' }}>Application Received!</h2>
+          <h2 style={{ color: c.text, marginBottom: '0.5rem' }}>
+            {success?.autoApproved ? "You're in — check your email!" : 'Application Received!'}
+          </h2>
           <p style={{ color: c.textSecondary, marginBottom: '1rem' }}>
-            Thank you for applying to join AlpasPinas. Our admin team will review your application and send you a registration link via email shortly.
+            {success?.autoApproved
+              ? success.emailSent
+                ? `Thanks for joining AlpasPinas! We've emailed a registration link to ${email.trim()}. Open it to set your password and finish creating your account — it's valid for 7 days.`
+                : "Thanks for joining AlpasPinas! Your registration link is ready, but the email didn't go through. Please contact the team admin to have it re-sent."
+              : 'Thank you for applying to join AlpasPinas. Our admin team will review your application and send you a registration link via email shortly.'}
           </p>
           <p style={{ color: c.textSecondary, fontSize: '0.85rem' }}>
             Redirecting to home page...

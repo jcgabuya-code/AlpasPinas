@@ -8,6 +8,8 @@ import {
   approveApplication,
   rejectApplication,
   sendRegistrationEmail,
+  isAutoApproveEnabled,
+  setAutoApprove,
   type Application,
 } from '../../utils/users';
 
@@ -102,6 +104,8 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
   const [rejectingMobile, setRejectingMobile] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [busyMobile, setBusyMobile] = useState<string | null>(null);
+  const [autoApprove, setAutoApproveState] = useState<boolean | null>(null);
+  const [togglingApprove, setTogglingApprove] = useState(false);
 
   const loadApplications = async () => {
     setLoading(true);
@@ -118,7 +122,29 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
 
   useEffect(() => {
     loadApplications();
+    isAutoApproveEnabled().then(setAutoApproveState).catch(() => setAutoApproveState(false));
   }, []);
+
+  const handleToggleAutoApprove = async () => {
+    if (autoApprove === null || togglingApprove) return;
+    const next = !autoApprove;
+    setTogglingApprove(true);
+    try {
+      const saved = await setAutoApprove(next);
+      setAutoApproveState(saved);
+      showToast(
+        saved
+          ? 'Auto-approval on — new applicants get their registration link instantly.'
+          : 'Auto-approval off — applications now wait for your review.',
+        'success',
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update setting';
+      showToast(msg, 'error');
+    } finally {
+      setTogglingApprove(false);
+    }
+  };
 
   // Approve (or re-approve to regenerate an expired link), then email the
   // registration link. Approval already succeeded if the email fails — the
@@ -225,6 +251,70 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
         @keyframes spin { to { transform: rotate(360deg); } }
         .admin-focus:focus-visible { outline: 2px solid ${c.primary}; outline-offset: 2px; }
       `}</style>
+
+      {/* Trial toggle: when on, applicants get their registration link instantly
+          (no manual approve). Flip off after the trial to restore the review gate. */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          padding: isMobile ? '0.9rem 1rem' : '1rem 1.25rem',
+          marginBottom: isMobile ? '1rem' : '1.25rem',
+          backgroundColor: c.surface,
+          border: `1px solid ${c.border}`,
+          borderRadius: '0.85rem',
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 600, color: c.text }}>
+            Instant approval (trial)
+          </div>
+          <div style={{ fontSize: '0.8rem', color: c.textSecondary, marginTop: '0.2rem', lineHeight: 1.5 }}>
+            {autoApprove
+              ? 'New applicants are emailed their registration link automatically — no review needed.'
+              : 'New applications wait here for you to approve before a link is sent.'}
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoApprove ?? false}
+          aria-label="Toggle instant approval"
+          onClick={handleToggleAutoApprove}
+          disabled={autoApprove === null || togglingApprove}
+          className="admin-focus"
+          style={{
+            position: 'relative',
+            flexShrink: 0,
+            width: 52,
+            height: 30,
+            borderRadius: '999px',
+            border: 'none',
+            padding: 0,
+            cursor: autoApprove === null || togglingApprove ? 'not-allowed' : 'pointer',
+            backgroundColor: autoApprove ? c.primary : c.border,
+            opacity: autoApprove === null ? 0.5 : 1,
+            transition: 'background-color 0.2s',
+          }}
+        >
+          <span
+            style={{
+              position: 'absolute',
+              top: 3,
+              left: autoApprove ? 25 : 3,
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              backgroundColor: '#fff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              transition: 'left 0.2s',
+            }}
+          />
+        </button>
+      </div>
 
       <div style={{ fontSize: '0.85rem', color: c.textSecondary, margin: `0 0 ${isMobile ? '1rem' : '1.25rem'}` }}>
         {loading ? 'Fetching…' : `${applications.length} application${applications.length === 1 ? '' : 's'} · ${pending.length} pending review`}
