@@ -322,7 +322,7 @@ export const MobileHome: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
-          paddingBottom: '30%',
+          paddingBottom: '12%',
           overflow: 'hidden',
           background: c.surface,
           scrollMarginTop: `${scrollMargin}px`,
