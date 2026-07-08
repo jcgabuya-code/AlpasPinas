@@ -114,11 +114,11 @@ export const MobileHome: React.FC = () => {
 
   // Hero text follows the theme like the desktop hero: c.text goes white in dark
   // mode and dark navy in light mode. Since it sits over a photo (no heavy scrim
-  // like desktop's), light mode gets a soft white halo so the dark text stays
-  // legible; dark mode keeps its own dark drop shadow. The Next Race chip keeps a
-  // light accent because it rides its own dark translucent pill in both modes.
+  // like desktop's), light mode gets a tight light edge — a crisp 1px lift for
+  // legibility, not a blurry glow. Dark mode keeps its own dark drop shadow. The
+  // Next Race chip keeps a light accent because it rides its own dark pill.
   const heroAccentLight = c.primaryLight;
-  const heroShadowLight = '0 1px 12px rgba(255,255,255,0.65), 0 1px 3px rgba(255,255,255,0.55)';
+  const heroShadowLight = '0 1px 2px rgba(255,255,255,0.9)';
 
   // Section refs so the pill bar and hero CTAs can jump to each band.
   const refs: Record<SectionKey, React.RefObject<HTMLElement | null>> = {
