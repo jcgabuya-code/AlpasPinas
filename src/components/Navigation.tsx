@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { HERO_PICKER, HeroPhotoPicker, useHeroPick } from './HeroPicker';
 
 // Dashboard grid — reads as "control panel" at a glance, rather than a vague
 // security badge. Matches the thin line-art weight of the other nav icons.
@@ -157,6 +158,9 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const [heroPick, setHeroPick] = useHeroPick();
+  // The picker only controls the home hero, so surface it only on the home page.
+  const showHeroPicker = HERO_PICKER && location.pathname === '/';
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -319,17 +323,21 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
               }}
             />
           </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? '1.3rem' : '1.6rem',
-              letterSpacing: '0.04em',
-              color: c.text,
-              lineHeight: 1,
-            }}
-          >
-            ALPAS<span style={{ color: c.primary }}>PINAS</span>
-          </span>
+          {/* On mobile the centered hero picker needs the middle of the short bar,
+              so drop the wordmark there while the picker is active (edit-mode only). */}
+          {!(showHeroPicker && isMobile) && (
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: isMobile ? '1.3rem' : '1.6rem',
+                letterSpacing: '0.04em',
+                color: c.text,
+                lineHeight: 1,
+              }}
+            >
+              ALPAS<span style={{ color: c.primary }}>PINAS</span>
+            </span>
+          )}
         </Link>
         )}
 
@@ -632,6 +640,26 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
           </div>
         )}
       </div>
+
+      {/* Edit-mode hero photo picker — centered in the bar, home page only. The
+          wrapper is click-through (pointer-events:none) so it never blocks the nav
+          links/actions beneath it; only the pill itself is interactive. */}
+      {showHeroPicker && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 101,
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ pointerEvents: 'auto' }}>
+            <HeroPhotoPicker pick={heroPick} onPick={setHeroPick} compact={isMobile} />
+          </div>
+        </div>
+      )}
 
       {/* Mobile full-screen drawer — matches the AlpasPinas mobile reference: a
           fade-in overlay with oversized Anton nav links, an Appearance row (brand

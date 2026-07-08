@@ -5,7 +5,7 @@ import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
-import hero5Image from '../../images/hero-5-hd.png';
+import { HERO_OPTIONS, useHeroPick } from './HeroPicker';
 
 
 // Keyword tagline — echoes the team's identity, separated by emerald marks.
@@ -236,7 +236,7 @@ export const NextRaceTicket: React.FC<{
 
 // Photos for the mobile HeroPhoto slider. Add more entries here to extend the carousel.
 const HERO_PHOTOS = [
-  { src: hero5Image, alt: 'AlpasPinas Dragonboat Team — paddlers with team flag at the beach', objectPosition: '60% 24%' },
+  { src: HERO_OPTIONS[0].src, alt: 'AlpasPinas Dragonboat Team — paddlers with team flag at the beach', objectPosition: '60% 24%' },
   { src: '/team-2.jpg', alt: 'AlpasPinas Dragonboat Team', objectPosition: 'center 50%' },
 ];
 
@@ -253,6 +253,8 @@ export const Hero: React.FC = () => {
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
   const [videoOpen, setVideoOpen] = useState(false);
+  const [heroPick] = useHeroPick();
+  const heroPhoto = HERO_OPTIONS[heroPick];
 
   // Theme-aware surface — the hero is dark-forward but honors light mode and the
   // ocean/bandila brands by reading every color from the active palette. The panel
@@ -552,7 +554,7 @@ export const Hero: React.FC = () => {
         }}
       >
         <img
-          src={hero5Image}
+          src={heroPhoto.src}
           alt="AlpasPinas crew paddling across a mountain lake"
           style={{
             position: 'absolute',
@@ -560,7 +562,7 @@ export const Hero: React.FC = () => {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            objectPosition: '50% 36%',
+            objectPosition: heroPhoto.objectPosition,
             display: 'block',
           }}
         />
@@ -713,6 +715,7 @@ export const HeroPhoto: React.FC = () => {
   const c = colors[brand][theme];
   const isDark = theme === 'dark';
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
+  const [heroPick] = useHeroPick();
 
   const nextEvent = useMemo(() => {
     const upcoming = (eventsData as RaceEvent[])
@@ -721,8 +724,16 @@ export const HeroPhoto: React.FC = () => {
     return upcoming[0] ?? null;
   }, []);
 
+  // The lead slide mirrors the desktop hero pick so the team can compare candidates
+  // on mobile too; the remaining slides carry the rest of the carousel.
+  const photos = useMemo(() => {
+    const [lead, ...rest] = HERO_PHOTOS;
+    const chosen = HERO_OPTIONS[heroPick];
+    return [{ ...lead, src: chosen.src, objectPosition: chosen.objectPosition }, ...rest];
+  }, [heroPick]);
+
   // Photo slider state.
-  const count = HERO_PHOTOS.length;
+  const count = photos.length;
   const [index, setIndex] = useState(0);
   const go = (i: number) => setIndex(((i % count) + count) % count);
   const touchStartX = useRef<number | null>(null);
@@ -776,7 +787,7 @@ export const HeroPhoto: React.FC = () => {
           transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {HERO_PHOTOS.map((p) => (
+        {photos.map((p) => (
           // Frame clips the Ken Burns overscan so the zoom never bleeds into neighbours.
           <div key={p.src} style={{ flex: '0 0 100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
             <img
