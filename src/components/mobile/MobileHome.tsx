@@ -113,12 +113,12 @@ export const MobileHome: React.FC = () => {
   const grad = brandGradient(brand, theme);
 
   // Hero text follows the theme like the desktop hero: c.text goes white in dark
-  // mode and dark navy in light mode. Since it sits over a photo (no heavy scrim
-  // like desktop's), light mode gets a tight light edge — a crisp 1px lift for
-  // legibility, not a blurry glow. Dark mode keeps its own dark drop shadow. The
-  // Next Race chip keeps a light accent because it rides its own dark pill.
+  // mode and dark navy in light mode. Light mode uses NO text shadow (any light
+  // shadow behind the dark glyphs reads as a glow) — legibility comes from the
+  // scrim instead. Dark mode keeps its own dark drop shadow. The Next Race chip
+  // keeps a light accent because it rides its own dark pill.
   const heroAccentLight = c.primaryLight;
-  const heroShadowLight = '0 1px 2px rgba(255,255,255,0.9)';
+  const heroShadowLight = 'none';
 
   // Section refs so the pill bar and hero CTAs can jump to each band.
   const refs: Record<SectionKey, React.RefObject<HTMLElement | null>> = {
@@ -338,7 +338,7 @@ export const MobileHome: React.FC = () => {
             inset: 0,
             background: isDark
               ? `linear-gradient(180deg, ${hexToRgba(c.surface, 0.4)} 0%, ${hexToRgba(c.surface, 0.56)} 30%, ${hexToRgba(c.surface, 0.8)} 60%, ${hexToRgba(c.surface, 0.93)} 100%)`
-              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.12)} 40%, ${hexToRgba(c.surface, 0.32)} 70%, ${hexToRgba(c.surface, 0.5)} 100%)`,
+              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.2)} 0%, ${hexToRgba(c.surface, 0.12)} 22%, ${hexToRgba(c.surface, 0.4)} 68%, ${hexToRgba(c.surface, 0.72)} 100%)`,
           }}
         />
         {/* Next Race — pinned to the top of the hero photo, above the scrim, so it
