@@ -8,17 +8,19 @@ import heroAlpasImage from '../../images/alpas-hero4.png';
 // on-screen toggle before shipping. The chosen index is remembered in localStorage
 // and kept in sync across the desktop hero, mobile hero, and the nav control via a
 // custom event, so the pill can live in the nav while the heroes just read the pick.
-export const HERO_PICKER = true;
+export const HERO_PICKER = false;
 export const HERO_OPTIONS = [
-  { src: hero5Image, label: 'Mountain lake', short: 'Lake', objectPosition: '50% 36%' },
   { src: heroAlpasImage, label: 'Alpas hero 4', short: 'Hero 4', objectPosition: '50% 36%' },
+  { src: hero5Image, label: 'Mountain lake', short: 'Lake', objectPosition: '50% 36%' },
 ];
 const HERO_PICK_KEY = 'alpas.heroPick';
 const HERO_PICK_EVENT = 'alpas:heroPick';
 
 export function useHeroPick(): [number, (i: number) => void] {
   const [pick, setPick] = useState<number>(() => {
-    if (typeof window === 'undefined') return 0;
+    // Once the picker is disabled (vote finalized), always use the default so a
+    // stale saved index can't pin the losing photo now that it can't be changed.
+    if (!HERO_PICKER || typeof window === 'undefined') return 0;
     const raw = Number(window.localStorage.getItem(HERO_PICK_KEY));
     return Number.isInteger(raw) && raw >= 0 && raw < HERO_OPTIONS.length ? raw : 0;
   });
