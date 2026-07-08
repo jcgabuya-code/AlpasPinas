@@ -55,6 +55,8 @@ export const Cart: React.FC = () => {
       unitPrice: l.unitPrice,
     }));
     try {
+      // The confirmation email is sent server-side by a DB trigger on insert
+      // (send-order-email Edge Function) — the client just records the order.
       await submitOrder({
         contactName: name.trim(),
         contactEmail: email.trim(),

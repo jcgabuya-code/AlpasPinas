@@ -7,7 +7,6 @@ import {
   getApplications,
   approveApplication,
   rejectApplication,
-  sendRegistrationEmail,
   isAutoApproveEnabled,
   setAutoApprove,
   type Application,
@@ -152,13 +151,10 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
   const handleApprove = async (mobile: string) => {
     setBusyMobile(mobile);
     try {
-      const { token, email, name } = await approveApplication(mobile);
-      const emailSent = await sendRegistrationEmail(email, name, token);
-      if (emailSent) {
-        showToast(`Approved — registration link emailed to ${email}.`, 'success');
-      } else {
-        showToast('Approved, but the email failed to send. Use "Copy link" to share it manually.', 'error');
-      }
+      const { email } = await approveApplication(mobile);
+      // Minting the token fires a DB trigger that emails the registration link
+      // (send-registration-email). If it doesn't arrive, Copy link is the fallback.
+      showToast(`Approved — registration link emailed to ${email}.`, 'success');
       await loadApplications();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to approve application';

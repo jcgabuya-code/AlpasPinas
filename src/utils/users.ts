@@ -441,31 +441,12 @@ export const checkRegistrationToken = async (
   return row ? { email: row.app_email, name: row.app_name } : null;
 };
 
-/**
- * Ask the Apps Script mailer to deliver the registration link. The script
- * builds the URL itself from the token; we only pass the token. Returns
- * whether the email went out — approval already succeeded either way, so the
- * caller should fall back to copy-link rather than treat this as fatal.
+/*
+ * Registration link email is sent server-side: minting a registration_token on
+ * public.applications (approve_application / self_approve_application) fires a
+ * DB trigger → send-registration-email Edge Function (see migration
+ * 20260708110000_registration_email_webhook.sql). No client email call.
  */
-export const sendRegistrationEmail = async (
-  email: string,
-  name: string,
-  token: string,
-): Promise<boolean> => {
-  if (!isRemote) return false;
-  try {
-    const result = (await postToSheet({
-      action: 'sendRegistrationEmail',
-      secret: (import.meta.env.VITE_MAILER_SECRET ?? '').trim(),
-      email,
-      name,
-      token,
-    })) as { ok?: boolean };
-    return Boolean(result?.ok);
-  } catch {
-    return false;
-  }
-};
 
 export const checkApplicationConflict = async (
   mobile: string,
@@ -592,11 +573,12 @@ export const submitApplication = async (
     throw new Error(error.message);
   }
 
-  // Trial: skip the admin queue — mint the token and email the link now.
+  // Trial: skip the admin queue — mint the token now. Minting the token fires a
+  // DB trigger that emails the registration link (send-registration-email), so
+  // there's no client email call. Reported optimistically.
   if (await isAutoApproveEnabled()) {
-    const { token, email: approvedEmail, name: approvedName } = await selfApproveApplication(fullMobile, cleanEmail);
-    const emailSent = await sendRegistrationEmail(approvedEmail, approvedName, token);
-    return { autoApproved: true, emailSent };
+    await selfApproveApplication(fullMobile, cleanEmail);
+    return { autoApproved: true, emailSent: true };
   }
 
   return { autoApproved: false };

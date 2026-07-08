@@ -385,6 +385,17 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Order confirmation email: called by a Postgres Database Webhook (not a user),
+# so skip JWT verification and gate on ORDER_WEBHOOK_SECRET inside the function.
+[functions.send-order-email]
+verify_jwt = false
+
+# Registration link email: called by a Postgres Database Webhook when a token
+# is minted (admin-approve OR public self-service), so skip JWT verification and
+# gate on REG_WEBHOOK_SECRET inside the function.
+[functions.send-registration-email]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

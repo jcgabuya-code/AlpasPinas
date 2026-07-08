@@ -364,6 +364,13 @@ export const submitOrder = async (order: NewOrder): Promise<void> => {
   }
 };
 
+/*
+ * Order confirmation email is sent server-side: a Postgres trigger on
+ * merch_orders INSERT fires the `send-order-email` Edge Function (see
+ * supabase/migrations/20260708100000_order_email_webhook.sql). The client just
+ * submits the order — no email call, no mailer secret in the browser.
+ */
+
 /**
  * The signed-in user's OWN orders (newest first), for the customer-facing
  * order-tracking page. Explicitly filters by user_id so an admin sees only

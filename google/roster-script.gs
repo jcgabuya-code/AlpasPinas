@@ -29,7 +29,7 @@ var TOKENS_SHEET = 'Tokens';
 var TOKENS_HEADERS = ['Token', 'Mobile', 'Email', 'Name', 'ExpiresAt', 'Used'];
 
 var ADMIN_EMAIL = 'admin@alpaspinas.com';
-var APP_BASE_URL = 'http://localhost:5173'; // Change to https://alpaspinas.com for production
+var APP_BASE_URL = 'http://localhost:5173'; // Change to https://beta.alpaspinas.com for production
 
 // Shared secret for the 'sendRegistrationEmail' action. Must match
 // VITE_MAILER_SECRET in the website's .env.local. The link is always built
