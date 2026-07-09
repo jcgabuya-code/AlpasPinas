@@ -169,6 +169,7 @@ export const TrainingSchedule: React.FC = () => {
 
   return (
     <section
+      id="training"
       style={{
         backgroundColor: c.background,
         borderTop: `1px solid ${c.border}`,

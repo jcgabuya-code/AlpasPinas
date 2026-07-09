@@ -143,7 +143,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', to: '/', end: true },
   { label: 'About', to: '/', hash: '#about' },
-  { label: 'Training', to: '/training' },
+  { label: 'Training', to: '/', hash: '#training' },
   { label: 'Merch', to: '/shop' },
 ];
 
@@ -211,10 +211,9 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   // (About/Training/Merch/Races/My Orders) isn't relevant to them.
   const isAdminOnly = canSeeAdmin;
 
-  // Training is a member activity — only surface it to signed-in users.
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (isAdminOnly && (item.label === 'About' || item.label === 'Training' || item.label === 'Merch')) return false;
-    return item.label === 'Training' ? Boolean(user) : true;
+    return true;
   });
 
   // Drawer nav — the mobile reference's link set. Home-page sections resolve via
@@ -608,10 +607,50 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
           </div>
         )}
 
-        {/* Mobile: cart + animated hamburger. The theme + brand toggles moved into
-            the drawer's Appearance row (matching the mobile reference). */}
+        {/* Mobile: appearance duo + cart + animated hamburger, all in the top bar. */}
         {isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <button
+                onClick={toggleBrand}
+                aria-label={`Switch color theme (currently ${brand})`}
+                title={`Color: ${brand} — tap to switch`}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${c.border}`,
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ width: '1rem', height: '1rem', borderRadius: '999px', background: brandGradient(brand, theme) }} />
+              </button>
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle light or dark theme"
+                style={{
+                  background: 'transparent',
+                  color: c.text,
+                  border: `1px solid ${c.border}`,
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {theme === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+              </button>
+            </div>
             <CartBadge count={cartCount} onClick={closeMenu} />
             <button
               onClick={() => setMenuOpen((o) => !o)}
@@ -763,31 +802,6 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                   <ChevronRight />
                 </NavLink>
               )}
-            </div>
-
-            {/* Appearance row — brand swatch + light/dark toggle */}
-            <div
-              className={menuOpen ? 'drawer-item-in' : undefined}
-              style={{ animationDelay: '0.5s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 4px', marginTop: '4px', borderBottom: `1px solid ${c.border}` }}
-            >
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: c.textSecondary }}>Appearance</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <button
-                  onClick={toggleBrand}
-                  aria-label={`Switch color theme (currently ${brand})`}
-                  title={`Color: ${brand} — tap to switch`}
-                  style={{ background: 'transparent', border: `1px solid ${c.border}`, width: '32px', height: '32px', borderRadius: '999px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                >
-                  <span style={{ width: '16px', height: '16px', borderRadius: '999px', background: brandGradient(brand, theme) }} />
-                </button>
-                <button
-                  onClick={toggleTheme}
-                  aria-label="Toggle light or dark theme"
-                  style={{ background: 'transparent', color: c.text, border: `1px solid ${c.border}`, width: '32px', height: '32px', borderRadius: '999px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {theme === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
-                </button>
-              </div>
             </div>
 
             {/* Signed-in user identity */}

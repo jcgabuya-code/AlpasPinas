@@ -26,6 +26,7 @@ import race2 from '../../../images/race-2.jpg';
 import race3 from '../../../images/race-3.jpeg';
 import { WhatsAppGlyph, YouTubeGlyph } from '../Hero';
 import { ContactRow, LocationIcon, MailIcon, InstagramIcon } from '../Contact';
+import { submitApplication, type ApplicationResult } from '../../utils/users';
 import { cadenceAccentUri } from '../../styles/tokens';
 
 /**
@@ -79,6 +80,18 @@ const CONTACT_INFO: { label: string; value: string; icon: React.ReactNode }[] = 
   { label: 'Training base', value: 'Marina Putrajaya / Subang PARC', icon: <LocationIcon /> },
   { label: 'Email', value: 'admin@alpaspinas.com', icon: <MailIcon /> },
   { label: 'Instagram', value: '@alpaspinasdbt', icon: <InstagramIcon /> },
+];
+
+// Mirrors Contact.tsx's list — the "claim a seat" application carries the
+// same mobile format the account is keyed on.
+const COUNTRY_CODES = [
+  { code: '+60', flag: '🇲🇾' },
+  { code: '+63', flag: '🇵🇭' },
+  { code: '+65', flag: '🇸🇬' },
+  { code: '+1', flag: '🇺🇸' },
+  { code: '+44', flag: '🇬🇧' },
+  { code: '+61', flag: '🇦🇺' },
+  { code: '+81', flag: '🇯🇵' },
 ];
 
 const prefersReducedMotion = () =>
@@ -335,8 +348,8 @@ export const MobileHome: React.FC = () => {
             position: 'absolute',
             inset: 0,
             background: isDark
-              ? `linear-gradient(180deg, ${hexToRgba(c.surface, 0.4)} 0%, ${hexToRgba(c.surface, 0.56)} 30%, ${hexToRgba(c.surface, 0.8)} 60%, ${hexToRgba(c.surface, 0.93)} 100%)`
-              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.12)} 40%, ${hexToRgba(c.surface, 0.32)} 70%, ${hexToRgba(c.surface, 0.5)} 100%)`,
+              ? `linear-gradient(180deg, ${hexToRgba(c.surface, 0.4)} 0%, ${hexToRgba(c.surface, 0.2)} 30%, ${hexToRgba(c.surface, 0.4)} 60%, ${hexToRgba(c.surface, 0.85)} 100%)`
+              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.12)} 40%, ${hexToRgba(c.surface, 0.2)} 70%, ${hexToRgba(c.surface, 0.2)} 100%)`,
           }}
         />
         {/* Next Race — pinned to the top of the hero photo, above the scrim, so it
@@ -604,9 +617,11 @@ export const MobileHome: React.FC = () => {
   );
 };
 
-// --- Claim Your Seat form — reference layout, wired to a submit stub that mirrors
-//     the desktop Contact section (swap for a real Supabase insert / email relay). ---
+// --- Claim Your Seat form — same submit flow as the desktop Contact section
+//     (submitApplication: insert + trial-period auto-approve + registration email). ---
 type Status = 'idle' | 'submitting' | 'success' | 'error';
+type Values = { name: string; email: string; countryCode: string; mobile: string };
+type Errors = { name?: string; email?: string; mobile?: string };
 
 const ClaimYourSeat: React.FC<{
   sectionRef: React.RefObject<HTMLElement | null>;
@@ -617,27 +632,34 @@ const ClaimYourSeat: React.FC<{
   accent: string;
   grad: string;
 }> = ({ sectionRef, sectionStyle, eyebrow, heading, c, accent, grad }) => {
-  const [values, setValues] = useState({ name: '', email: '', exp: 'any', message: '' });
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [values, setValues] = useState<Values>({ name: '', email: '', countryCode: '+60', mobile: '' });
+  const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<Status>('idle');
+  const [result, setResult] = useState<ApplicationResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const set = (k: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+  const set = (k: keyof Values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === 'submitting') return;
-    const next: { name?: string; email?: string } = {};
+    const next: Errors = {};
     if (!values.name.trim()) next.name = 'Tell us your name';
     if (!values.email.trim()) next.email = 'We need an email to reach you';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) next.email = 'That email looks off';
+    if (!values.mobile.trim()) next.mobile = 'We need a mobile number for your account';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
     setStatus('submitting');
+    setErrorMsg(null);
     try {
-      await new Promise((r) => setTimeout(r, 900)); // INTEGRATION POINT — real submit
+      const fullMobile = `${values.countryCode}${values.mobile.trim()}`;
+      const res = await submitApplication(fullMobile, values.name.trim(), values.email.trim());
+      setResult(res);
       setStatus('success');
-    } catch {
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : null);
       setStatus('error');
     }
   };
@@ -688,16 +710,37 @@ const ClaimYourSeat: React.FC<{
 
       {status === 'success' ? (
         <div role="status" style={{ marginTop: '6px', border: `1px solid ${c.border}`, borderRadius: '14px', padding: '22px 18px', textAlign: 'center', background: c.background }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: c.text }}>Seat saved.</div>
-          <div style={{ fontSize: '0.9rem', color: c.textSecondary, lineHeight: 1.55, marginTop: '6px' }}>
-            Thanks{values.name.trim() ? `, ${values.name.trim().split(/\s+/)[0]}` : ''}! We'll be in touch within a day or two about your first session.
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: c.text }}>
+            {result?.autoApproved ? 'Check your email.' : 'Seat saved.'}
           </div>
+          <div style={{ fontSize: '0.9rem', color: c.textSecondary, lineHeight: 1.55, marginTop: '6px' }}>
+            Thanks{values.name.trim() ? `, ${values.name.trim().split(/\s+/)[0]}` : ''}!{' '}
+            {result?.autoApproved
+              ? result.emailSent
+                ? `We've emailed a registration link to ${values.email.trim()}. Open it to set your password and finish creating your account — it's valid for 7 days.`
+                : "Your registration link is ready, but the email didn't go through. Please email the team admin to have it re-sent."
+              : "We've got your application — our admin team will review it and email you a registration link shortly."}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setValues({ name: '', email: '', countryCode: '+60', mobile: '' });
+              setErrors({});
+              setResult(null);
+              setErrorMsg(null);
+              setStatus('idle');
+            }}
+            style={{ marginTop: '10px', background: 'none', border: 'none', color: accent, fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Send another →
+          </button>
         </div>
       ) : (
         <form onSubmit={onSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '6px' }}>
           {status === 'error' && (
             <div role="alert" style={{ fontSize: '0.82rem', color: c.text, background: '#ef44441a', border: '1px solid #ef444455', borderRadius: '10px', padding: '10px 12px', lineHeight: 1.5 }}>
-              We couldn't send that just now. Please try again, or email <a href="mailto:admin@alpaspinas.com" style={{ color: accent, fontWeight: 600 }}>admin@alpaspinas.com</a>.
+              {errorMsg ?? "We couldn't send that just now. Please try again"} — if it keeps happening, email{' '}
+              <a href="mailto:admin@alpaspinas.com" style={{ color: accent, fontWeight: 600 }}>admin@alpaspinas.com</a>.
             </div>
           )}
           <label style={labelStyle}>
@@ -711,17 +754,24 @@ const ClaimYourSeat: React.FC<{
             {errors.email && <span style={{ color: '#ef4444', fontWeight: 500 }}>{errors.email}</span>}
           </label>
           <label style={labelStyle}>
-            Paddling experience
-            <select value={values.exp} onChange={set('exp')} style={field}>
-              <option value="any">Pick one…</option>
-              <option value="none">Never paddled before</option>
-              <option value="some">A bit — kayak / outrigger / etc.</option>
-              <option value="dragon">Done dragon boat before</option>
-            </select>
-          </label>
-          <label style={labelStyle}>
-            Message
-            <textarea placeholder="Tell us a bit about yourself" rows={3} value={values.message} onChange={set('message')} style={{ ...field, height: 'auto', padding: '12px 14px', resize: 'none' }} />
+            Mobile number
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select aria-label="Country code" value={values.countryCode} onChange={set('countryCode')} style={{ ...field, flex: '0 0 92px', padding: '0 8px' }}>
+                {COUNTRY_CODES.map((cc) => (
+                  <option key={cc.code} value={cc.code}>
+                    {cc.flag} {cc.code}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                placeholder="12 345 6789"
+                value={values.mobile}
+                onChange={set('mobile')}
+                style={{ ...field, flex: 1, borderColor: errors.mobile ? '#ef4444' : c.border }}
+              />
+            </div>
+            {errors.mobile && <span style={{ color: '#ef4444', fontWeight: 500 }}>{errors.mobile}</span>}
           </label>
           <button
             type="submit"
