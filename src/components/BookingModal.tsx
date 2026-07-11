@@ -32,6 +32,13 @@ const GENDERS: Gender[] = ['Male', 'Female'];
 const SIDES: SideRole[] = ['Left', 'Right', 'Coxswain', 'Coach'];
 const YES_NO: YesNo[] = ['Yes', 'No'];
 
+const formatBirthday = (iso: string) => {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, (m ?? 1) - 1, d ?? 1);
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
 export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
@@ -45,12 +52,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   // all — the sign-up covers that one day, full stop.
   const singleDay = (event?.days.length ?? 0) <= 1;
 
-  // Form state — name defaults to the logged-in user and is locked to them.
+  // Form state — name/gender/birthday/side/weight default from the logged-in
+  // user's profile (captured at registration) but stay editable per sign-up.
   const [name, setName] = useState(user?.name ?? '');
-  const [gender, setGender] = useState<Gender>('Male');
+  const [gender, setGender] = useState<Gender>(user?.gender ?? 'Male');
   const [birthday, setBirthday] = useState<string>(user?.birthday ?? '');
-  const [side, setSide] = useState<SideRole>('Left');
-  const [weight, setWeight] = useState<string>('');
+  const [side, setSide] = useState<SideRole>(user?.side ?? 'Left');
+  const [weight, setWeight] = useState<string>(user?.weight ? String(user.weight) : '');
   const [needPFD, setNeedPFD] = useState<YesNo>('No');
   const [needPaddle, setNeedPaddle] = useState<YesNo>('No');
   const [attending, setAttending] = useState<Attending>('both');
@@ -64,10 +72,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   useEffect(() => {
     if (open && event) {
       setName(user?.name ?? '');
-      setGender('Male');
+      setGender(user?.gender ?? 'Male');
       setBirthday(user?.birthday ?? '');
-      setSide('Left');
-      setWeight('');
+      setSide(user?.side ?? 'Left');
+      setWeight(user?.weight ? String(user.weight) : '');
       setNeedPFD('No');
       setNeedPaddle('No');
       setAttending(event.days.length === 1 ? event.days[0].key : 'both');
@@ -316,20 +324,40 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
             </Field>
 
             <Field label="Gender" c={c}>
-              <Chips options={GENDERS} value={gender} onChange={setGender} c={c} />
+              {user?.gender ? (
+                <>
+                  <ReadOnlyValue value={gender} c={c} isMobile={isMobile} />
+                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                    From your profile — update it in your account settings.
+                  </div>
+                </>
+              ) : (
+                <Chips options={GENDERS} value={gender} onChange={setGender} c={c} />
+              )}
             </Field>
 
             <Field label="Date of birth" c={c}>
-              <input
-                type="date"
-                value={birthday}
-                onChange={(e) => setBirthday(e.target.value)}
-                max={new Date().toISOString().slice(0, 10)}
-                style={inputStyle(c, isMobile)}
-              />
-              <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                Used for age-based crews (e.g. Masters 40+) — kept private.
-              </div>
+              {user?.birthday ? (
+                <>
+                  <ReadOnlyValue value={formatBirthday(birthday)} c={c} isMobile={isMobile} />
+                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                    From your profile — used for age-based crews (e.g. Masters 40+), kept private.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <input
+                    type="date"
+                    value={birthday}
+                    onChange={(e) => setBirthday(e.target.value)}
+                    max={new Date().toISOString().slice(0, 10)}
+                    style={inputStyle(c, isMobile)}
+                  />
+                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                    Used for age-based crews (e.g. Masters 40+) — kept private.
+                  </div>
+                </>
+              )}
             </Field>
 
             {!isLand && (
@@ -730,6 +758,22 @@ const Field: React.FC<{ label: string; c: ColorPalette; children: React.ReactNod
       {label}
     </label>
     {children}
+  </div>
+);
+
+const ReadOnlyValue: React.FC<{ value: string; c: ColorPalette; isMobile: boolean }> = ({
+  value,
+  c,
+  isMobile,
+}) => (
+  <div
+    style={{
+      ...inputStyle(c, isMobile),
+      opacity: 0.7,
+      cursor: 'not-allowed',
+    }}
+  >
+    {value}
   </div>
 );
 
