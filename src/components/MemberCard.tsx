@@ -24,7 +24,7 @@ export const avatarColor = (name: string, brand: Brand = 'emerald') => {
   const palettes: Record<Brand, string[]> = {
     emerald: ['#10b981', '#047857', '#34d399', '#059669', '#6ee7b7', '#065f46'],
     ocean: ['#0ea5e9', '#0369a1', '#38bdf8', '#0284c7', '#7dd3fc', '#8b5cf6'],
-    bandila: ['#0ea5e9', '#0369a1', '#38bdf8', '#0284c7', '#fcd116', '#7dd3fc'],
+    bandila: ['#3b5bdb', '#0038a8', '#5b7cf5', '#2541b8', '#ce1126', '#93a8f2'],
   };
   const palette = palettes[brand] ?? palettes.emerald;
   let hash = 0;

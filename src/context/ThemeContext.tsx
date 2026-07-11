@@ -26,7 +26,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [brand, setBrand] = useState<Brand>(() => {
     const saved = localStorage.getItem('brand');
-    // Default to bandila — the v2 ocean-blue + bandila-yellow direction (the Home v2 reference)
+    // Default to bandila — the v2 royal-blue + crimson-red direction (the Home v2 reference)
     return saved && (BRANDS as string[]).includes(saved) ? (saved as Brand) : 'bandila';
   });
 

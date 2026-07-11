@@ -1,7 +1,7 @@
 // Three brand palettes, each with a dark + light mode.
 //  - emerald: the original AlpasPinas look (dark is the primary aesthetic)
-//  - ocean:   client-requested alt — ocean blue accent, violet→red signature gradient
-//  - bandila: ocean-blue base, golden-yellow signature gradient (blue → yellow)
+//  - ocean:   client-requested alt — pure ocean-blue accent + gradient
+//  - bandila: royal-blue base, blue→crimson signature gradient (echoes the PH flag's blue + red)
 const emerald = {
   dark: {
     background: '#0b1014',       // near-black with slight green tint
@@ -74,20 +74,20 @@ const ocean = {
 
 const bandila = {
   dark: {
-    background: '#0a1018',       // near-black with a cool blue tint (ocean base)
+    background: '#0a1018',       // near-black with a cool blue tint (royal-blue base)
     surface: '#111824',          // lifted dark for cards/nav
     surfaceAlt: '#1a2332',       // even more lifted for nested cards
     text: '#f5f7fb',             // off-white, cool
     textSecondary: '#9aa6bd',    // muted, slightly blue
-    primary: '#0ea5e9',          // sky-500 — ocean blue
-    primaryDark: '#0369a1',      // sky-700
-    primaryLight: '#7dd3fc',     // sky-300
-    accent: '#38bdf8',           // sky-400 — bright accent
+    primary: '#3b5bdb',          // royal blue — PH flag blue, brightened for dark-bg legibility
+    primaryDark: '#0038a8',      // true PH flag blue (deep)
+    primaryLight: '#93a8f2',     // light royal-blue tint
+    accent: '#5b7cf5',           // bright royal-blue accent
     border: '#24324a',
     hover: '#161f2c',
     overlay: 'rgba(0, 0, 0, 0.55)',
-    sand: '#141a10',             // alternating band — a touch lifted/warm vs background (nods to the yellow)
-    sun: '#fcd116',              // golden-yellow — gradient end + cadence/beat motif
+    sand: '#1a1013',             // alternating band — a touch lifted/warm vs background (nods to the red)
+    sun: '#fcd116',              // golden-yellow — PH flag sun/stars, cadence/beat motif only
   },
   light: {
     background: '#f8f3e3',       // light cream, gold-leaning — echoes the sun accent
@@ -95,15 +95,15 @@ const bandila = {
     surfaceAlt: '#f1e8d0',
     text: '#0a1018',
     textSecondary: '#586478',
-    primary: '#0ea5e9',
-    primaryDark: '#0369a1',
-    primaryLight: '#7dd3fc',
-    accent: '#0284c7',           // sky-600 — readable accent on light bg
+    primary: '#3b5bdb',
+    primaryDark: '#0038a8',
+    primaryLight: '#93a8f2',
+    accent: '#2541b8',           // deeper royal blue — readable accent on light bg
     border: '#e4dac0',
     hover: '#f3ecd7',
     overlay: 'rgba(255, 255, 255, 0.6)',
-    sand: '#f0e4c4',             // deeper gold-cream band — nods to the gradient's yellow
-    sun: '#caa406',              // golden-yellow, darkened for contrast on light bg — gradient end + cadence/beat motif
+    sand: '#f0e4c4',             // deeper gold-cream band — nods to the sun/stars motif
+    sun: '#caa406',              // golden-yellow, darkened for contrast on light bg — cadence/beat motif only
   },
 };
 
@@ -115,14 +115,14 @@ export type ColorPalette = typeof emerald.dark;
 
 // Signature gradient per brand.
 //  - emerald: primaryDark → primary → primaryLight (3-green sweep)
-//  - ocean:   midnight blue → red (matches the Drifit Shirt's diagonal fade)
-//  - bandila: pure ocean blue sweep (deep → ocean → bright sky)
+//  - ocean:   pure ocean-blue sweep (deep → ocean → bright sky)
+//  - bandila: royal blue → crimson red (PH flag's two field colors)
 export const brandGradient = (brand: Brand = 'emerald', mode: ColorMode = 'dark') => {
   if (brand === 'ocean') {
-    return 'linear-gradient(135deg, #0a1a3f 0%, #14275c 55%, #c0272d 100%)';
+    return 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 55%, #7dd3fc 100%)';
   }
   if (brand === 'bandila') {
-    return 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 55%, #7dd3fc 100%)';
+    return 'linear-gradient(135deg, #0038a8 0%, #3b5bdb 55%, #ce1126 100%)';
   }
   const c = colors.emerald[mode];
   return `linear-gradient(135deg, ${c.primaryDark} 0%, ${c.primary} 55%, ${c.primaryLight} 100%)`;
