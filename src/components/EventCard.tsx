@@ -35,10 +35,14 @@ export const isUpcoming = (iso: string) => {
 
 const MONTHS_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-/** Medal color for podium ranks. Returns null for 4th+ so the card stays neutral. */
-export const medalColor = (rank: number): string | null => {
+/**
+ * Medal color for podium ranks. Returns null for 4th+ so the card stays neutral.
+ * Silver needs a theme-aware shade — a pale slate reads fine on a dark card but
+ * is nearly invisible on the light cream background, so it darkens in light mode.
+ */
+export const medalColor = (rank: number, isDark = true): string | null => {
   if (rank === 1) return '#facc15'; // gold
-  if (rank === 2) return '#cbd5e1'; // silver
+  if (rank === 2) return isDark ? '#cbd5e1' : '#64748b'; // silver
   if (rank === 3) return '#d97706'; // bronze
   return null;
 };
@@ -60,7 +64,7 @@ export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
   const month = MONTHS_SHORT[d.getMonth()];
   const year = d.getFullYear();
   const upcoming = isUpcoming(e.date);
-  const medal = e.result ? medalColor(e.result.rank) : null;
+  const medal = e.result ? medalColor(e.result.rank, theme === 'dark') : null;
 
   return (
     <article

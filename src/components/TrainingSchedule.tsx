@@ -75,7 +75,7 @@ export const TrainingSchedule: React.FC = () => {
   const [ref, inView] = useInView<HTMLDivElement>();
   const [reserveHover, setReserveHover] = useState(false);
 
-  const accent = isDark ? c.primaryLight : c.primary;
+  const accent = isDark ? c.accent : c.primary;
   const cardBg = c.surface;
 
   // Open/closed status pill — open sessions glow in the brand accent; closed

@@ -34,7 +34,7 @@ export const RaceRecord: React.FC = () => {
   const [ref, inView] = useInView<HTMLDivElement>();
   const [photo, setPhoto] = useState(0);
 
-  const accent = isDark ? c.primaryLight : c.primary;
+  const accent = isDark ? c.accent : c.primary;
 
   // Auto cross-fade through the team photos, unless the user prefers reduced motion
   // (then the first photo stays put; the dots still allow manual selection).
@@ -137,7 +137,7 @@ export const RaceRecord: React.FC = () => {
   // One results row: year · event/category · time · place badge.
   const row = (e: RaceEvent, i: number) => {
     const rank = e.result!.rank;
-    const medal = medalColor(rank);
+    const medal = medalColor(rank, isDark);
     return (
       <div
         key={e.id}

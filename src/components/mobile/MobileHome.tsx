@@ -119,7 +119,7 @@ export const MobileHome: React.FC = () => {
   const { user } = useAuth();
   const c = colors[brand][theme];
   const isDark = theme === 'dark';
-  const accent = isDark ? c.primaryLight : c.primary;
+  const accent = isDark ? c.accent : c.primary;
   const grad = brandGradient(brand, theme);
 
   // Light-mode-only hero overrides: the hero sits over a full-bleed photo, so the
@@ -349,7 +349,7 @@ export const MobileHome: React.FC = () => {
             inset: 0,
             background: isDark
               ? `linear-gradient(180deg, ${hexToRgba(c.surface, 0.4)} 0%, ${hexToRgba(c.surface, 0.2)} 30%, ${hexToRgba(c.surface, 0.4)} 60%, ${hexToRgba(c.surface, 0.85)} 100%)`
-              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.12)} 40%, ${hexToRgba(c.surface, 0.2)} 70%, ${hexToRgba(c.surface, 0.2)} 100%)`,
+              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.2)} 40%, ${hexToRgba(c.surface, 0.4)} 70%, ${hexToRgba(c.surface, 0.6)} 100%)`,
           }}
         />
         {/* Next Race — pinned to the top of the hero photo, above the scrim, so it
@@ -382,11 +382,11 @@ export const MobileHome: React.FC = () => {
           )}
         </div>
         <div style={{ position: 'relative', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', lineHeight: 0.98, color: isDark ? c.text : heroTextLight, letterSpacing: '0.01em', textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight }}>
-            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', animationDelay: '0.16s' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', lineHeight: 0.98, letterSpacing: '0.01em' }}>
+            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: isDark ? c.text : heroTextLight, textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight, animationDelay: '0.16s' }}>
               BREAK
             </span>
-            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: isDark ? accent : heroAccentLight, animationDelay: '0.42s' }}>
+            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: isDark ? accent : heroAccentLight, textShadow: 'none', animationDelay: '0.42s' }}>
               AWAY
               <span
                 aria-hidden="true"
@@ -397,7 +397,7 @@ export const MobileHome: React.FC = () => {
           </div>
           <div
             className="stroke-in"
-            style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 400, color: isDark ? accent : heroAccentLight, letterSpacing: '0.02em', lineHeight: 1, animationDelay: '0.56s', textShadow: isDark ? 'none' : heroShadowLight }}
+            style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 400, color: isDark ? accent : heroAccentLight, letterSpacing: '0.02em', lineHeight: 1, animationDelay: '0.56s', textShadow: 'none' }}
           >
             on every stroke.
           </div>
@@ -594,7 +594,7 @@ export const MobileHome: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           {results.map((e) => {
             const rank = e.result!.rank;
-            const medal = medalColor(rank);
+            const medal = medalColor(rank, isDark);
             return (
               <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: c.surface, border: `1px solid ${c.border}`, borderRadius: '12px', padding: '12px 14px' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: c.textSecondary, width: '34px', flexShrink: 0 }}>{parseEventDate(e.date).getFullYear()}</div>

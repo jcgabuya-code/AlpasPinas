@@ -58,7 +58,7 @@ export const About: React.FC = () => {
   const isMobile = useIsMobile();
   const [ref, inView] = useInView<HTMLDivElement>();
 
-  const accent = isDark ? c.primaryLight : c.primary;
+  const accent = isDark ? c.accent : c.primary;
   // The manifesto is the emotional core — keep it near-ink for contrast rather than
   // the faint secondary, which would drop below AA on this lifted surface.
   const ink = isDark ? 'rgba(245,247,245,0.88)' : c.text;

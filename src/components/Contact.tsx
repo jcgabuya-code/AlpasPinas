@@ -71,7 +71,7 @@ export const Contact: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
-  const accent = theme === 'dark' ? c.primaryLight : c.primary;
+  const accent = theme === 'dark' ? c.accent : c.primary;
 
   const [values, setValues] = useState<Values>({ name: '', email: '', countryCode: '+60', mobile: '' });
   const [errors, setErrors] = useState<Errors>({});

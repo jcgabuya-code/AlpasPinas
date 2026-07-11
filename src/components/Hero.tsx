@@ -100,7 +100,7 @@ export const NextRaceTicket: React.FC<{
   const glassBg = isDark ? 'rgba(8,11,10,0.46)' : 'rgba(255,255,255,0.58)';
   const glassBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)';
   const stubBg = isDark ? `${c.primary}3a` : `${c.primary}24`;
-  const accent = isDark ? c.primaryLight : c.primary;
+  const accent = isDark ? c.accent : c.primary;
   const perfColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.18)';
   const actionLabel = compact ? 'Reserve spot' : 'Reserve your seat';
 
@@ -276,7 +276,7 @@ export const Hero: React.FC = () => {
 
   const heroText = c.text;
   const heroSub = isDark ? 'rgba(245, 247, 245, 0.82)' : c.textSecondary;
-  const heroAccent = isDark ? c.primaryLight : c.primary;
+  const heroAccent = isDark ? c.accent : c.primary;
   
   const chipBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.7)';
   const chipBorder = isDark ? 'rgba(255, 255, 255, 0.16)' : c.border;

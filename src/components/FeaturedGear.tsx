@@ -67,7 +67,7 @@ export const FeaturedGear: React.FC = () => {
     return [...featured, ...rest];
   }, [products]);
 
-  const accent = isDark ? c.primaryLight : c.primary;
+  const accent = isDark ? c.accent : c.primary;
   const cardBg = c.surface;
 
   if (!products || ordered.length === 0) return null;
@@ -175,7 +175,7 @@ export const FeaturedGear: React.FC = () => {
 
       <div style={{ position: 'relative', marginTop: 'auto', width: '100%', padding: isMobile ? '1.4rem 1.4rem 1.5rem' : '1.7rem 1.8rem 1.8rem' }}>
         {lead.category && (
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: c.primaryLight, marginBottom: '0.55rem' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: c.accent, marginBottom: '0.55rem' }}>
             {lead.category}
           </div>
         )}

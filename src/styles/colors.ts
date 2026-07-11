@@ -79,10 +79,10 @@ const bandila = {
     surfaceAlt: '#1a2332',       // even more lifted for nested cards
     text: '#f5f7fb',             // off-white, cool
     textSecondary: '#9aa6bd',    // muted, slightly blue
-    primary: '#3b5bdb',          // royal blue — PH flag blue, brightened for dark-bg legibility
-    primaryDark: '#0038a8',      // true PH flag blue (deep)
-    primaryLight: '#93a8f2',     // light royal-blue tint
-    accent: '#5b7cf5',           // bright royal-blue accent
+    primary: '#0038a8',          // true PH flag royal blue
+    primaryDark: '#002266',      // darkened further, same hue — for gradient depth
+    primaryLight: '#1a66ff',     // brightened tint, same hue — legible blue for dark-bg text/borders
+    accent: '#3d7eff',           // brightest, same hue — dark-bg text accent (was drifting violet at #5b7cf5)
     border: '#24324a',
     hover: '#161f2c',
     overlay: 'rgba(0, 0, 0, 0.55)',
@@ -95,9 +95,9 @@ const bandila = {
     surfaceAlt: '#f1e8d0',
     text: '#0a1018',
     textSecondary: '#586478',
-    primary: '#3b5bdb',
-    primaryDark: '#0038a8',
-    primaryLight: '#93a8f2',
+    primary: '#0038a8',
+    primaryDark: '#00246d',
+    primaryLight: '#3b5bdb',
     accent: '#2541b8',           // deeper royal blue — readable accent on light bg
     border: '#e4dac0',
     hover: '#f3ecd7',
