@@ -89,7 +89,7 @@ export const FeaturedGear: React.FC = () => {
         display: 'flex',
         borderRadius: '1.1rem',
         overflow: 'hidden',
-        border: `1px solid ${hoverId === lead.id ? `${c.primary}66` : c.border}`,
+        border: `1px solid ${hoverId === lead.id ? `${accent}66` : c.border}`,
         backgroundColor: c.surfaceAlt,
         textDecoration: 'none',
         minHeight: isMobile ? '360px' : '440px',
@@ -158,8 +158,8 @@ export const FeaturedGear: React.FC = () => {
             left: '1rem',
             padding: '0.4rem 0.8rem',
             borderRadius: '999px',
-            background: `${c.primary}26`,
-            border: `1px solid ${c.primary}66`,
+            background: `${accent}26`,
+            border: `1px solid ${accent}66`,
             backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
             color: '#fff',
@@ -244,7 +244,7 @@ export const FeaturedGear: React.FC = () => {
           textDecoration: 'none',
           color: c.text,
           background: cardBg,
-          border: `1px solid ${hovered ? `${c.primary}66` : c.border}`,
+          border: `1px solid ${hovered ? `${accent}66` : c.border}`,
           borderRadius: '0.9rem',
           padding: '0.7rem',
           transform: hovered ? 'translateX(3px)' : 'translateX(0)',
@@ -287,8 +287,8 @@ export const FeaturedGear: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: `${c.primary}1f`,
-            border: `1px solid ${c.primary}4d`,
+            background: `${accent}1f`,
+            border: `1px solid ${accent}4d`,
             color: accent,
             flexShrink: 0,
           }}
@@ -307,11 +307,11 @@ export const FeaturedGear: React.FC = () => {
         gap: '0.9rem',
         padding: '1rem 1.1rem',
         borderRadius: '0.9rem',
-        border: `1px dashed ${c.primary}59`,
-        background: `${c.primary}0d`,
+        border: `1px dashed ${accent}59`,
+        background: `${accent}0d`,
       }}
     >
-      <span style={{ width: '2.4rem', height: '2.4rem', flexShrink: 0, borderRadius: '0.6rem', background: `${c.primary}1f`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ width: '2.4rem', height: '2.4rem', flexShrink: 0, borderRadius: '0.6rem', background: `${accent}1f`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <KitGlyph color={accent} />
       </span>
       <p style={{ fontSize: '0.82rem', color: c.textSecondary, lineHeight: 1.5, margin: 0 }}>

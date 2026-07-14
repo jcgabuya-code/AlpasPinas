@@ -152,6 +152,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   const { user, logout } = useAuth();
   const { count: cartCount } = useCart();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -334,7 +335,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                 lineHeight: 1,
               }}
             >
-              ALPAS<span style={{ color: c.primary }}>PINAS</span>
+              ALPAS<span style={{ color: accent }}>PINAS</span>
             </span>
           )}
         </Link>
@@ -376,7 +377,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                       onMouseLeave={() => setHovered(null)}
                       style={({ isActive }) => ({
                         color:
-                          hovered === key || (isActive && !item.hash) ? c.primary : c.text,
+                          hovered === key || (isActive && !item.hash) ? accent : c.text,
                         textDecoration: 'none',
                         fontWeight: 500,
                         fontSize: '0.95rem',
@@ -460,8 +461,8 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                       width: '2.25rem',
                       height: '2.25rem',
                       borderRadius: '999px',
-                      border: `1px solid ${hovered === '__admin__' ? c.primary + '88' : c.border}`,
-                      color: hovered === '__admin__' ? c.primary : c.textSecondary,
+                      border: `1px solid ${hovered === '__admin__' ? accent + '88' : c.border}`,
+                      color: hovered === '__admin__' ? accent : c.textSecondary,
                       textDecoration: 'none',
                       transition: 'color 0.15s ease, border-color 0.15s ease',
                       flexShrink: 0,
@@ -480,7 +481,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                       style={{
                         background: 'transparent',
                         color: c.text,
-                        border: `1px solid ${hovered === '__user__' ? c.primary + '88' : c.border}`,
+                        border: `1px solid ${hovered === '__user__' ? accent + '88' : c.border}`,
                         borderRadius: '999px',
                         padding: '0.5rem 0.9rem',
                         cursor: 'pointer',
@@ -550,8 +551,8 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                             style={{
                               width: '100%',
                               background: 'transparent',
-                              color: c.primary,
-                              border: `1px solid ${c.primary}33`,
+                              color: accent,
+                              border: `1px solid ${accent}33`,
                               borderRadius: '0.4rem',
                               padding: '0.5rem',
                               cursor: 'pointer',
@@ -733,7 +734,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                 <img src="/logo-round.jpg" alt="AlpasPinas" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               </div>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', letterSpacing: '0.03em', color: c.text }}>
-                ALPAS<span style={{ color: c.primary }}>PINAS</span>
+                ALPAS<span style={{ color: accent }}>PINAS</span>
               </span>
             </Link>
             <button
@@ -767,7 +768,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                       padding: '13px 4px',
                       textDecoration: 'none',
                       borderBottom: `1px solid ${c.border}`,
-                      color: active ? c.primary : c.text,
+                      color: active ? accent : c.text,
                       fontFamily: 'var(--font-display)',
                       fontSize: '1.4rem',
                       letterSpacing: '0.02em',
@@ -792,7 +793,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                     padding: '13px 4px',
                     textDecoration: 'none',
                     borderBottom: `1px solid ${c.border}`,
-                    color: isActive ? c.primary : c.text,
+                    color: isActive ? accent : c.text,
                     fontFamily: 'var(--font-display)',
                     fontSize: '1.4rem',
                     letterSpacing: '0.02em',

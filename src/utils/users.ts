@@ -31,6 +31,8 @@ export type User = {
   gender?: UserGender | null;
   side?: UserSide | null;
   weight?: number | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
   isAdmin: boolean;
   createdAt: string;
 };
@@ -61,6 +63,8 @@ type ProfileRow = {
   gender: UserGender | null;
   side: UserSide | null;
   weight: number | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
   is_admin: boolean;
   created_at: string;
 };
@@ -73,6 +77,8 @@ const mapProfile = (row: ProfileRow): User => ({
   gender: row.gender,
   side: row.side,
   weight: row.weight,
+  emergencyContactName: row.emergency_contact_name,
+  emergencyContactPhone: row.emergency_contact_phone,
   isAdmin: row.is_admin,
   createdAt: row.created_at,
 });
@@ -146,8 +152,10 @@ export const registerWithEmail = async (
     name: string;
     birthday?: string;
     gender: UserGender;
-    side: UserSide;
+    side: UserSide | null;
     weight: number;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
   },
 ): Promise<User> => {
   // 1. Resolve the token so we don't strand an auth user with no profile.
@@ -197,6 +205,8 @@ export const registerWithEmail = async (
       gender: profile.gender,
       side: profile.side,
       weight: profile.weight,
+      emergency_contact_name: profile.emergencyContactName?.trim() || null,
+      emergency_contact_phone: profile.emergencyContactPhone?.trim() || null,
     })
     .select()
     .maybeSingle();
@@ -431,14 +441,14 @@ export const approveApplication = async (
  */
 export const checkRegistrationToken = async (
   token: string,
-): Promise<{ email: string; name: string } | null> => {
+): Promise<{ email: string; name: string; mobile: string } | null> => {
   const { data, error } = await supabase.rpc('check_registration_token', {
     check_token: token,
   });
 
   if (error) throw new Error(error.message);
-  const row = (data as { app_email: string; app_name: string }[])?.[0];
-  return row ? { email: row.app_email, name: row.app_name } : null;
+  const row = (data as { app_email: string; app_name: string; app_mobile: string }[])?.[0];
+  return row ? { email: row.app_email, name: row.app_name, mobile: row.app_mobile } : null;
 };
 
 /*

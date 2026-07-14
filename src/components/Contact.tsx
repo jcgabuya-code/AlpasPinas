@@ -143,7 +143,7 @@ export const Contact: React.FC = () => {
         {/* Left: the invitation */}
         <div>
           <SectionHeader eyebrow="The Open Seat" style={{ marginBottom: '0' }}>
-            CLAIM YOUR <span style={{ color: c.primary }}>SEAT</span>
+            CLAIM YOUR <span style={{ color: accent }}>SEAT</span>
           </SectionHeader>
 
           {/* Cadence meter — same motif as the hero readout */}
@@ -171,9 +171,9 @@ export const Contact: React.FC = () => {
           </p>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
-            <ContactRow icon={<LocationIcon />} label="Training base" value="Marina Putrajaya / Subang PARC · weekends" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
-            <ContactRow icon={<MailIcon />} label="Email" value="admin@alpaspinas.com" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
-            <ContactRow icon={<InstagramIcon />} label="Instagram" value="@alpaspinasdbt" color={c.primary} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon={<LocationIcon />} label="Training base" value="Marina Putrajaya / Subang PARC · weekends" color={accent} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon={<MailIcon />} label="Email" value="admin@alpaspinas.com" color={accent} textColor={c.text} subColor={c.textSecondary} />
+            <ContactRow icon={<InstagramIcon />} label="Instagram" value="@alpaspinasdbt" color={accent} textColor={c.text} subColor={c.textSecondary} />
           </ul>
         </div>
 
@@ -194,7 +194,7 @@ export const Contact: React.FC = () => {
                 height: '42px',
                 borderRadius: '50%',
                 flexShrink: 0,
-                border: `2px dashed ${c.primary}aa`,
+                border: `2px dashed ${accent}aa`,
                 color: accent,
                 display: 'flex',
                 alignItems: 'center',
@@ -247,7 +247,7 @@ export const Contact: React.FC = () => {
                   setErrorMsg(null);
                   setStatus('idle');
                 }}
-                style={{ marginTop: '0.6rem', background: 'none', border: 'none', color: c.primary, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ marginTop: '0.6rem', background: 'none', border: 'none', color: accent, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Send another →
               </button>

@@ -90,15 +90,15 @@ export const TrainingSchedule: React.FC = () => {
           gap: '0.4rem',
           padding: '0.35rem 0.8rem',
           borderRadius: '999px',
-          background: `${c.primary}1f`,
-          border: `1px solid ${c.primary}59`,
+          background: `${accent}1f`,
+          border: `1px solid ${accent}59`,
           color: accent,
           fontSize: '0.74rem',
           fontWeight: 700,
           whiteSpace: 'nowrap',
         }}
       >
-        <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: c.primary }} />
+        <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '999px', backgroundColor: accent }} />
         {s.openLabel}
       </span>
     ) : (
@@ -218,8 +218,8 @@ export const TrainingSchedule: React.FC = () => {
                   height: 34,
                   flexShrink: 0,
                   borderRadius: '0.6rem',
-                  background: `${c.primary}1f`,
-                  border: `1px solid ${c.primary}59`,
+                  background: `${accent}1f`,
+                  border: `1px solid ${accent}59`,
                 }}
               >
                 {g.venue === 'land' ? <LandGlyph color={accent} /> : <WaveGlyph color={accent} />}
@@ -299,8 +299,8 @@ export const TrainingSchedule: React.FC = () => {
                                     height: '13px',
                                     borderRadius: '999px',
                                     backgroundColor: c.background,
-                                    border: `2px solid ${c.primary}`,
-                                    boxShadow: `0 0 0 4px ${c.primary}1f`,
+                                    border: `2px solid ${accent}`,
+                                    boxShadow: `0 0 0 4px ${accent}1f`,
                                   }}
                                 />
                               </div>

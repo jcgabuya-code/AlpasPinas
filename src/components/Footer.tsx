@@ -17,6 +17,7 @@ const LINKS: { label: string; to: string; hash?: string }[] = [
 export const Footer: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
 
   return (
@@ -35,10 +36,10 @@ export const Footer: React.FC = () => {
         aria-hidden="true"
         style={{
           position: 'absolute',
-          top: '-40%',
-          right: '-5%',
-          width: '45%',
-          height: '140%',
+          top: isMobile ? '-70px' : '-40%',
+          right: isMobile ? '-70px' : '-5%',
+          width: isMobile ? '200px' : '45%',
+          height: isMobile ? '200px' : '140%',
           background: `radial-gradient(circle, ${c.primary}1f 0%, transparent 68%)`,
           pointerEvents: 'none',
         }}
@@ -67,7 +68,7 @@ export const Footer: React.FC = () => {
                 color: c.text,
               }}
             >
-              ALPAS<span style={{ color: c.primary }}>PINAS</span>
+              ALPAS<span style={{ color: accent }}>PINAS</span>
             </div>
             {!isMobile && (
               <p

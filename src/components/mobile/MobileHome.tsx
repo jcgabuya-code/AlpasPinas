@@ -360,7 +360,7 @@ export const MobileHome: React.FC = () => {
             style={{
               animationDelay: '0.04s',
               alignSelf: 'flex-start',
-              background: isDark ? `${c.primary}24` : 'rgba(8,13,20,0.5)',
+              background: isDark ? `${accent}24` : 'rgba(8,13,20,0.5)',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
               border: isDark ? 'none' : '1px solid rgba(255,255,255,0.18)',
@@ -391,7 +391,7 @@ export const MobileHome: React.FC = () => {
               <span
                 aria-hidden="true"
                 className="wake-underline"
-                style={{ position: 'absolute', left: 0, right: 0, bottom: '0.04em', height: '0.07em', borderRadius: '999px', background: `linear-gradient(90deg, ${c.primary}, ${c.sun})` }}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: '0.04em', height: '0.07em', borderRadius: '999px', background: isDark ? `linear-gradient(90deg, ${c.accent}, ${c.sun})` : `linear-gradient(90deg, ${c.primary}, ${c.sun})` }}
               />
             </span>
           </div>

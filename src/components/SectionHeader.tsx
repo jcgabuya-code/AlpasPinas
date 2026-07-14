@@ -12,13 +12,14 @@ export const Eyebrow: React.FC<{ children: React.ReactNode; style?: React.CSSPro
 }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   return (
     <span
       style={{
         ...eyebrowChip,
-        border: `1px solid ${c.primary}55`,
-        backgroundColor: `${c.primary}15`,
-        color: c.primary,
+        border: `1px solid ${accent}55`,
+        backgroundColor: `${accent}15`,
+        color: accent,
         ...style,
       }}
     >

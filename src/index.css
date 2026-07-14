@@ -252,3 +252,71 @@ button {
 .scroll-strip::-webkit-scrollbar {
   display: none;
 }
+
+/* ===================================================================== */
+/* New-member onboarding — the two-panel brand-stage flow (Apply →       */
+/* Applied → Register → Welcome). A self-contained immersive dark        */
+/* experience: the aurora brand gradient drifts, ambient orbs float, the */
+/* cadence dot beats, and each screen rises in. Classes are onb-scoped   */
+/* so nothing here leaks into the rest of the app.                       */
+/* ===================================================================== */
+@keyframes onbAurora   { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+@keyframes onbFloatA   { 0%,100%{transform:translate(0,0)} 50%{transform:translate(34px,-28px)} }
+@keyframes onbFloatB   { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,26px)} }
+@keyframes onbBeat     { 0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(252,209,22,.55)} 20%{transform:scale(1.55);box-shadow:0 0 0 9px rgba(252,209,22,0)} }
+@keyframes onbScreenIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes onbRiseIn   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes onbHeadIn   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+@keyframes onbDrawCheck{ to{stroke-dashoffset:0} }
+@keyframes onbRingPulse{ 0%{transform:scale(.55);opacity:.7} 70%{transform:scale(1.4);opacity:0} 100%{opacity:0} }
+@keyframes onbSheen    { 0%{transform:translateX(-140%) skewX(-18deg)} 55%,100%{transform:translateX(320%) skewX(-18deg)} }
+
+.onb-aurora  { animation: onbAurora 20s ease-in-out infinite; }
+.onb-orb-a   { animation: onbFloatA 16s ease-in-out infinite; }
+.onb-orb-b   { animation: onbFloatB 19s ease-in-out infinite; }
+.onb-orb-c   { animation: onbFloatA 22s ease-in-out infinite; }
+.onb-beat    { animation: onbBeat .85s ease-in-out infinite; }
+.onb-head    { animation: onbHeadIn .55s cubic-bezier(.2,.7,.2,1) both; }
+.onb-screen  { animation: onbScreenIn .42s cubic-bezier(.2,.7,.2,1); }
+.onb-check   { stroke-dasharray: 60; stroke-dashoffset: 60; animation: onbDrawCheck .55s .3s cubic-bezier(.6,0,.3,1) forwards; }
+.onb-ring    { animation: onbRingPulse 1.4s ease-out .2s; }
+
+.onb-field::placeholder { color: #5c6a83; }
+.onb-field:focus {
+  outline: none;
+  border-color: #3d7eff !important;
+  box-shadow: 0 0 0 3px rgba(61, 126, 255, 0.18);
+}
+
+.onb-btn { position: relative; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+.onb-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(0, 56, 168, 0.5); }
+.onb-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 38%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: onbSheen 3.6s ease-in-out infinite;
+}
+.onb-btn > span { position: relative; z-index: 1; }
+
+.onb-ghost { transition: border-color .15s, background .15s; }
+.onb-ghost:hover { border-color: #3d7eff; background: rgba(61, 126, 255, 0.08); }
+
+.onb-quicklink { transition: border-color .15s, transform .15s; }
+.onb-quicklink:hover { border-color: #3d7eff; transform: translateY(-2px); }
+
+.onb-textlink { transition: color .15s; }
+.onb-textlink:hover { color: #8fb4ff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .onb-aurora, .onb-orb-a, .onb-orb-b, .onb-orb-c, .onb-beat, .onb-btn::before, .onb-ring {
+    animation: none !important;
+  }
+  .onb-head, .onb-screen {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .onb-check { stroke-dashoffset: 0; animation: none !important; }
+}
