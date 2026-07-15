@@ -10,7 +10,7 @@ import {
   type OrderStatus,
 } from '../../utils/merch';
 
-type Props = { showToast: ShowToast; c: ColorPalette };
+type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
 
 // Reserve -> confirm availability & collect payment -> hand over. 'confirmed'
 // is a legacy status from an older 4-step flow; kept in the type/records for
@@ -44,7 +44,10 @@ const nextStatus = (s: OrderStatus): OrderStatus | null => {
   return i >= 0 && i < STATUS_FLOW.length - 1 ? STATUS_FLOW[i + 1] : null;
 };
 
-export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
+export const AdminOrders: React.FC<Props> = ({ showToast, c, theme }) => {
+  // Deep-navy `primary` is illegible on dark surfaces — use the brighter dark-bg
+  // accent for text; light mode keeps the deep tone.
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const [orders, setOrders] = useState<MerchOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -296,7 +299,7 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c }) => {
                         fontSize: '0.7rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
-                        color: o.deliveryMethod === 'delivery' ? c.primary : c.textSecondary,
+                        color: o.deliveryMethod === 'delivery' ? accent : c.textSecondary,
                       }}
                     >
                       {o.deliveryMethod === 'delivery' ? 'Delivery' : 'Self pick-up'}

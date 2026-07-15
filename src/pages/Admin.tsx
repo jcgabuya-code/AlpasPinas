@@ -97,6 +97,9 @@ const AdminGate: React.FC<{
 }> = ({ theme, title, message, onHome }) => {
   const { brand } = useTheme();
   const c = colors[brand][theme];
+  // On dark surfaces the deep-navy `primary` is unreadable as text/icon — use the
+  // palette's brighter dark-bg accent. Light mode keeps the deep brand tone.
+  const accent = theme === 'dark' ? c.accent : c.primary;
 
   return (
     <div
@@ -122,7 +125,7 @@ const AdminGate: React.FC<{
         <div style={{ height: '3px', background: brandGradient(brand, theme) }} />
         <div style={{ padding: '2rem 1.75rem', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
-            <ShieldCheck size={32} color={c.primary} />
+            <ShieldCheck size={32} color={accent} />
           </div>
           <div
             style={{
@@ -133,7 +136,7 @@ const AdminGate: React.FC<{
               lineHeight: 1,
             }}
           >
-            ALPAS<span style={{ color: c.primary }}>PINAS</span>
+            ALPAS<span style={{ color: accent }}>PINAS</span>
           </div>
           <div style={{ fontSize: '1rem', color: c.text, fontWeight: 600, marginTop: '1rem' }}>
             {title}
@@ -174,8 +177,11 @@ type ToastState = { msg: string; type: ToastType } | null;
 
 const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { theme, brand } = useTheme();
+  // Deep-navy `primary` is unreadable as text on dark surfaces — use the brighter
+  // dark-bg accent for text/icons, keeping `primary` only for tinted backgrounds.
   const navigate = useNavigate();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const [active, setActive] = useState<AdminSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
@@ -225,7 +231,7 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             lineHeight: 1,
           }}
         >
-          ALPAS<span style={{ color: c.primary }}>PINAS</span>
+          ALPAS<span style={{ color: accent }}>PINAS</span>
         </div>
         <span
           style={{
@@ -235,7 +241,7 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             borderRadius: '999px',
             background: `${c.primary}18`,
             border: `1px solid ${c.primary}44`,
-            color: c.primary,
+            color: accent,
             fontSize: '0.62rem',
             fontWeight: 700,
             letterSpacing: '0.12em',
@@ -291,7 +297,7 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 borderRadius: '0.55rem',
                 border: 'none',
                 backgroundColor: isActive ? `${c.primary}18` : 'transparent',
-                color: isActive ? c.primary : c.textSecondary,
+                color: isActive ? accent : c.textSecondary,
                 fontWeight: isActive ? 600 : 500,
                 fontSize: '0.88rem',
                 textAlign: 'left',
@@ -486,7 +492,7 @@ const SectionContent: React.FC<{
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;
     case 'roster':    return <AdminRoster    showToast={showToast} c={c} theme={theme} />;
     case 'products':  return <AdminProducts  showToast={showToast} c={c} />;
-    case 'orders':    return <AdminOrders    showToast={showToast} c={c} />;
+    case 'orders':    return <AdminOrders    showToast={showToast} c={c} theme={theme} />;
     default:          return null;
   }
 };

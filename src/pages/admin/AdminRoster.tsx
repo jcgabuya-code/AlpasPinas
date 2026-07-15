@@ -45,6 +45,9 @@ const COLUMNS = '2fr 1.1fr 1.1fr 0.9fr 0.8fr 1.4fr';
 
 export const AdminRoster: React.FC<Props> = ({ c, showToast, theme }) => {
   const isMobile = useIsMobile();
+  // Deep-navy `primary` is illegible on dark surfaces — brighter dark-bg accent
+  // for text/borders; light mode keeps the deep tone.
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -261,7 +264,7 @@ export const AdminRoster: React.FC<Props> = ({ c, showToast, theme }) => {
             );
             const actions = (
               <RowActions
-                c={c} isMobile={isMobile} busy={busy} confirming={confirming} isInactive={isInactive}
+                c={c} accent={accent} isMobile={isMobile} busy={busy} confirming={confirming} isInactive={isInactive}
                 onEdit={() => startEdit(m)}
                 onToggle={() => handleToggleStatus(m)}
                 onAskRemove={() => setConfirmRemove(m.name)}
@@ -313,6 +316,7 @@ export const AdminRoster: React.FC<Props> = ({ c, showToast, theme }) => {
 
 const RowActions: React.FC<{
   c: ColorPalette;
+  accent: string;
   isMobile: boolean;
   busy: boolean;
   confirming: boolean;
@@ -323,7 +327,7 @@ const RowActions: React.FC<{
   onAskRemove: () => void;
   onCancelRemove: () => void;
   onConfirmRemove: () => void;
-}> = ({ c, isMobile, busy, confirming, isInactive, name, onEdit, onToggle, onAskRemove, onCancelRemove, onConfirmRemove }) => {
+}> = ({ c, accent, isMobile, busy, confirming, isInactive, name, onEdit, onToggle, onAskRemove, onCancelRemove, onConfirmRemove }) => {
   const sz = isMobile ? 40 : 32;
   const minH = isMobile ? 40 : undefined;
 
@@ -346,7 +350,7 @@ const RowActions: React.FC<{
     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
       <IconBtn c={c} size={sz} label={`Edit ${name}`} onClick={onEdit}><Pencil size={14} /></IconBtn>
       <button type="button" onClick={onToggle} disabled={busy} aria-label={isInactive ? `Activate ${name}` : `Deactivate ${name}`} className="admin-focus"
-        style={{ padding: '0.35rem 0.75rem', minHeight: minH, borderRadius: '999px', border: `1px solid ${isInactive ? c.primary + '66' : c.border}`, background: 'transparent', color: isInactive ? c.primary : c.textSecondary, fontSize: '0.75rem', fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: busy ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+        style={{ padding: '0.35rem 0.75rem', minHeight: minH, borderRadius: '999px', border: `1px solid ${isInactive ? accent + '66' : c.border}`, background: 'transparent', color: isInactive ? accent : c.textSecondary, fontSize: '0.75rem', fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: busy ? 0.5 : 1, whiteSpace: 'nowrap' }}>
         {busy ? '…' : isInactive ? 'Activate' : 'Deactivate'}
       </button>
       <IconBtn c={c} size={sz} danger label={`Remove ${name}`} onClick={onAskRemove}><Trash2 size={14} /></IconBtn>

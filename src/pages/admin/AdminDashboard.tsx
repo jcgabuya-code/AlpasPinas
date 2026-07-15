@@ -47,7 +47,10 @@ const timeAgo = (iso: string): string => {
   return `${days}d ago`;
 };
 
-export const AdminDashboard: React.FC<Props> = ({ c, onNavigate }) => {
+export const AdminDashboard: React.FC<Props> = ({ c, theme, onNavigate }) => {
+  // Deep-navy `primary` is illegible as text/icons on dark surfaces — use the
+  // palette's brighter dark-bg accent there; light mode keeps the deep tone.
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
   const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
   const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
@@ -295,7 +298,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, onNavigate }) => {
                     minWidth: 0,
                   }}
                 >
-                  <a.icon size={18} strokeWidth={1.8} color={c.primary} />
+                  <a.icon size={18} strokeWidth={1.8} color={accent} />
                   <div style={{ fontSize: '0.8rem', fontWeight: 600, color: c.text }}>{a.label}</div>
                 </div>
               ))}

@@ -379,7 +379,7 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
                   <Copy size={15} strokeWidth={2} />
                 </IconBtn>
               )}
-              <IconBtn onClick={() => handleApprove(app.mobile)} disabled={busy} size={iconSize} color={c.primary} bg={`${c.primary}22`} title="Resend email">
+              <IconBtn onClick={() => handleApprove(app.mobile)} disabled={busy} size={iconSize} color={theme === 'dark' ? '#fff' : c.primary} bg={theme === 'dark' ? c.primary : `${c.primary}22`} title="Resend email">
                 <Mail size={15} strokeWidth={2} />
               </IconBtn>
             </div>

@@ -165,6 +165,9 @@ type CkTokens = {
   goodSoft: string; goodBorder: string;
   warnSoft: string; warnBorder: string;
   accentSoft: string;
+  // Legible-on-dark brand accent for text/icons/borders (deep-navy `primary`
+  // is unreadable on dark surfaces). Falls back to the deep tone in light mode.
+  accent: string;
 };
 const ckTokens = (c: ColorPalette, theme: 'dark' | 'light'): CkTokens => ({
   good: '#16a34a',
@@ -174,6 +177,7 @@ const ckTokens = (c: ColorPalette, theme: 'dark' | 'light'): CkTokens => ({
   warnSoft: theme === 'dark' ? 'rgba(245,158,11,0.16)' : 'rgba(245,158,11,0.11)',
   warnBorder: 'rgba(245,158,11,0.42)',
   accentSoft: `${c.primary}${theme === 'dark' ? '26' : '18'}`,
+  accent: theme === 'dark' ? c.accent : c.primary,
 });
 
 /* ------------------------------------------------------------------ */
@@ -185,6 +189,9 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const { brand } = useTheme();
   const isMobile = useIsMobile();
+  // Deep-navy `primary` is illegible as text/borders on dark surfaces — use the
+  // palette's brighter dark-bg accent for those; light mode keeps the deep tone.
+  const accent = theme === 'dark' ? c.accent : c.primary;
   // Boat seating only makes sense for lake weekends — land conditioning
   // sign-ups carry no side/weight and would show up as an empty bench.
   const [events, setEvents] = useState<TrainingEvent[]>([]);
@@ -606,9 +613,9 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                   style={{
                     padding: '0.45rem 0.9rem',
                     borderRadius: '999px',
-                    border: `1px solid ${boat.id === activeBoatId ? c.primary : c.border}`,
+                    border: `1px solid ${boat.id === activeBoatId ? accent : c.border}`,
                     background: boat.id === activeBoatId ? CK.accentSoft : 'transparent',
-                    color: boat.id === activeBoatId ? c.primary : c.textSecondary,
+                    color: boat.id === activeBoatId ? accent : c.textSecondary,
                     fontWeight: 600,
                     fontSize: '0.82rem',
                     cursor: 'pointer',
@@ -665,9 +672,9 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                     style={{
                       padding: '0.35rem 0.75rem',
                       borderRadius: '999px',
-                      border: `1px solid ${active ? c.primary : c.border}`,
+                      border: `1px solid ${active ? accent : c.border}`,
                       background: active ? CK.accentSoft : 'transparent',
-                      color: active ? c.primary : c.textSecondary,
+                      color: active ? accent : c.textSecondary,
                       fontWeight: active ? 700 : 500,
                       fontSize: '0.78rem',
                       cursor: 'pointer',
@@ -763,6 +770,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
                 onToggle={() => setBenchOpen((o) => !o)}
                 c={c}
                 CK={CK}
+                theme={theme}
               />
             </div>
 
@@ -1004,7 +1012,8 @@ const RosterPanel: React.FC<{
   onToggle: () => void;
   c: ColorPalette;
   CK: CkTokens;
-}> = ({ athletes, total, boat, selected, infoByName, query, onQuery, onSelect, onDragStart, onBenchDrop, collapsible, open, onToggle, c, CK }) => (
+  theme: 'dark' | 'light';
+}> = ({ athletes, total, boat, selected, infoByName, query, onQuery, onSelect, onDragStart, onBenchDrop, collapsible, open, onToggle, c, CK, theme }) => (
   <div
     style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1rem' }}
     onDragOver={(e) => e.preventDefault()}
@@ -1031,7 +1040,7 @@ const RosterPanel: React.FC<{
       <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: c.textSecondary }}>
         Needs a seat
       </span>
-      <span style={{ backgroundColor: CK.accentSoft, color: c.primary, borderRadius: '999px', padding: '0.1rem 0.55rem', fontSize: '0.7rem', fontWeight: 700 }}>
+      <span style={{ backgroundColor: theme === 'dark' ? c.primary : CK.accentSoft, color: theme === 'dark' ? '#fff' : c.primary, borderRadius: '999px', padding: '0.1rem 0.55rem', fontSize: '0.7rem', fontWeight: 700 }}>
         {total}
       </span>
       {collapsible && (
@@ -2040,10 +2049,10 @@ const SeatBox: React.FC<{
     textColor = warned ? CK.warn : CK.good;
   } else if (isDragOver) {
     bg = `${c.primary}33`;
-    border = `2px solid ${c.primary}`;
+    border = `2px solid ${CK.accent}`;
   } else if (canPlace) {
     bg = placeOffSide ? CK.warnSoft : CK.accentSoft;
-    border = placeOffSide ? `1px dashed ${CK.warn}` : `1px solid ${c.primary}66`;
+    border = placeOffSide ? `1px dashed ${CK.warn}` : `1px solid ${CK.accent}`;
   }
 
   const warnReason = [
@@ -2107,7 +2116,7 @@ const SeatBox: React.FC<{
           </div>
         </>
       ) : (
-        <div style={{ color: canPlace ? (placeOffSide ? CK.warn : c.primary) : c.textSecondary }}>{label}</div>
+        <div style={{ color: canPlace ? (placeOffSide ? CK.warn : CK.accent) : c.textSecondary }}>{label}</div>
       )}
     </button>
   );

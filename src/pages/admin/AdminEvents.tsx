@@ -24,7 +24,7 @@ type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
 
 /* ------------------------------------------------------------------ */
 
-export const AdminEvents: React.FC<Props> = ({ c, showToast }) => {
+export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
   const [tab, setTab] = useState<Tab>('training');
   const isMobile = useIsMobile();
 
@@ -68,8 +68,8 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast }) => {
       </div>
 
       {tab === 'training'
-        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
-        : <RaceTab c={c} showToast={showToast} isMobile={isMobile} />}
+        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />
+        : <RaceTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />}
     </div>
   );
 };
@@ -96,7 +96,7 @@ const blankTraining = (): TrainingEvent => ({
   days: [blankDay()],
 });
 
-const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast }) => {
+const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, theme }) => {
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [editing, setEditing] = useState<TrainingEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -156,7 +156,7 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: b
 
       {/* Form */}
       {editing && (
-        <TrainingForm ev={editing} setEv={setEditing} c={c} onSave={save} onCancel={() => setEditing(null)} isNew={isNew} />
+        <TrainingForm ev={editing} setEv={setEditing} c={c} theme={theme} onSave={save} onCancel={() => setEditing(null)} isNew={isNew} />
       )}
 
       {/* List */}
@@ -218,10 +218,12 @@ const TrainingForm: React.FC<{
   ev: TrainingEvent;
   setEv: (ev: TrainingEvent) => void;
   c: ColorPalette;
+  theme: 'dark' | 'light';
   onSave: () => void;
   onCancel: () => void;
   isNew: boolean;
-}> = ({ ev, setEv, c, onSave, onCancel, isNew }) => {
+}> = ({ ev, setEv, c, theme, onSave, onCancel, isNew }) => {
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const set = (patch: Partial<TrainingEvent>) => setEv({ ...ev, ...patch });
   const setDay = (idx: number, patch: Partial<TrainingDay>) =>
     set({ days: ev.days.map((d, i) => (i === idx ? { ...d, ...patch } : d)) });
@@ -243,9 +245,9 @@ const TrainingForm: React.FC<{
                 style={{
                   padding: '0.45rem 1rem',
                   borderRadius: '999px',
-                  border: `1px solid ${(ev.venue ?? 'lake') === v ? c.primary : c.border}`,
+                  border: `1px solid ${(ev.venue ?? 'lake') === v ? accent : c.border}`,
                   background: (ev.venue ?? 'lake') === v ? `${c.primary}18` : 'transparent',
-                  color: (ev.venue ?? 'lake') === v ? c.primary : c.textSecondary,
+                  color: (ev.venue ?? 'lake') === v ? accent : c.textSecondary,
                   fontWeight: 600,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
@@ -314,7 +316,7 @@ const blankRace = (): RaceEvent => ({
   result: null,
 });
 
-const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast, isMobile }) => {
+const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, isMobile, theme }) => {
   const [events, setEvents] = useState<RaceEvent[]>(() => getRaceEvents());
   const [editing, setEditing] = useState<RaceEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -364,6 +366,7 @@ const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boole
               key={ev.id}
               ev={ev}
               c={c}
+              theme={theme}
               isMobile={isMobile}
               confirming={confirmDelete === ev.id}
               onEdit={() => openEdit(ev)}
@@ -401,13 +404,14 @@ const medalColor = (rank: number): string => (rank === 1 ? '#d4a017' : rank === 
 const RaceCard: React.FC<{
   ev: RaceEvent;
   c: ColorPalette;
+  theme: 'dark' | 'light';
   isMobile: boolean;
   confirming: boolean;
   onEdit: () => void;
   onAskDelete: () => void;
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
-}> = ({ ev, c, isMobile, confirming, onEdit, onAskDelete, onCancelDelete, onConfirmDelete }) => {
+}> = ({ ev, c, theme, isMobile, confirming, onEdit, onAskDelete, onCancelDelete, onConfirmDelete }) => {
   const { mon, day } = dateChip(ev.date);
   const upcoming = ev.date >= new Date().toISOString().slice(0, 10);
   const btn = isMobile ? 40 : 32;
@@ -416,7 +420,7 @@ const RaceCard: React.FC<{
     <div style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '1rem', padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {/* date chip + type pill */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-        <div style={{ width: 52, height: 52, borderRadius: '0.7rem', background: `${c.primary}1f`, color: c.primary, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, flexShrink: 0 }}>
+        <div style={{ width: 52, height: 52, borderRadius: '0.7rem', background: theme === 'dark' ? c.primary : `${c.primary}1f`, color: theme === 'dark' ? '#fff' : c.primary, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, flexShrink: 0 }}>
           <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.04em' }}>{mon}</span>
           <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{day}</span>
         </div>
