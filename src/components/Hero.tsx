@@ -248,9 +248,12 @@ const HEADLINE_LINES = [
 ];
 
 export const Hero: React.FC = () => {
-  const { theme, brand } = useTheme();
-  const c = colors[brand][theme];
-  const isDark = theme === 'dark';
+  const { mode, brand } = useTheme();
+  // Mixed mode renders a dark hero over an otherwise light page, so the hero itself
+  // is dark unless the setting is explicitly 'light'.
+  const heroMode = mode === 'light' ? 'light' : 'dark';
+  const c = colors[brand][heroMode];
+  const isDark = heroMode === 'dark';
   const isMobile = useIsMobile();
   const [videoOpen, setVideoOpen] = useState(false);
   const [heroPick] = useHeroPick();

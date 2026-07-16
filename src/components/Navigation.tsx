@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import type { ThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { colors, brandGradient, bandilaHero } from '../styles/colors';
+import type { ColorMode } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HERO_PICKER, HeroPhotoPicker, useHeroPick } from './HeroPicker';
 
@@ -65,6 +67,18 @@ const MoonIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
+// Mixed — a circle split light/dark, for the "dark hero + light page" mode.
+const MixedIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+// Icon for the current appearance mode (the toggle cycles dark → light → mixed).
+const ThemeModeIcon = ({ mode, size }: { mode: ThemeMode; size?: number }) =>
+  mode === 'dark' ? <MoonIcon size={size} /> : mode === 'light' ? <SunIcon size={size} /> : <MixedIcon size={size} />;
+
 // Right chevron — trails each oversized drawer nav link.
 const ChevronRight = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -81,9 +95,13 @@ const UserIcon = ({ size = 16 }: { size?: number }) => (
 );
 
 // Cart link with a live count badge. Used in both desktop + mobile bars.
-const CartBadge: React.FC<{ count: number; onClick?: () => void }> = ({ count, onClick }) => {
+const CartBadge: React.FC<{ count: number; onClick?: () => void; mode?: ColorMode; borderColor?: string }> = ({ count, onClick, mode, borderColor }) => {
   const { theme, brand } = useTheme();
-  const c = colors[brand][theme];
+  // `mode` lets the caller force the badge's palette — e.g. the desktop nav passes its
+  // navMode so the cart reads white over the dark hero (mixed mode) until scrolled.
+  // `borderColor` overrides just the ring (the nav passes its chromeBorder so the ring
+  // matches the other icon outlines over the hero).
+  const c = colors[brand][mode ?? theme];
   return (
     <Link
       to="/cart"
@@ -98,7 +116,7 @@ const CartBadge: React.FC<{ count: number; onClick?: () => void }> = ({ count, o
         width: '2.25rem',
         height: '2.25rem',
         borderRadius: '999px',
-        border: `1px solid ${c.border}`,
+        border: `1px solid ${borderColor ?? c.border}`,
         color: c.text,
         textDecoration: 'none',
         flexShrink: 0,
@@ -148,10 +166,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedHome = false }) => {
-  const { theme, toggleTheme, brand, toggleBrand } = useTheme();
+  const { theme, mode, toggleTheme, brand, toggleBrand } = useTheme();
   const { user, logout } = useAuth();
   const { count: cartCount } = useCart();
-  const c = colors[brand][theme];
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -176,21 +193,36 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   }, []);
 
   const mergedHome = integratedHome && location.pathname === '/';
-  // Over the Home hero in light mode the header adopts the Alpas Hero spec blue
-  // (brighter than the app royal blue) so it matches the hero's blue accents. Tied to
-  // the bandila brand; other brands keep their own light accent.
-  const accent =
-    theme === 'dark'
-      ? c.accent
-      : mergedHome && brand === 'bandila'
-        ? bandilaHero.blue
-        : c.primary;
   // On desktop Home the nav floats over the hero: it stays `position: fixed` the
   // whole time and only morphs its surface (transparent → frosted) on scroll, so
   // there's no layout jump from swapping position values. `overlay` is the pinned-
   // at-top, transparent state; `floating` is true for the entire home scroll.
   const floating = mergedHome && !isMobile;
   const overlay = floating && !scrolled;
+
+  // Mixed mode: the desktop nav sits over the dark hero at the top, so it reads dark
+  // there and flips to light once scrolled onto the light sections. Everywhere else
+  // the nav just follows the effective theme (light in mixed).
+  const navMode = mode === 'mixed' && floating ? (overlay ? 'dark' : 'light') : theme;
+  const c = colors[brand][navMode];
+  // Over the Home hero in light mode the header adopts the Alpas Hero spec blue
+  // (brighter than the app royal blue) so it matches the hero's blue accents. Tied to
+  // the bandila brand; other brands keep their own light accent.
+  const accent =
+    navMode === 'dark'
+      ? c.accent
+      : mergedHome && brand === 'bandila'
+        ? bandilaHero.blue
+        : c.primary;
+  // Outline color for the nav's icon chrome (swatch / toggle / cart rings + divider).
+  // Over the transparent hero it reads against the photo — light on the dark hero,
+  // a neutral dark on the light hero (the warm palette border looks yellow there).
+  // Once the nav has a solid surface it falls back to the palette border.
+  const chromeBorder = overlay
+    ? navMode === 'dark'
+      ? 'rgba(255,255,255,0.24)'
+      : 'rgba(0,0,0,0.35)'
+    : c.border;
   // The Home v2 hero shows BREAK / AWAY (not the wordmark), so the nav keeps its
   // logo + wordmark over the transparent masthead, matching the reference.
   const hideLogo = false;
@@ -410,7 +442,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                   title={`Color: ${brand} — click to switch`}
                   style={{
                     background: 'transparent',
-                    border: `1px solid ${c.border}`,
+                    border: `1px solid ${chromeBorder}`,
                     width: '1.9rem',
                     height: '1.9rem',
                     borderRadius: '999px',
@@ -435,8 +467,8 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                   aria-label="Toggle theme"
                   style={{
                     background: 'transparent',
-                    color: c.textSecondary,
-                    border: `1px solid ${c.border}`,
+                    color: overlay && navMode === 'dark' ? '#f5f7fb' : c.textSecondary,
+                    border: `1px solid ${chromeBorder}`,
                     width: '1.9rem',
                     height: '1.9rem',
                     borderRadius: '999px',
@@ -446,14 +478,14 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                     justifyContent: 'center',
                   }}
                 >
-                  {theme === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
+                  <ThemeModeIcon mode={mode} size={15} />
                 </button>
               </div>
 
-              <span aria-hidden="true" style={{ width: '1px', height: '20px', backgroundColor: c.border, flexShrink: 0 }} />
+              <span aria-hidden="true" style={{ width: '1px', height: '20px', backgroundColor: chromeBorder, flexShrink: 0 }} />
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
-                <CartBadge count={cartCount} />
+                <CartBadge count={cartCount} mode={navMode} borderColor={chromeBorder} />
 
                 {canSeeAdmin && (
                   <Link
@@ -657,7 +689,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                   flexShrink: 0,
                 }}
               >
-                {theme === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+                <ThemeModeIcon mode={mode} size={16} />
               </button>
             </div>
             <CartBadge count={cartCount} onClick={closeMenu} />

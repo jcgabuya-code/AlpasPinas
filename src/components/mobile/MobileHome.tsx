@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { colors, brandGradient, type ColorPalette } from '../../styles/colors';
+import { colors, brandGradient, bandilaHero, type ColorPalette } from '../../styles/colors';
 import { Marquee } from '../Marquee';
 import {
   fetchProducts,
@@ -115,12 +115,24 @@ const SCROLL_CSS = '.apn-mobile-scroll::-webkit-scrollbar{display:none}.apn-mobi
 type SectionKey = 'home' | 'about' | 'training' | 'gear' | 'races' | 'contact';
 
 export const MobileHome: React.FC = () => {
-  const { theme, brand } = useTheme();
+  const { theme, mode, brand } = useTheme();
   const { user } = useAuth();
   const c = colors[brand][theme];
   const isDark = theme === 'dark';
   const accent = isDark ? c.accent : c.primary;
   const grad = brandGradient(brand, theme);
+
+  // Mixed mode: the hero band renders dark over an otherwise light page. `heroC` /
+  // `heroIsDark` / `heroAccent` drive the hero section only; the rest of the page
+  // keeps `c` / `isDark` (light in mixed). In plain dark/light they all agree.
+  const heroMode = mode === 'light' ? 'light' : 'dark';
+  const heroC = colors[brand][heroMode];
+  const heroIsDark = heroMode === 'dark';
+  const heroAccent = heroIsDark
+    ? heroC.accent
+    : brand === 'bandila'
+      ? bandilaHero.blue
+      : heroC.primary;
 
   // Light-mode-only hero overrides: the hero sits over a full-bleed photo, so the
   // page's dark navy text has no reliable contrast there. Both themes therefore use
@@ -128,7 +140,10 @@ export const MobileHome: React.FC = () => {
   // with a dark drop shadow for legibility.
   const heroTextLight = '#f7f9f7';
   const heroSubLight = 'rgba(247, 249, 247, 0.92)';
-  const heroAccentLight = c.primaryLight;
+  // Alpas Hero spec accents (light) — bandila gets the brighter hero blue + flag
+  // yellow (matches the desktop hero); other brands keep their own light palette.
+  const heroAccentLight = brand === 'bandila' ? bandilaHero.blue : c.primaryLight;
+  const heroYellowLight = brand === 'bandila' ? bandilaHero.yellow : c.sun;
   const heroShadowLight = '0 2px 14px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.5)';
 
   // Section refs so the pill bar and hero CTAs can jump to each band.
@@ -334,7 +349,7 @@ export const MobileHome: React.FC = () => {
           justifyContent: 'flex-end',
           paddingBottom: '20%',
           overflow: 'hidden',
-          background: c.surface,
+          background: heroC.surface,
           scrollMarginTop: `${scrollMargin}px`,
         }}
       >
@@ -347,9 +362,9 @@ export const MobileHome: React.FC = () => {
           style={{
             position: 'absolute',
             inset: 0,
-            background: isDark
-              ? `linear-gradient(180deg, ${hexToRgba(c.surface, 0.4)} 0%, ${hexToRgba(c.surface, 0.2)} 30%, ${hexToRgba(c.surface, 0.4)} 60%, ${hexToRgba(c.surface, 0.85)} 100%)`
-              : `linear-gradient(180deg, ${hexToRgba(c.surface, 0.02)} 0%, ${hexToRgba(c.surface, 0.2)} 40%, ${hexToRgba(c.surface, 0.4)} 70%, ${hexToRgba(c.surface, 0.6)} 100%)`,
+            background: heroIsDark
+              ? `linear-gradient(180deg, ${hexToRgba(heroC.surface, 0.4)} 0%, ${hexToRgba(heroC.surface, 0.2)} 30%, ${hexToRgba(heroC.surface, 0.4)} 60%, ${hexToRgba(heroC.surface, 0.85)} 100%)`
+              : `linear-gradient(180deg, ${hexToRgba(heroC.surface, 0.02)} 0%, ${hexToRgba(heroC.surface, 0.2)} 40%, ${hexToRgba(heroC.surface, 0.4)} 70%, ${hexToRgba(heroC.surface, 0.6)} 100%)`,
           }}
         />
         {/* Next Race — pinned to the top of the hero photo, above the scrim, so it
@@ -360,11 +375,11 @@ export const MobileHome: React.FC = () => {
             style={{
               animationDelay: '0.04s',
               alignSelf: 'flex-start',
-              background: isDark ? `${accent}24` : 'rgba(8,13,20,0.5)',
+              background: heroIsDark ? `${heroAccent}24` : 'rgba(8,13,20,0.5)',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
-              border: isDark ? 'none' : '1px solid rgba(255,255,255,0.18)',
-              color: isDark ? accent : heroAccentLight,
+              border: heroIsDark ? 'none' : '1px solid rgba(255,255,255,0.18)',
+              color: heroIsDark ? heroAccent : heroAccentLight,
               fontSize: '0.7rem',
               fontWeight: 800,
               letterSpacing: '0.06em',
@@ -376,28 +391,28 @@ export const MobileHome: React.FC = () => {
             Next Race · Join Us
           </span>
           {nextRace && (
-            <div className="stroke-in" style={{ animationDelay: '0.1s', fontSize: '0.85rem', color: isDark ? c.text : heroSubLight, fontWeight: 600, textShadow: isDark ? '0 1px 10px rgba(0,0,0,0.6)' : heroShadowLight }}>
+            <div className="stroke-in" style={{ animationDelay: '0.1s', fontSize: '0.85rem', color: heroIsDark ? heroC.text : heroSubLight, fontWeight: 600, textShadow: heroIsDark ? '0 1px 10px rgba(0,0,0,0.6)' : heroShadowLight }}>
               {nextRace.name} — {nextRace.when}
             </div>
           )}
         </div>
         <div style={{ position: 'relative', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', lineHeight: 0.98, letterSpacing: '0.01em' }}>
-            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: isDark ? c.text : heroTextLight, textShadow: isDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight, animationDelay: '0.16s' }}>
+            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: heroIsDark ? heroC.text : heroTextLight, textShadow: heroIsDark ? '0 2px 30px rgba(0,0,0,0.35)' : heroShadowLight, animationDelay: '0.16s' }}>
               BREAK
             </span>
-            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: isDark ? accent : heroAccentLight, textShadow: 'none', animationDelay: '0.42s' }}>
+            <span className="stroke-in" style={{ display: 'block', position: 'relative', width: 'fit-content', color: heroIsDark ? heroAccent : heroAccentLight, textShadow: 'none', animationDelay: '0.42s' }}>
               AWAY
               <span
                 aria-hidden="true"
                 className="wake-underline"
-                style={{ position: 'absolute', left: 0, right: 0, bottom: '0.04em', height: '0.07em', borderRadius: '999px', background: isDark ? `linear-gradient(90deg, ${c.accent}, ${c.sun})` : `linear-gradient(90deg, ${c.primary}, ${c.sun})` }}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: '0.04em', height: '0.07em', borderRadius: '999px', background: heroIsDark ? `linear-gradient(90deg, ${heroC.accent}, ${heroC.sun})` : `linear-gradient(90deg, ${heroAccentLight}, ${heroYellowLight})` }}
               />
             </span>
           </div>
           <div
             className="stroke-in"
-            style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 400, color: isDark ? accent : heroAccentLight, letterSpacing: '0.02em', lineHeight: 1, animationDelay: '0.56s', textShadow: 'none' }}
+            style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 400, color: heroIsDark ? heroAccent : heroAccentLight, letterSpacing: '0.02em', lineHeight: 1, animationDelay: '0.56s', textShadow: 'none' }}
           >
             on every stroke.
           </div>
@@ -406,9 +421,9 @@ export const MobileHome: React.FC = () => {
             <span
               aria-hidden="true"
               className="cadence-beat"
-              style={{ width: '7px', height: '7px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }}
+              style={{ width: '7px', height: '7px', borderRadius: '999px', backgroundColor: heroC.sun, flexShrink: 0 }}
             />
-            <span style={{ color: isDark ? c.text : heroTextLight, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textShadow: isDark ? 'none' : heroShadowLight }}>
+            <span style={{ color: heroIsDark ? heroC.text : heroTextLight, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textShadow: heroIsDark ? 'none' : heroShadowLight }}>
               Filipino Dragon Boat Team · Malaysia
             </span>
           </div>
@@ -417,52 +432,112 @@ export const MobileHome: React.FC = () => {
           </div> */}
           <div className="stroke-in" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '4px', animationDelay: '0.8s' }}>
 
-            {/* Book a Session — messages the crew (WhatsApp green) */}
-            <button
-              onClick={() => scrollTo('contact')}
-              style={{
-                background: 'linear-gradient(135deg, #1faa4d, #25D366)',
-                color: '#fff',
-                border: 'none',
-                padding: '0.72rem 1.25rem',
-                borderRadius: '999px',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                letterSpacing: '0.01em',
-                boxShadow: '0 12px 30px rgba(37,211,102,0.4)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              <WhatsAppGlyph size={30} />
-              Book a Session
-            </button>
-            {/* Watch Race — opens the highlight reel (YouTube red) */}
-            <button
-              onClick={() => scrollTo('races')}
-              style={{
-                background: '#FF0000',
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.18)',
-                padding: '0.72rem 1.2rem',
-                borderRadius: '999px',
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                letterSpacing: '0.01em',
-                boxShadow: '0 12px 30px rgba(255,0,0,0.34)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-              }}
-            >
-              <YouTubeGlyph size={30} />
-              Watch Race
-            </button>
+            {heroIsDark ? (
+              <>
+                {/* Book a Session — messages the crew (WhatsApp green) */}
+                <button
+                  onClick={() => scrollTo('contact')}
+                  style={{
+                    background: 'linear-gradient(135deg, #1faa4d, #25D366)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.72rem 1.25rem',
+                    borderRadius: '999px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.01em',
+                    boxShadow: '0 12px 30px rgba(37,211,102,0.4)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <WhatsAppGlyph size={30} />
+                  Book a Session
+                </button>
+                {/* Watch Race — opens the highlight reel (YouTube red) */}
+                <button
+                  onClick={() => scrollTo('races')}
+                  style={{
+                    background: '#FF0000',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.18)',
+                    padding: '0.72rem 1.2rem',
+                    borderRadius: '999px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.01em',
+                    boxShadow: '0 12px 30px rgba(255,0,0,0.34)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                  }}
+                >
+                  <YouTubeGlyph size={30} />
+                  Watch Race
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Light mode (Alpas Hero spec): blue-filled primary with WhatsApp mark
+                    in a green badge, over the photo. */}
+                <button
+                  onClick={() => scrollTo('contact')}
+                  style={{
+                    background: heroAccentLight,
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.72rem 1.25rem',
+                    borderRadius: '999px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.01em',
+                    boxShadow: `0 10px 28px ${heroAccentLight}66`,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#25d366', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <WhatsAppGlyph size={14} />
+                  </span>
+                  Book a Session
+                </button>
+                {/* Ghost secondary — glass over the photo (white ink), play mark in a
+                    red badge. */}
+                <button
+                  onClick={() => scrollTo('races')}
+                  style={{
+                    background: 'rgba(8,13,20,0.42)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    color: '#fff',
+                    border: '1.5px solid rgba(255,255,255,0.5)',
+                    padding: '0.72rem 1.2rem',
+                    borderRadius: '999px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.01em',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                  }}
+                >
+                  <span style={{ width: 28, height: 20, borderRadius: 6, background: '#ff0000', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                  </span>
+                  Watch Race
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
