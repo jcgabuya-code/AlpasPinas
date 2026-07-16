@@ -16,6 +16,8 @@ import {
   ShoppingBag,
   Package,
   Download,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { downloadAdminExport } from '../utils/adminExport';
 
@@ -176,7 +178,7 @@ const AdminGate: React.FC<{
 type ToastState = { msg: string; type: ToastType } | null;
 
 const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const { theme, brand } = useTheme();
+  const { theme, brand, toggleTheme, toggleBrand } = useTheme();
   // Deep-navy `primary` is unreadable as text on dark surfaces — use the brighter
   // dark-bg accent for text/icons, keeping `primary` only for tinted backgrounds.
   const navigate = useNavigate();
@@ -315,8 +317,64 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         })}
       </nav>
 
-      {/* Export + sign out */}
+      {/* Appearance + export + sign out */}
       <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {/* Appearance — same bordered-pill chrome as Export/Sign out, with the
+            palette swatch + light/dark toggle as the tappable bits on the right. */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            width: '100%',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '0.55rem',
+            border: `1px solid ${c.border}`,
+          }}
+        >
+          <span style={{ flex: 1, fontSize: '0.85rem', color: c.textSecondary }}>Appearance</span>
+          <button
+            type="button"
+            onClick={toggleBrand}
+            title={`Color: ${brand} — click to switch`}
+            aria-label={`Switch color palette (currently ${brand})`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '1.9rem',
+              height: '1.9rem',
+              borderRadius: '999px',
+              border: `1px solid ${c.border}`,
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <span style={{ width: '0.9rem', height: '0.9rem', borderRadius: '999px', background: brandGradient(brand, theme) }} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title="Toggle light / dark"
+            aria-label="Toggle light or dark mode"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '1.9rem',
+              height: '1.9rem',
+              borderRadius: '999px',
+              border: `1px solid ${c.border}`,
+              backgroundColor: 'transparent',
+              color: c.textSecondary,
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleExport}

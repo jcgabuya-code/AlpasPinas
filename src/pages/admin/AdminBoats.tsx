@@ -986,9 +986,9 @@ const MobileBalanceCard: React.FC<{ stats: BoatStats; c: ColorPalette; CK: CkTok
       ))}
     </div>
     <div style={{ marginTop: '0.65rem', paddingTop: '0.55rem', borderTop: `1px solid ${c.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', fontWeight: 700, color: c.text, fontFamily: 'ui-monospace, monospace' }}>
-      <span>Port {stats.left}</span>
+      <span>Left {stats.left}</span>
       <span style={{ color: stats.trimOk ? CK.good : CK.warn }}>◆ Δ {stats.sideDelta} kg</span>
-      <span>{stats.right} Stbd</span>
+      <span>{stats.right} Right</span>
     </div>
   </div>
 );
@@ -1138,7 +1138,7 @@ const TrimBalancePanel: React.FC<{ stats: BoatStats; c: ColorPalette; CK: CkToke
         Trim &amp; balance
       </div>
 
-      <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginBottom: '0.3rem' }}>Port / Starboard</div>
+      <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginBottom: '0.3rem' }}>Left / Right</div>
       {bar(stats.left, stats.right)}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: c.text, fontWeight: 600, marginTop: '0.25rem' }}>
         <span>L {stats.left} kg</span>
@@ -1981,11 +1981,14 @@ const BoatGrid: React.FC<{
         ↑ Bow · direction of travel
       </div>
 
-      <SeatBox {...seatProps('DRUMMER')} label="Drummer" full />
+      {/* Drummer narrowed + centered to tuck inside the rounded bow dome. */}
+      <div style={{ width: '82%', margin: '0 auto' }}>
+        <SeatBox {...seatProps('DRUMMER')} label="Drummer" full />
+      </div>
 
-      {/* Port / Starboard column headers */}
+      {/* Left / Right column headers */}
       <div style={{ display: 'flex', gap: '0.35rem', margin: '0.15rem 0' }}>
-        {(['Port', 'Starboard'] as const).map((side) => (
+        {(['Left', 'Right'] as const).map((side) => (
           <div key={side} style={{ ...(fluid ? { flex: 1, minWidth: 0 } : { width: SEAT_W }), textAlign: 'center', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: c.textSecondary }}>
             {side}
           </div>

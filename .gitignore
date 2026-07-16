@@ -35,3 +35,6 @@ scripts/*.png
 
 # PDF export artifacts from dev scripts
 design-export/
+
+# Session scratchpad (temp screenshots, working files)
+scratchpad/

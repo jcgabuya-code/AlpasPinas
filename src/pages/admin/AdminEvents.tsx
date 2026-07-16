@@ -96,7 +96,7 @@ const blankTraining = (): TrainingEvent => ({
   days: [blankDay()],
 });
 
-const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, theme }) => {
+const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, isMobile, theme }) => {
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [editing, setEditing] = useState<TrainingEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -196,15 +196,7 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: b
             {/* Expanded registrations */}
             {isExp && (
               <div style={{ borderTop: `1px solid ${c.border}`, padding: '0.75rem 1rem' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary, marginBottom: '0.6rem' }}>
-                  Registrations ({regs.length})
-                </div>
-                {regs.length === 0 && <p style={{ color: c.textSecondary, fontSize: '0.82rem' }}>No sign-ups yet.</p>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  {regs.map((b) => (
-                    <RegRow key={`${b.eventId}::${b.name}`} b={b} event={ev} c={c} showToast={showToast} />
-                  ))}
-                </div>
+                <RegList regs={regs} event={ev} c={c} showToast={showToast} isMobile={isMobile} />
               </div>
             )}
           </div>
@@ -534,10 +526,66 @@ const RaceForm: React.FC<{
 };
 
 /* ================================================================== */
-/*  Registration row (training tab)                                     */
+/*  Registration list (training tab)                                    */
 /* ================================================================== */
 
-const RegRow: React.FC<{ b: ReturnType<typeof getAllBookings>[0]; event: TrainingEvent; c: ColorPalette; showToast: ShowToast }> = ({ b, event, c, showToast }) => {
+/**
+ * Scannable roster: one summary line hoists the facts shared by everyone
+ * (confirmed count, "all both days"), then a dense multi-column grid of names.
+ * Per-row tags appear ONLY as exceptions (waitlisted, or a partial-day
+ * attendance) — printing "Sat + Sun / Confirmed" on all 19 rows was noise.
+ */
+const RegList: React.FC<{
+  regs: ReturnType<typeof getAllBookings>;
+  event: TrainingEvent;
+  c: ColorPalette;
+  showToast: ShowToast;
+  isMobile: boolean;
+}> = ({ regs, event, c, showToast, isMobile }) => {
+  if (regs.length === 0) {
+    return <p style={{ color: c.textSecondary, fontSize: '0.82rem', margin: 0 }}>No sign-ups yet.</p>;
+  }
+
+  const confirmed = regs.filter((b) => b.status === 'confirmed');
+  const waiting = regs.filter((b) => b.status === 'waiting');
+  const multiDay = event.days.length > 1;
+  // Everyone attending the whole event → say it once instead of on every row.
+  const allBothDays = multiDay && regs.every((b) => b.attending === 'both');
+
+  return (
+    <>
+      <style>{`
+        .regcell { transition: background-color 0.12s; }
+        .regcell:hover { background: ${c.surfaceAlt}; }
+        .regcell:hover .regcell-x { opacity: 1; }
+      `}</style>
+
+      {/* Summary — the facts shared by the whole list, stated once. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.35rem 0.7rem', marginBottom: '0.7rem', fontSize: '0.78rem', color: c.textSecondary }}>
+        <span style={{ fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '0.72rem' }}>Registrations</span>
+        <span style={{ fontWeight: 700, color: c.text }}>{confirmed.length} confirmed</span>
+        {waiting.length > 0 && <><span aria-hidden>·</span><span style={{ color: '#d97706', fontWeight: 700 }}>{waiting.length} waitlist</span></>}
+        {allBothDays && <><span aria-hidden>·</span><span>all both days</span></>}
+      </div>
+
+      {/* Dense grid — auto-fills columns so a long roster stays short. */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.1rem 0.5rem' }}>
+        {regs.map((b) => (
+          <RegCell key={`${b.eventId}::${b.name}`} b={b} event={event} c={c} showToast={showToast} isMobile={isMobile} allBothDays={allBothDays} />
+        ))}
+      </div>
+    </>
+  );
+};
+
+const RegCell: React.FC<{
+  b: ReturnType<typeof getAllBookings>[0];
+  event: TrainingEvent;
+  c: ColorPalette;
+  showToast: ShowToast;
+  isMobile: boolean;
+  allBothDays: boolean;
+}> = ({ b, event, c, showToast, isMobile, allBothDays }) => {
   const [busy, setBusy] = useState(false);
   const [removed, setRemoved] = useState(false);
 
@@ -557,16 +605,18 @@ const RegRow: React.FC<{ b: ReturnType<typeof getAllBookings>[0]; event: Trainin
     }
   };
 
-  const statusColor = b.status === 'confirmed' ? '#16a34a' : '#d97706';
+  // Only when it deviates from the norm: partial-day attendance (multi-day
+  // events where "all both days" doesn't hold) and waitlisted status.
+  const exception = !allBothDays && b.attending !== 'both' ? attendingLabel(b.attending, event) : null;
+  const isWaiting = b.status === 'waiting';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.65rem', borderRadius: '0.5rem', backgroundColor: c.background, border: `1px solid ${c.border}`, flexWrap: 'wrap' }}>
-      <span style={{ fontWeight: 600, fontSize: '0.85rem', color: c.text, flex: 1 }}>{b.name}</span>
-      <span style={{ fontSize: '0.68rem', color: c.textSecondary }}>{attendingLabel(b.attending, event)}</span>
-      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: statusColor, textTransform: 'uppercase' }}>{b.status}</span>
-      <button type="button" onClick={handleCancel} disabled={busy} style={{ padding: '0.25rem 0.6rem', borderRadius: '999px', border: '1px solid #ef444466', background: 'transparent', color: '#ef4444', fontSize: '0.72rem', cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: busy ? 0.5 : 1 }}>
-        Remove
-      </button>
+    <div className="regcell" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.4rem', borderRadius: '0.4rem', minWidth: 0, opacity: busy ? 0.5 : 1 }}>
+      <span style={{ fontWeight: 600, fontSize: '0.83rem', color: c.text, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
+      {isWaiting && <span style={{ fontSize: '0.56rem', fontWeight: 800, letterSpacing: '0.06em', color: '#d97706', flexShrink: 0 }}>WAIT</span>}
+      {exception && <span style={{ fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.04em', color: '#d97706', flexShrink: 0 }}>{exception}</span>}
+      <button type="button" aria-label={`Remove ${b.name}`} className="regcell-x admin-focus" onClick={handleCancel} disabled={busy}
+        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: busy ? 'not-allowed' : 'pointer', fontSize: '0.82rem', lineHeight: 1, flexShrink: 0, padding: '0 0.15rem', opacity: isMobile ? 0.6 : 0, transition: 'opacity 0.12s' }}>✕</button>
     </div>
   );
 };
