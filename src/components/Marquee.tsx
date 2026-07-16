@@ -293,6 +293,9 @@ export const Marquee: React.FC<{ connected?: boolean }> = ({ connected = false }
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
+  // Band color — matches the hero's blue (the AWAY headline accent). The hero renders
+  // from the dark palette in both modes, so the marquee reads the dark accent too.
+  const heroBlue = colors[brand].dark.accent;
 
   // Honor prefers-reduced-motion — a perpetually scrolling band is a classic
   // vestibular trigger, so freeze the scroll + wave + edge animations for it.
@@ -350,9 +353,9 @@ export const Marquee: React.FC<{ connected?: boolean }> = ({ connected = false }
       style={{
         position: 'relative',
         zIndex: 1,
-        backgroundColor: c.primary,
-        borderTop: `1px solid ${c.primary}`,
-        borderBottom: `1px solid ${c.primary}`,
+        backgroundColor: heroBlue,
+        borderTop: `1px solid ${heroBlue}`,
+        borderBottom: `1px solid ${heroBlue}`,
         overflow: 'hidden',
         padding: isMobile ? `${0.72 * MARQUEE_SCALE}rem 0` : `${0.92 * MARQUEE_SCALE}rem 0`,
         marginTop: connected ? (isMobile ? '-0.35rem' : '-0.9rem') : isMobile ? '1.25rem' : '2rem',
@@ -378,8 +381,8 @@ export const Marquee: React.FC<{ connected?: boolean }> = ({ connected = false }
       </div>
 
       {/* Edge fades — band-colored, so items dissolve in/out at both ends */}
-      <div style={{ ...fadeBase, left: 0, background: `linear-gradient(90deg, ${c.primary} 0%, ${c.primary}00 100%)` }} />
-      <div style={{ ...fadeBase, right: 0, background: `linear-gradient(270deg, ${c.primary} 0%, ${c.primary}00 100%)` }} />
+      <div style={{ ...fadeBase, left: 0, background: `linear-gradient(90deg, ${heroBlue} 0%, ${heroBlue}00 100%)` }} />
+      <div style={{ ...fadeBase, right: 0, background: `linear-gradient(270deg, ${heroBlue} 0%, ${heroBlue}00 100%)` }} />
     </div>
   );
 };

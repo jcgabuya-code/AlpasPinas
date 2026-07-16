@@ -6,6 +6,7 @@ import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HERO_OPTIONS, useHeroPick } from './HeroPicker';
+import { LEGACY_LIGHT_HERO } from '../config/homeHero';
 
 
 // Keyword tagline — echoes the team's identity, separated by emerald marks.
@@ -249,9 +250,9 @@ const HEADLINE_LINES = [
 
 export const Hero: React.FC = () => {
   const { mode, brand } = useTheme();
-  // Mixed mode renders a dark hero over an otherwise light page, so the hero itself
-  // is dark unless the setting is explicitly 'light'.
-  const heroMode = mode === 'light' ? 'light' : 'dark';
+  // The hero is dark in both modes (dark page or light page) — light mode is a dark
+  // hero over a light page. The original light hero is stashed behind LEGACY_LIGHT_HERO.
+  const heroMode = LEGACY_LIGHT_HERO && mode === 'light' ? 'light' : 'dark';
   const c = colors[brand][heroMode];
   const isDark = heroMode === 'dark';
   const isMobile = useIsMobile();

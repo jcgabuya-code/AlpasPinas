@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import type { ThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { colors, brandGradient, bandilaHero } from '../styles/colors';
@@ -67,18 +66,6 @@ const MoonIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
-// Mixed — a circle split light/dark, for the "dark hero + light page" mode.
-const MixedIcon = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor" stroke="none" />
-  </svg>
-);
-
-// Icon for the current appearance mode (the toggle cycles dark → light → mixed).
-const ThemeModeIcon = ({ mode, size }: { mode: ThemeMode; size?: number }) =>
-  mode === 'dark' ? <MoonIcon size={size} /> : mode === 'light' ? <SunIcon size={size} /> : <MixedIcon size={size} />;
-
 // Right chevron — trails each oversized drawer nav link.
 const ChevronRight = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -98,7 +85,7 @@ const UserIcon = ({ size = 16 }: { size?: number }) => (
 const CartBadge: React.FC<{ count: number; onClick?: () => void; mode?: ColorMode; borderColor?: string }> = ({ count, onClick, mode, borderColor }) => {
   const { theme, brand } = useTheme();
   // `mode` lets the caller force the badge's palette — e.g. the desktop nav passes its
-  // navMode so the cart reads white over the dark hero (mixed mode) until scrolled.
+  // navMode so the cart reads white over the dark hero until scrolled.
   // `borderColor` overrides just the ring (the nav passes its chromeBorder so the ring
   // matches the other icon outlines over the hero).
   const c = colors[brand][mode ?? theme];
@@ -200,10 +187,9 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   const floating = mergedHome && !isMobile;
   const overlay = floating && !scrolled;
 
-  // Mixed mode: the desktop nav sits over the dark hero at the top, so it reads dark
-  // there and flips to light once scrolled onto the light sections. Everywhere else
-  // the nav just follows the effective theme (light in mixed).
-  const navMode = mode === 'mixed' && floating ? (overlay ? 'dark' : 'light') : theme;
+  // The hero is dark in both modes, so the desktop nav reads dark while it floats over
+  // the hero (overlay) and flips to the page theme once scrolled onto the content.
+  const navMode = overlay ? 'dark' : theme;
   const c = colors[brand][navMode];
   // Over the Home hero in light mode the header adopts the Alpas Hero spec blue
   // (brighter than the app royal blue) so it matches the hero's blue accents. Tied to
@@ -478,7 +464,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                     justifyContent: 'center',
                   }}
                 >
-                  <ThemeModeIcon mode={mode} size={15} />
+                  {mode === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
                 </button>
               </div>
 
@@ -689,7 +675,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                   flexShrink: 0,
                 }}
               >
-                <ThemeModeIcon mode={mode} size={16} />
+                {mode === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
               </button>
             </div>
             <CartBadge count={cartCount} onClick={closeMenu} />

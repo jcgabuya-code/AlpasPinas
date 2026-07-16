@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { colors, brandGradient, bandilaHero, type ColorPalette } from '../../styles/colors';
+import { LEGACY_LIGHT_HERO } from '../../config/homeHero';
 import { Marquee } from '../Marquee';
 import {
   fetchProducts,
@@ -122,10 +123,11 @@ export const MobileHome: React.FC = () => {
   const accent = isDark ? c.accent : c.primary;
   const grad = brandGradient(brand, theme);
 
-  // Mixed mode: the hero band renders dark over an otherwise light page. `heroC` /
-  // `heroIsDark` / `heroAccent` drive the hero section only; the rest of the page
-  // keeps `c` / `isDark` (light in mixed). In plain dark/light they all agree.
-  const heroMode = mode === 'light' ? 'light' : 'dark';
+  // The hero band renders dark over an otherwise light page (light mode = dark hero +
+  // light page). `heroC` / `heroIsDark` / `heroAccent` drive the hero section only; the
+  // rest of the page keeps `c` / `isDark`. The original light hero is stashed behind
+  // LEGACY_LIGHT_HERO.
+  const heroMode = LEGACY_LIGHT_HERO && mode === 'light' ? 'light' : 'dark';
   const heroC = colors[brand][heroMode];
   const heroIsDark = heroMode === 'dark';
   const heroAccent = heroIsDark
@@ -612,8 +614,8 @@ export const MobileHome: React.FC = () => {
             const price = effectivePrice(p);
             const promo = p.promoPrice != null && p.promoPrice < p.price;
             return (
-              <Link key={p.id} to={`/shop/${p.slug}`} style={{ flexShrink: 0, width: '160px', display: 'flex', flexDirection: 'column', gap: '8px', textDecoration: 'none' }}>
-                <div style={{ position: 'relative', height: '160px', borderRadius: '12px', overflow: 'hidden', background: c.surfaceAlt }}>
+              <Link key={p.id} to={`/shop/${p.slug}`} style={{ flexShrink: 0, width: '200px', display: 'flex', flexDirection: 'column', gap: '8px', textDecoration: 'none' }}>
+                <div style={{ position: 'relative', height: '230px', borderRadius: '12px', overflow: 'hidden', background: c.surfaceAlt }}>
                   {p.imageUrl && <img src={p.imageUrl} alt={p.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                   {p.promoLabel && (
                     <span style={{ position: 'absolute', top: '8px', left: '8px', background: c.sun, color: '#1a1205', fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', padding: '3px 8px', borderRadius: '999px' }}>

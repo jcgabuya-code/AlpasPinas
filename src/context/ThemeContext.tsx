@@ -6,17 +6,14 @@ import type { Brand, ColorMode } from '../styles/colors';
 // Cycle order for the brand switcher — matches the order palettes are defined.
 const BRANDS = Object.keys(colors) as Brand[];   // ['emerald', 'ocean', 'bandila']
 
-// User-facing appearance setting. 'mixed' renders a dark hero over an otherwise
-// light page — see `theme` (the effective ColorMode) below.
-export type ThemeMode = 'light' | 'dark' | 'mixed';
-const MODES: ThemeMode[] = ['dark', 'light', 'mixed'];
+// User-facing appearance setting. Light mode renders a dark hero over an otherwise
+// light page; dark mode is dark throughout. (`mode` and `theme` are the same value —
+// both are kept so callers that opted into `mode` still read cleanly.)
+export type ThemeMode = 'light' | 'dark';
+const MODES: ThemeMode[] = ['dark', 'light'];
 
 interface ThemeContextType {
-  // Effective palette mode for general UI. 'mixed' resolves to 'light' here so every
-  // component that reads `theme` renders light; the hero/nav read `mode` to opt into
-  // the dark treatment where the design calls for it.
   theme: ColorMode;
-  // Raw appearance setting, including 'mixed'.
   mode: ThemeMode;
   toggleTheme: () => void;
   brand: Brand;
@@ -38,8 +35,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return saved && (BRANDS as string[]).includes(saved) ? (saved as Brand) : 'bandila';
   });
 
-  // Mixed pages are light everywhere except the hero, so the general palette is light.
-  const theme: ColorMode = mode === 'mixed' ? 'light' : mode;
+  // The general palette follows the setting directly; the hero opts into dark on its
+  // own (see LEGACY_LIGHT_HERO), so light mode is a dark hero over a light page.
+  const theme: ColorMode = mode;
 
   const toggleTheme = () => {
     setMode((prev) => {
