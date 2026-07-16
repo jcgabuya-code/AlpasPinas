@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { colors, brandGradient } from '../styles/colors';
+import { colors, brandGradient, bandilaHero } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HERO_PICKER, HeroPhotoPicker, useHeroPick } from './HeroPicker';
 
@@ -152,7 +152,6 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   const { user, logout } = useAuth();
   const { count: cartCount } = useCart();
   const c = colors[brand][theme];
-  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -177,6 +176,15 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   }, []);
 
   const mergedHome = integratedHome && location.pathname === '/';
+  // Over the Home hero in light mode the header adopts the Alpas Hero spec blue
+  // (brighter than the app royal blue) so it matches the hero's blue accents. Tied to
+  // the bandila brand; other brands keep their own light accent.
+  const accent =
+    theme === 'dark'
+      ? c.accent
+      : mergedHome && brand === 'bandila'
+        ? bandilaHero.blue
+        : c.primary;
   // On desktop Home the nav floats over the hero: it stays `position: fixed` the
   // whole time and only morphs its surface (transparent → frosted) on scroll, so
   // there's no layout jump from swapping position values. `overlay` is the pinned-

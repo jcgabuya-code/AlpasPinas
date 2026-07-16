@@ -35,6 +35,7 @@ const opt = (name, fallback) => {
 };
 
 const mobile = flag('mobile');
+const theme = opt('theme', null); // 'light' | 'dark' — seeds localStorage before load
 const section = opt('section', null);
 const fullPage = flag('full');
 const waitMs = Number(opt('wait', '500'));
@@ -74,6 +75,9 @@ const context = await browser.newContext(
       }
     : { viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 },
 );
+if (theme) {
+  await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
+}
 const page = await context.newPage();
 page.on('console', (m) => m.type() === 'error' && console.error('[page error]', m.text()));
 

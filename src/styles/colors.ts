@@ -109,6 +109,12 @@ const bandila = {
 
 export const colors = { emerald, ocean, bandila };
 
+// Alpas Hero light-mode accents — a brighter bandila blue + flag yellow the home
+// hero/header use in light mode (per the Alpas Hero design spec). Kept out of the
+// per-mode palette because they only apply to the hero showcase, not general UI;
+// gate their use on `brand === 'bandila'`.
+export const bandilaHero = { blue: '#2f6bff', yellow: '#ffd21e' } as const;
+
 export type Brand = keyof typeof colors;        // 'emerald' | 'ocean' | 'bandila'
 export type ColorMode = keyof typeof emerald;   // 'dark' | 'light'
 export type ColorPalette = typeof emerald.dark;

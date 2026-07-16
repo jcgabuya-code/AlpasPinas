@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colors, type ColorPalette } from '../styles/colors';
+import { colors, bandilaHero, type ColorPalette } from '../styles/colors';
 import { VideoModal } from './VideoModal';
 import eventsData from '../data/events.json';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
@@ -57,15 +57,15 @@ const ArrowGlyph: React.FC<{ size?: number }> = ({ size = 16 }) => (
 
 // WhatsApp mark — the "Book a Session" CTA messages the crew, so it carries the
 // recognizable WhatsApp glyph + green, matching the Home v2 reference.
-export const WhatsAppGlyph: React.FC<{ size?: number }> = ({ size = 22 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+export const WhatsAppGlyph: React.FC<{ size?: number; color?: string }> = ({ size = 22, color = '#fff' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
     <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.8c2.16 0 4.19.84 5.72 2.37a8.06 8.06 0 0 1 2.37 5.72c0 4.46-3.63 8.09-8.1 8.09a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.07.81.82-3-.19-.31a8.05 8.05 0 0 1-1.24-4.3c0-4.46 3.63-8.09 8.1-8.09zm-3.04 4.3c-.14 0-.37.05-.57.27-.2.22-.75.74-.75 1.8s.77 2.09.88 2.23c.11.14 1.51 2.31 3.67 3.24.51.22.91.35 1.22.45.51.16.98.14 1.35.08.41-.06 1.27-.52 1.45-1.02.18-.5.18-.93.13-1.02-.05-.09-.2-.14-.41-.25-.21-.11-1.27-.63-1.46-.7-.2-.07-.34-.11-.48.11-.14.22-.55.7-.68.84-.12.14-.25.16-.46.05-.21-.11-.9-.33-1.71-1.06-.63-.56-1.06-1.26-1.18-1.47-.12-.22-.01-.33.1-.44.1-.1.21-.25.32-.38.11-.12.14-.21.21-.36.07-.14.04-.27-.02-.38-.05-.11-.48-1.18-.66-1.61-.17-.42-.35-.36-.48-.37l-.41-.01z" />
   </svg>
 );
 
 // YouTube play badge — the "Watch Race" CTA, red to read as "watch the highlight reel".
-export const YouTubeGlyph: React.FC<{ size?: number }> = ({ size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+export const YouTubeGlyph: React.FC<{ size?: number; color?: string }> = ({ size = 24, color = '#fff' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
     <path d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.25 5 12 5 12 5s-6.25 0-7.82.42A2.5 2.5 0 0 0 2.42 7.19 26 26 0 0 0 2 12a26 26 0 0 0 .42 4.81 2.5 2.5 0 0 0 1.76 1.77C5.75 19 12 19 12 19s6.25 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77A26 26 0 0 0 22 12a26 26 0 0 0-.42-4.81zM10 15V9l5.2 3-5.2 3z" />
   </svg>
 );
@@ -97,8 +97,8 @@ export const NextRaceTicket: React.FC<{
   compact?: boolean;
 }> = ({ event, c, isDark, compact = false }) => {
   const [hover, setHover] = useState(false);
-  const glassBg = isDark ? 'rgba(8,11,10,0.46)' : 'rgba(255,255,255,0.58)';
-  const glassBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)';
+  const glassBg = isDark ? 'rgba(6,10,14,0.66)' : 'rgba(255,255,255,0.74)';
+  const glassBorder = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.68)';
   const stubBg = isDark ? `${c.accent}3a` : `${c.primary}24`;
   const accent = isDark ? c.accent : c.primary;
   const perfColor = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.18)';
@@ -131,7 +131,7 @@ export const NextRaceTicket: React.FC<{
         border: `1px solid ${glassBorder}`,
         borderRadius: compact ? '0.8rem' : '0.95rem',
         overflow: 'hidden',
-        boxShadow: hover ? '0 14px 40px rgba(0,0,0,0.30)' : '0 8px 28px rgba(0,0,0,0.20)',
+        boxShadow: hover ? '0 16px 44px rgba(0,0,0,0.42)' : '0 10px 30px rgba(0,0,0,0.32)',
         transform: hover ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         WebkitMaskImage: maskImage,
@@ -263,20 +263,29 @@ export const Hero: React.FC = () => {
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
   const panel = `rgb(${panelRgb})`;
 
-  // Left-weighted legibility scrim over the photo. Light mode gets a much softer,
-  // shorter wash: a full-strength near-white gradient reads as a heavy fog over the
-  // image, whereas the same stops in dark mode blend into the water as a vignette.
+  // Scrim tint — dark washes the copy column near-black; light washes it a cool
+  // off-white (matches the Alpas Hero design spec, rgb(233,241,240)).
+  const scrimRgb = isDark ? panelRgb : '233, 241, 240';
+
+  // Left-weighted legibility scrim over the photo. Dark blends into the water as a
+  // vignette; light lays a stronger off-white column (per the design spec) that fades
+  // to clear photo by ~66%.
   const heroScrim = isDark
-    ? `linear-gradient(96deg, rgba(${panelRgb},0.92) 0%, rgba(${panelRgb},0.8) 22%, rgba(${panelRgb},0.3) 42%, rgba(${panelRgb},0.05) 55%, rgba(${panelRgb},0) 70%)`
-    : `linear-gradient(96deg, rgba(${panelRgb},0.82) 0%, rgba(${panelRgb},0.62) 20%, rgba(${panelRgb},0.28) 38%, rgba(${panelRgb},0.08) 52%, rgba(${panelRgb},0) 66%)`;
-  // Light-mode copy sits over a busier, brighter photo — a faint panel-colored halo
-  // keeps it legible without reaching back for the heavy scrim we just trimmed.
-  const heroTextHalo = isDark ? undefined : `0 1px 12px rgba(${panelRgb},0.72)`;
-  const heroTopFade = `linear-gradient(180deg, rgba(${panelRgb},${isDark ? 0.6 : 0.34}), transparent)`;
+    ? `linear-gradient(96deg, rgba(${scrimRgb},0.92) 0%, rgba(${scrimRgb},0.8) 22%, rgba(${scrimRgb},0.3) 42%, rgba(${scrimRgb},0.05) 55%, rgba(${scrimRgb},0) 70%)`
+    : `linear-gradient(90deg, rgba(${scrimRgb},0.96) 0%, rgba(${scrimRgb},0.82) 26%, rgba(${scrimRgb},0.4) 48%, rgba(${scrimRgb},0) 66%)`;
+  // Light-mode copy sits over a busier, brighter photo — a faint halo keeps it legible.
+  const heroTextHalo = isDark ? undefined : `0 1px 12px rgba(${scrimRgb},0.72)`;
+  const heroTopFade = `linear-gradient(180deg, rgba(${scrimRgb},${isDark ? 0.6 : 0.5}), transparent)`;
+
+  // Alpas Hero spec accents for light mode — the bandila brand gets a brighter blue
+  // that harmonizes with the water + a warm flag yellow; other brands fall back to
+  // their own palette (the dark theme always keeps the app's own accent).
+  const specBlue = brand === 'bandila' ? bandilaHero.blue : c.primary;
+  const specYellow = brand === 'bandila' ? bandilaHero.yellow : c.sun;
 
   const heroText = c.text;
   const heroSub = isDark ? 'rgba(245, 247, 245, 0.82)' : c.textSecondary;
-  const heroAccent = isDark ? c.accent : c.primary;
+  const heroAccent = isDark ? c.accent : specBlue;
   
   const chipBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.7)';
   const chipBorder = isDark ? 'rgba(255, 255, 255, 0.16)' : c.border;
@@ -347,61 +356,127 @@ export const Hero: React.FC = () => {
       className="stroke-in"
       style={{ display: 'flex', gap: isMobile ? '0.5rem' : '0.75rem', flexWrap: 'nowrap', marginBottom: isMobile ? '1.45rem' : '2.1rem', animationDelay: delay }}
     >
-      {/* Book a Session — messages the crew (WhatsApp green) */}
-      <a
-        href="#contact"
-        aria-label="Book your first session"
-        style={{
-          background: 'linear-gradient(135deg, #1faa4d, #25D366)',
-          color: '#fff',
-          padding: isMobile ? '0.7rem 0.7rem' : '0.6rem 1.2rem',
-          borderRadius: '999px',
-          fontWeight: 800,
-          textDecoration: 'none',
-          fontSize: isMobile ? '0.66rem' : '0.84rem',
-          letterSpacing: '0.01em',
-          boxShadow: '0 12px 30px rgba(37,211,102,0.4)',
-          whiteSpace: 'nowrap',
-          flex: isMobile ? '1 1 0' : '0 0 auto',
-          minWidth: 0,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: isMobile ? '0.45rem' : '0.6rem',
-        }}
-      >
-        <WhatsAppGlyph size={isMobile ? 26 : 34} />
-        Book a Session
-      </a>
-      {/* Watch Race — opens the highlight reel (YouTube red) */}
-      <button
-        type="button"
-        onClick={() => setVideoOpen(true)}
-        aria-label="Watch race highlights"
-        style={{
-          background: '#FF0000',
-          color: '#fff',
-          padding: isMobile ? '0.7rem 0.7rem' : '0.6rem 1.1rem',
-          borderRadius: '999px',
-          fontWeight: 800,
-          fontSize: isMobile ? '0.66rem' : '0.84rem',
-          border: '1px solid rgba(255,255,255,0.18)',
-          boxShadow: '0 12px 30px rgba(255,0,0,0.34)',
-          cursor: 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: isMobile ? '0.4rem' : '0.55rem',
-          fontFamily: 'inherit',
-          letterSpacing: '0.01em',
-          whiteSpace: 'nowrap',
-          flex: isMobile ? '1 1 0' : '0 0 auto',
-          minWidth: 0,
-          justifyContent: 'center',
-        }}
-      >
-        <YouTubeGlyph size={isMobile ? 29 : 38} />
-        Watch Race
-      </button>
+      {isDark ? (
+        <>
+          {/* Book a Session — messages the crew (WhatsApp green) */}
+          <a
+            href="#contact"
+            aria-label="Book your first session"
+            style={{
+              background: 'linear-gradient(135deg, #1faa4d, #25D366)',
+              color: '#fff',
+              padding: isMobile ? '0.72rem 0.9rem' : '0.72rem 1.45rem',
+              borderRadius: '999px',
+              fontWeight: 800,
+              textDecoration: 'none',
+              fontSize: isMobile ? '0.66rem' : '0.86rem',
+              letterSpacing: '0.01em',
+              boxShadow: '0 12px 30px rgba(37,211,102,0.4)',
+              whiteSpace: 'nowrap',
+              flex: isMobile ? '1 1 0' : '0 0 auto',
+              minWidth: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isMobile ? '0.45rem' : '0.55rem',
+            }}
+          >
+            <WhatsAppGlyph size={isMobile ? 30 : 34} />
+            Book a Session
+          </a>
+          {/* Watch Race — opens the highlight reel (YouTube red) */}
+          <button
+            type="button"
+            onClick={() => setVideoOpen(true)}
+            aria-label="Watch race highlights"
+            style={{
+              background: '#FF0000',
+              color: '#fff',
+              padding: isMobile ? '0.72rem 0.9rem' : '0.72rem 1.3rem',
+              borderRadius: '999px',
+              fontWeight: 800,
+              fontSize: isMobile ? '0.66rem' : '0.86rem',
+              border: '1px solid rgba(255,255,255,0.18)',
+              boxShadow: '0 12px 30px rgba(255,0,0,0.34)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: isMobile ? '0.4rem' : '0.5rem',
+              fontFamily: 'inherit',
+              letterSpacing: '0.01em',
+              whiteSpace: 'nowrap',
+              flex: isMobile ? '1 1 0' : '0 0 auto',
+              minWidth: 0,
+              justifyContent: 'center',
+            }}
+          >
+            <YouTubeGlyph size={isMobile ? 30 : 36} />
+            Watch Race
+          </button>
+        </>
+      ) : (
+        <>
+          {/* Light mode (Alpas Hero spec): blue-filled primary that harmonizes with the
+              water, WhatsApp mark tucked into a small green badge. */}
+          <a
+            href="#contact"
+            aria-label="Book your first session"
+            style={{
+              background: specBlue,
+              color: '#fff',
+              padding: isMobile ? '0.72rem 0.9rem' : '0.72rem 1.45rem',
+              borderRadius: '999px',
+              fontWeight: 800,
+              textDecoration: 'none',
+              fontSize: isMobile ? '0.66rem' : '0.86rem',
+              letterSpacing: '0.01em',
+              boxShadow: `0 10px 28px ${specBlue}55`,
+              whiteSpace: 'nowrap',
+              flex: isMobile ? '1 1 0' : '0 0 auto',
+              minWidth: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isMobile ? '0.5rem' : '0.6rem',
+            }}
+          >
+            <span style={{ width: 26, height: 26, borderRadius: '50%', background: '#25d366', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <WhatsAppGlyph size={15} />
+            </span>
+            Book a Session
+          </a>
+          {/* Ghost/outline secondary, play mark in a small red badge. */}
+          <button
+            type="button"
+            onClick={() => setVideoOpen(true)}
+            aria-label="Watch race highlights"
+            style={{
+              background: 'transparent',
+              color: c.text,
+              padding: isMobile ? '0.72rem 0.9rem' : '0.72rem 1.3rem',
+              borderRadius: '999px',
+              fontWeight: 800,
+              fontSize: isMobile ? '0.66rem' : '0.86rem',
+              border: '1.5px solid rgba(11,31,30,0.28)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: isMobile ? '0.5rem' : '0.6rem',
+              fontFamily: 'inherit',
+              letterSpacing: '0.01em',
+              whiteSpace: 'nowrap',
+              flex: isMobile ? '1 1 0' : '0 0 auto',
+              minWidth: 0,
+              justifyContent: 'center',
+            }}
+          >
+            <span style={{ width: 30, height: 22, borderRadius: 6, background: '#ff0000', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+            Watch Race
+          </button>
+        </>
+      )}
     </div>
   );
 
@@ -503,7 +578,7 @@ export const Hero: React.FC = () => {
                       borderRadius: '999px',
                       background: isDark
                         ? `linear-gradient(90deg, ${c.accent}, ${c.sun})`
-                        : `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                        : `linear-gradient(90deg, ${specBlue}, ${specYellow})`,
                     }}
                   />
                 )}
@@ -602,6 +677,19 @@ export const Hero: React.FC = () => {
             background: heroTopFade,
           }}
         />
+        {/* Bottom fade — anchors the bottom-left masthead + bottom-right ticket so the
+            type never floats over a bright patch of water. */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '46%',
+            pointerEvents: 'none',
+            background: `linear-gradient(0deg, rgba(${scrimRgb},${isDark ? 0.72 : 0.5}) 0%, rgba(${scrimRgb},0) 100%)`,
+          }}
+        />
         <div
           style={{
             position: 'absolute',
@@ -685,7 +773,7 @@ export const Hero: React.FC = () => {
                       borderRadius: '999px',
                       background: isDark
                         ? `linear-gradient(90deg, ${c.accent}, ${c.sun})`
-                        : `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                        : `linear-gradient(90deg, ${specBlue}, ${specYellow})`,
                     }}
                   />
                 )}

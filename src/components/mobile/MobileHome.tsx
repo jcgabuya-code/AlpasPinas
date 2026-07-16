@@ -417,14 +417,14 @@ export const MobileHome: React.FC = () => {
           </div> */}
           <div className="stroke-in" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '4px', animationDelay: '0.8s' }}>
 
-            {/* Book a Session — messages the crew (WhatsApp green), matches desktop hero */}
+            {/* Book a Session — messages the crew (WhatsApp green) */}
             <button
               onClick={() => scrollTo('contact')}
               style={{
                 background: 'linear-gradient(135deg, #1faa4d, #25D366)',
                 color: '#fff',
                 border: 'none',
-                padding: '0.7rem 1.2rem',
+                padding: '0.72rem 1.25rem',
                 borderRadius: '999px',
                 fontWeight: 800,
                 fontSize: '0.85rem',
@@ -437,17 +437,17 @@ export const MobileHome: React.FC = () => {
                 gap: '0.5rem',
               }}
             >
-              <WhatsAppGlyph size={26} />
+              <WhatsAppGlyph size={30} />
               Book a Session
             </button>
-            {/* Watch Race — opens the highlight reel (YouTube red), matches desktop hero */}
+            {/* Watch Race — opens the highlight reel (YouTube red) */}
             <button
               onClick={() => scrollTo('races')}
               style={{
                 background: '#FF0000',
                 color: '#fff',
                 border: '1px solid rgba(255,255,255,0.18)',
-                padding: '0.7rem 1.1rem',
+                padding: '0.72rem 1.2rem',
                 borderRadius: '999px',
                 fontWeight: 800,
                 fontSize: '0.85rem',
@@ -460,7 +460,7 @@ export const MobileHome: React.FC = () => {
                 gap: '0.45rem',
               }}
             >
-              <YouTubeGlyph size={29} />
+              <YouTubeGlyph size={30} />
               Watch Race
             </button>
           </div>
