@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, MapPin, Trophy } from 'lucide-react';
+import { Plus, Pencil, Copy, Trash2, ChevronDown, MapPin, Trophy } from 'lucide-react';
 import { type ColorPalette } from '../../styles/colors';
 import { type ShowToast } from '../Admin';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -17,7 +17,7 @@ import {
   type RaceEvent,
 } from '../../utils/adminRaceEvents';
 import { type TrainingEvent, type TrainingDay } from '../../components/TrainingCard';
-import { getAllBookings, cancelBooking, attendingLabel, formatShortDate } from '../../utils/bookings';
+import { getAllBookings, cancelBooking, attendingLabel, formatShortDate, isUpcomingDate, type Booking } from '../../utils/bookings';
 
 type Tab = 'training' | 'races';
 type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
@@ -30,7 +30,20 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
 
   return (
     <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
-      <style>{`.admin-focus:focus-visible { outline: 2px solid ${c.primary}; outline-offset: 2px; }`}</style>
+      <style>{`
+        .admin-focus:focus-visible { outline: 2px solid ${c.primary}; outline-offset: 2px; }
+        @keyframes adm-ev-reveal { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .anim-reveal { animation: adm-ev-reveal 280ms cubic-bezier(0.25, 1, 0.5, 1); }
+        .anim-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms cubic-bezier(0.25, 1, 0.5, 1); }
+        .anim-collapse.is-open { grid-template-rows: 1fr; }
+        .anim-collapse > div { overflow: hidden; min-height: 0; }
+        .anim-chevron { transition: transform 250ms cubic-bezier(0.25, 1, 0.5, 1); }
+        .anim-chevron.is-open { transform: rotate(180deg); }
+        @media (prefers-reduced-motion: reduce) {
+          .anim-reveal { animation: none; }
+          .anim-collapse, .anim-chevron { transition: none; }
+        }
+      `}</style>
 
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
         EVENTS
@@ -68,7 +81,7 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
       </div>
 
       {tab === 'training'
-        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />
+        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
         : <RaceTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />}
     </div>
   );
@@ -78,49 +91,187 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
 /*  Training tab                                                        */
 /* ================================================================== */
 
-const blankDay = (): TrainingDay => ({
-  key: 'sat',
-  label: 'Saturday',
-  date: '',
-  time: '07:30',
-  location: '',
-  capacity: 22,
-});
+/** A brand-new day's key/label always derive from its date (see `deriveDay`),
+ * so a blank one just needs venue-appropriate time/location/capacity defaults. */
+const blankDay = (venue: 'land' | 'lake' = 'lake'): TrainingDay => (
+  venue === 'land'
+    ? { key: '', label: '', date: '', time: '19:00', location: 'Subang PARC', capacity: 16 }
+    : { key: '', label: '', date: '', time: '07:30', location: '', capacity: 22 }
+);
 
-const blankTraining = (): TrainingEvent => ({
+const addDays = (iso: string, days: number): string => {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+/** Lake/land sessions repeat weekly with the same fields — duplicating one and
+ * bumping every day a week forward covers the common case with one click;
+ * the form still opens so the admin can tweak (e.g. a dated weekend title). */
+const duplicateTraining = (ev: TrainingEvent): TrainingEvent => ({
+  ...ev,
   id: `training-${Date.now()}`,
-  title: '',
-  description: '',
-  thumbnail: '',
-  venue: 'lake',
-  days: [blankDay()],
+  days: ev.days.map((d) => ({ ...d, date: d.date ? addDays(d.date, 7) : d.date })),
 });
 
-const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, isMobile, theme }) => {
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DOW = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 } as const;
+
+/** Next date landing on the given day-of-week (today counts). */
+const nextDow = (target: number, from = new Date()): string => {
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  d.setDate(d.getDate() + ((target - d.getDay() + 7) % 7));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** A day's key/label are never typed by hand — they always derive from its
+ * date, so "Saturday" and "sat" can't drift out of sync with the calendar. */
+const deriveDay = (date: string): { key: string; label: string } => {
+  if (!date) return { key: '', label: '' };
+  const label = WEEKDAYS[new Date(`${date}T00:00:00`).getDay()];
+  return { key: label.slice(0, 3).toLowerCase(), label };
+};
+
+const formatMonthDay = (d: string): string => {
+  const dt = new Date(`${d}T00:00:00`);
+  return `${dt.toLocaleString('en-US', { month: 'long' })} ${dt.getDate()}`;
+};
+
+const monthDayRange = (d1: string, d2: string): string => {
+  const a = new Date(`${d1}T00:00:00`);
+  const b = new Date(`${d2}T00:00:00`);
+  const am = a.toLocaleString('en-US', { month: 'long' });
+  const bm = b.toLocaleString('en-US', { month: 'long' });
+  return am === bm ? `${am} ${a.getDate()}-${b.getDate()}` : `${am} ${a.getDate()} – ${bm} ${b.getDate()}`;
+};
+
+/** Title is never typed by hand — always derived from venue + day dates, kept
+ * in sync live as the admin edits either. Training tab is recurring lake/land
+ * sessions only; one-off custom-named events belong in the Race/Events tab. */
+const computeTitle = (ev: Pick<TrainingEvent, 'venue' | 'days'>): string => {
+  const dates = ev.days.map((d) => d.date).filter(Boolean).sort();
+  if ((ev.venue ?? 'lake') === 'land') {
+    const label = ev.days[0]?.label;
+    return label ? `Land Conditioning — ${label}` : 'Land Conditioning';
+  }
+  if (dates.length === 0) return 'New Lake Training';
+  if (dates.length === 1) return `${formatMonthDay(dates[0])} Lake Training`;
+  return `${monthDayRange(dates[0], dates[dates.length - 1])} Lake Training`;
+};
+
+/** Most recent day matching `match` among existing events of `venue` — the
+ * template (time/location/capacity) a freshly-created recurring session copies. */
+const latestMatchingDay = (events: TrainingEvent[], venue: 'land' | 'lake', match: (d: TrainingDay) => boolean): TrainingDay | undefined =>
+  events
+    .filter((e) => (e.venue ?? 'lake') === venue)
+    .flatMap((e) => e.days.filter(match))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .pop();
+
+/** One week after `lastDate` (same weekday) — rolled forward again if that
+ * landed in the past, e.g. nobody created a session for a couple of weeks.
+ * With no `lastDate`, falls back to the next real occurrence of `targetDow`. */
+const nextRecurrence = (lastDate: string | undefined, targetDow: number): string => {
+  let candidate = lastDate ? addDays(lastDate, 7) : nextDow(targetDow);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  while (new Date(`${candidate}T00:00:00`) < today) candidate = addDays(candidate, 7);
+  return candidate;
+};
+
+/** Quick-create: lake weekend (Sat + Sun), one week after the last one — or
+ * the next real Sat/Sun if there's no history yet. Location/time/capacity and
+ * the title/description are all pre-filled; the form still opens to tweak. */
+const presetLakeWeekend = (events: TrainingEvent[]): TrainingEvent => {
+  const sat = latestMatchingDay(events, 'lake', (d) => d.key === 'sat');
+  const sun = latestMatchingDay(events, 'lake', (d) => d.key === 'sun');
+  // Sunday is always the day after Saturday (never rolled independently —
+  // that could desync the pair, e.g. Sunday landing before Saturday).
+  const satDate = nextRecurrence(sat?.date, DOW.sat);
+  const sunDate = addDays(satDate, 1);
+  const loc1 = sat?.location || 'Marina Putrajaya';
+  const loc2 = sun?.location || 'Subang PARC';
+  const days = [
+    { ...deriveDay(satDate), date: satDate, time: sat?.time || '07:30', location: loc1, capacity: sat?.capacity ?? 22 },
+    { ...deriveDay(sunDate), date: sunDate, time: sun?.time || '07:30', location: loc2, capacity: sun?.capacity ?? 22 },
+  ];
+  return {
+    id: `training-${Date.now()}`,
+    title: computeTitle({ venue: 'lake', days }),
+    description: loc1 === loc2
+      ? `Two-day lake training at ${loc1}. Open to all paddlers — sign up for one day or both.`
+      : `Two-day lake training. Saturday at ${loc1}, Sunday at ${loc2}. Open to all paddlers — sign up for one day or both.`,
+    thumbnail: '',
+    venue: 'lake',
+    days,
+  };
+};
+
+const LAND_DESCRIPTION = 'Strength circuit, paddle ergs, and core work to build the engine off the water. All levels, drop-ins welcome.';
+
+/** Quick-create: land session, defaults to Tuesday, one week after the last
+ * Tuesday session — or the next real Tuesday if there's no history yet. */
+const presetLandSession = (events: TrainingEvent[]): TrainingEvent => {
+  const tue = latestMatchingDay(events, 'land', (d) => d.label === 'Tuesday');
+  const date = nextRecurrence(tue?.date, DOW.tue);
+  const days = [{ ...deriveDay(date), date, time: tue?.time || '19:00', location: tue?.location || 'Subang PARC', capacity: tue?.capacity ?? 16 }];
+  return {
+    id: `training-${Date.now()}`,
+    title: computeTitle({ venue: 'land', days }),
+    description: LAND_DESCRIPTION,
+    thumbnail: '',
+    venue: 'land',
+    days,
+  };
+};
+
+/** All of an event's days are in the past. */
+const isPastEvent = (ev: TrainingEvent) => !ev.days.some((d) => isUpcomingDate(d.date));
+const earliestDay = (ev: TrainingEvent) => ev.days.reduce((min, d) => (d.date < min ? d.date : min), ev.days[0]?.date ?? '');
+const latestDay = (ev: TrainingEvent) => ev.days.reduce((max, d) => (d.date > max ? d.date : max), ev.days[0]?.date ?? '');
+
+const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast, isMobile }) => {
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [editing, setEditing] = useState<TrainingEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
+  // Days already persisted (present when editing opened) keep their original
+  // key/label frozen — only days added/created fresh this session auto-derive
+  // from their date. See TrainingForm's setDay.
+  const [existingDayCount, setExistingDayCount] = useState(0);
+  const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [showPast, setShowPast] = useState(false);
 
   const reload = () => fetchTrainingEvents().then(setEvents);
 
   useEffect(() => { reload(); }, []);
 
-  const openNew = () => {
-    setEditing(blankTraining());
+  const openPreset = (ev: TrainingEvent) => {
+    setEditing(ev);
     setIsNew(true);
+    setExistingDayCount(0);
   };
 
   const openEdit = (ev: TrainingEvent) => {
     setEditing(JSON.parse(JSON.stringify(ev)));
     setIsNew(false);
+    setExistingDayCount(ev.days.length);
+  };
+
+  const openDuplicate = (ev: TrainingEvent) => {
+    setEditing(duplicateTraining(ev));
+    setIsNew(true);
+    setExistingDayCount(0);
   };
 
   const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) { showToast('Title is required.', 'error'); return; }
     if (editing.days.some((d) => !d.date)) { showToast('All days need a date.', 'error'); return; }
+    setSaving(true);
     try {
       if (isNew) await createTrainingEvent(editing);
       else await updateTrainingEvent(editing.id, editing);
@@ -129,6 +280,8 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: b
       showToast(isNew ? 'Event created.' : 'Event updated.');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Could not save the session.', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -145,64 +298,125 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: b
   };
 
   const allBookings = getAllBookings();
+  const upcoming = events.filter((ev) => !isPastEvent(ev)).sort((a, b) => earliestDay(a).localeCompare(earliestDay(b)));
+  const past = events.filter(isPastEvent).sort((a, b) => latestDay(b).localeCompare(latestDay(a)));
+
+  const rowProps = (ev: TrainingEvent) => ({
+    ev,
+    regs: allBookings.filter((b) => b.eventId === ev.id),
+    c,
+    showToast,
+    isMobile,
+    isExpanded: expanded === ev.id,
+    onToggleExpand: () => setExpanded(expanded === ev.id ? null : ev.id),
+    onEdit: () => openEdit(ev),
+    onDuplicate: () => openDuplicate(ev),
+    confirming: confirmDelete === ev.id,
+    onAskDelete: () => setConfirmDelete(ev.id),
+    onCancelDelete: () => setConfirmDelete(null),
+    onConfirmDelete: () => remove(ev.id),
+  });
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button type="button" onClick={openNew} className="admin-focus" style={addBtn(c)}>
-          <Plus size={14} /> New Session
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <button type="button" onClick={() => openPreset(presetLandSession(events))} className="admin-focus" style={ghostBtn(c)}>
+          <Plus size={14} /> Land Session
+        </button>
+        <button type="button" onClick={() => openPreset(presetLakeWeekend(events))} className="admin-focus" style={addBtn(c)}>
+          <Plus size={14} /> Lake Weekend
         </button>
       </div>
 
       {/* Form */}
       {editing && (
-        <TrainingForm ev={editing} setEv={setEditing} c={c} theme={theme} onSave={save} onCancel={() => setEditing(null)} isNew={isNew} />
+        <TrainingForm ev={editing} setEv={setEditing} c={c} onSave={save} onCancel={() => setEditing(null)} isNew={isNew} existingDayCount={existingDayCount} saving={saving} />
       )}
 
       {/* List */}
       {events.length === 0 && !editing && (
         <EmptyMsg c={c} msg="No training sessions. Add one above." />
       )}
+      {events.length > 0 && upcoming.length === 0 && !editing && (
+        <EmptyMsg c={c} msg="No upcoming sessions. Add one above, or check past sessions below." />
+      )}
 
-      {events.map((ev) => {
-        const regs = allBookings.filter((b) => b.eventId === ev.id);
-        const isExp = expanded === ev.id;
-        return (
-          <div
-            key={ev.id}
-            style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', marginBottom: '0.75rem', overflow: 'hidden' }}
+      {upcoming.map((ev) => <TrainingRow key={ev.id} {...rowProps(ev)} />)}
+
+      {past.length > 0 && (
+        <div style={{ marginTop: upcoming.length > 0 ? '1.5rem' : 0 }}>
+          <button
+            type="button"
+            onClick={() => setShowPast((s) => !s)}
+            className="admin-focus"
+            style={{ ...ghostBtn(c), width: '100%', justifyContent: 'center' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: c.text }}>{ev.title}</div>
-                <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.2rem' }}>
-                  {ev.days.map((d) => `${d.label} ${formatShortDate(d.date)}`).join(' · ')} · {regs.length} sign-up{regs.length !== 1 ? 's' : ''}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
-                <IconBtn icon={<Pencil size={14} />} onClick={() => openEdit(ev)} c={c} label={`Edit ${ev.title}`} />
-                {confirmDelete === ev.id ? (
-                  <>
-                    <ConfirmBtn label="Delete?" onClick={() => remove(ev.id)} />
-                    <IconBtn icon="✕" onClick={() => setConfirmDelete(null)} c={c} label="Cancel delete" />
-                  </>
-                ) : (
-                  <IconBtn icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(ev.id)} c={c} danger label={`Delete ${ev.title}`} />
-                )}
-                <IconBtn icon={isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />} onClick={() => setExpanded(isExp ? null : ev.id)} c={c} label={isExp ? 'Collapse' : 'Show registrations'} />
-              </div>
+            <ChevronDown size={14} className={`anim-chevron${showPast ? ' is-open' : ''}`} />
+            {showPast ? 'Hide' : 'Show'} past sessions ({past.length})
+          </button>
+          <div className={`anim-collapse${showPast ? ' is-open' : ''}`}>
+            <div style={{ marginTop: '0.75rem' }}>
+              {past.map((ev) => <TrainingRow key={ev.id} {...rowProps(ev)} />)}
             </div>
-
-            {/* Expanded registrations */}
-            {isExp && (
-              <div style={{ borderTop: `1px solid ${c.border}`, padding: '0.75rem 1rem' }}>
-                <RegList regs={regs} event={ev} c={c} showToast={showToast} isMobile={isMobile} />
-              </div>
-            )}
           </div>
-        );
-      })}
+        </div>
+      )}
     </>
+  );
+};
+
+const TrainingRow: React.FC<{
+  ev: TrainingEvent;
+  regs: Booking[];
+  c: ColorPalette;
+  showToast: ShowToast;
+  isMobile: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  confirming: boolean;
+  onAskDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
+}> = ({ ev, regs, c, showToast, isMobile, isExpanded, onToggleExpand, onEdit, onDuplicate, confirming, onAskDelete, onCancelDelete, onConfirmDelete }) => {
+  const deleteLabel = regs.length > 0
+    ? `Delete ${ev.title} — also removes ${regs.length} sign-up${regs.length !== 1 ? 's' : ''}`
+    : `Delete ${ev.title}`;
+
+  return (
+    <div style={{ backgroundColor: c.surface, border: `1px solid ${c.border}`, borderRadius: '0.85rem', marginBottom: '0.75rem', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1rem', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: c.text }}>{ev.title}</div>
+          <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.2rem' }}>
+            {ev.days.map((d) => `${d.label} ${formatShortDate(d.date)}`).join(' · ')} · {regs.length} sign-up{regs.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+          <IconBtn icon={<Pencil size={14} />} onClick={onEdit} c={c} label={`Edit ${ev.title}`} />
+          <IconBtn icon={<Copy size={14} />} onClick={onDuplicate} c={c} label={`Duplicate ${ev.title}`} />
+          {confirming ? (
+            <>
+              <ConfirmBtn label="Delete?" onClick={onConfirmDelete} />
+              <IconBtn icon="✕" onClick={onCancelDelete} c={c} label="Cancel delete" />
+            </>
+          ) : (
+            <IconBtn icon={<Trash2 size={14} />} onClick={onAskDelete} c={c} danger label={deleteLabel} />
+          )}
+          <IconBtn icon={<ChevronDown size={14} className={`anim-chevron${isExpanded ? ' is-open' : ''}`} />} onClick={onToggleExpand} c={c} label={isExpanded ? 'Collapse' : 'Show registrations'} />
+        </div>
+      </div>
+
+      {/* Expanded registrations */}
+      <div className={`anim-collapse${isExpanded ? ' is-open' : ''}`}>
+        <div>
+          <div style={{ borderTop: `1px solid ${c.border}`, padding: '0.75rem 1rem' }}>
+            <RegList regs={regs} event={ev} c={c} showToast={showToast} isMobile={isMobile} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -210,56 +424,58 @@ const TrainingForm: React.FC<{
   ev: TrainingEvent;
   setEv: (ev: TrainingEvent) => void;
   c: ColorPalette;
-  theme: 'dark' | 'light';
   onSave: () => void;
   onCancel: () => void;
   isNew: boolean;
-}> = ({ ev, setEv, c, theme, onSave, onCancel, isNew }) => {
-  const accent = theme === 'dark' ? c.accent : c.primary;
-  const set = (patch: Partial<TrainingEvent>) => setEv({ ...ev, ...patch });
+  /** Days at index < this were already persisted when the form opened — their
+   * key/label are frozen (existing sign-ups reference them). Days at or past
+   * this index are new this session and auto-derive key/label from date. */
+  existingDayCount: number;
+  saving: boolean;
+}> = ({ ev, setEv, c, onSave, onCancel, isNew, existingDayCount, saving }) => {
+  // Title always derives from venue + day dates — recomputed on every change
+  // so it can never drift from what's actually on the form.
+  const set = (patch: Partial<TrainingEvent>) => {
+    const merged = { ...ev, ...patch };
+    setEv({ ...merged, title: computeTitle(merged) });
+  };
   const setDay = (idx: number, patch: Partial<TrainingDay>) =>
-    set({ days: ev.days.map((d, i) => (i === idx ? { ...d, ...patch } : d)) });
+    set({
+      days: ev.days.map((d, i) => {
+        if (i !== idx) return d;
+        const merged = { ...d, ...patch };
+        // Only a brand-new day's key/label follow the date; an existing
+        // day's are frozen so its sign-ups don't detach from capacity counts.
+        return patch.date !== undefined && i >= existingDayCount
+          ? { ...merged, ...deriveDay(merged.date) }
+          : merged;
+      }),
+    });
+
+  // Venue is decided by which quick-create button opened this form (Land
+  // Session vs Lake Weekend) — day count/defaults/title all follow from it,
+  // so it isn't editable here. Wrong button? Cancel and click the right one.
+  const venueLabel = (ev.venue ?? 'lake') === 'land' ? 'Land' : 'Lake';
 
   return (
-    <div style={{ backgroundColor: c.surfaceAlt, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1.25rem', marginBottom: '1rem' }}>
+    <div className="anim-reveal" style={{ backgroundColor: c.surfaceAlt, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1.25rem', marginBottom: '1rem' }}>
       <div style={{ fontWeight: 700, fontSize: '0.9rem', color: c.text, marginBottom: '1rem' }}>
-        {isNew ? 'New Training Session' : 'Edit Session'}
+        {isNew ? `New ${venueLabel} Session` : `Edit ${venueLabel} Session`}
       </div>
       <div style={{ display: 'grid', gap: '0.75rem' }}>
         <div>
-          <label style={labelStyle(c)}>Venue</label>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            {(['land', 'lake'] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => set({ venue: v })}
-                style={{
-                  padding: '0.45rem 1rem',
-                  borderRadius: '999px',
-                  border: `1px solid ${(ev.venue ?? 'lake') === v ? accent : c.border}`,
-                  background: (ev.venue ?? 'lake') === v ? `${c.primary}18` : 'transparent',
-                  color: (ev.venue ?? 'lake') === v ? accent : c.textSecondary,
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          <label style={labelStyle(c)}>Title (auto)</label>
+          <div style={{ ...inputStyle(c), color: c.textSecondary, backgroundColor: c.surface }}>{ev.title}</div>
         </div>
-        <Field label="Title" value={ev.title} onChange={(v) => set({ title: v })} c={c} />
         <Field label="Description" value={ev.description} onChange={(v) => set({ description: v })} c={c} multiline />
         <Field label="Thumbnail URL" value={ev.thumbnail ?? ''} onChange={(v) => set({ thumbnail: v })} c={c} placeholder="/marina-putrajaya.jpg" />
 
         {ev.days.map((d, i) => (
-          <div key={i} style={{ padding: '0.85rem', backgroundColor: c.surface, borderRadius: '0.6rem', border: `1px solid ${c.border}` }}>
+          <div key={i} className="anim-reveal" style={{ padding: '0.85rem', backgroundColor: c.surface, borderRadius: '0.6rem', border: `1px solid ${c.border}` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
-              <span style={{ fontWeight: 600, fontSize: '0.82rem', color: c.text }}>Day {i + 1}</span>
+              <span style={{ fontWeight: 600, fontSize: '0.82rem', color: c.text }}>
+                Day {i + 1}{d.label ? ` · ${d.label}` : ''}
+              </span>
               {ev.days.length > 1 && (
                 <button type="button" onClick={() => set({ days: ev.days.filter((_, j) => j !== i) })} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.78rem' }}>
                   Remove
@@ -267,8 +483,6 @@ const TrainingForm: React.FC<{
               )}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
-              <Field label="Key (sat/sun)" value={d.key} onChange={(v) => setDay(i, { key: v })} c={c} />
-              <Field label="Label" value={d.label} onChange={(v) => setDay(i, { label: v })} c={c} />
               <Field label="Date" value={d.date} onChange={(v) => setDay(i, { date: v })} c={c} type="date" />
               <Field label="Time" value={d.time} onChange={(v) => setDay(i, { time: v })} c={c} type="time" />
               <Field label="Location" value={d.location} onChange={(v) => setDay(i, { location: v })} c={c} />
@@ -279,15 +493,17 @@ const TrainingForm: React.FC<{
 
         <button
           type="button"
-          onClick={() => set({ days: [...ev.days, blankDay()] })}
+          onClick={() => set({ days: [...ev.days, blankDay(ev.venue)] })}
           style={{ ...ghostBtn(c), alignSelf: 'flex-start' }}
         >
           <Plus size={13} /> Add day
         </button>
       </div>
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-        <button type="button" onClick={onSave} style={primaryBtn(c)}>Save</button>
-        <button type="button" onClick={onCancel} style={ghostBtn(c)}>Cancel</button>
+        <button type="button" onClick={onSave} disabled={saving} style={{ ...primaryBtn(c), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        <button type="button" onClick={onCancel} disabled={saving} style={{ ...ghostBtn(c), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>Cancel</button>
       </div>
     </div>
   );
@@ -475,7 +691,7 @@ const RaceForm: React.FC<{
   const hasResult = !!ev.result;
 
   return (
-    <div style={{ backgroundColor: c.surfaceAlt, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1.25rem', marginBottom: '1rem' }}>
+    <div className="anim-reveal" style={{ backgroundColor: c.surfaceAlt, border: `1px solid ${c.border}`, borderRadius: '0.85rem', padding: '1.25rem', marginBottom: '1rem' }}>
       <div style={{ fontWeight: 700, fontSize: '0.9rem', color: c.text, marginBottom: '1rem' }}>
         {isNew ? 'New Race Event' : 'Edit Race Event'}
       </div>
