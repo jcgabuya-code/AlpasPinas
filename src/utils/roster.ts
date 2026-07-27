@@ -1,20 +1,20 @@
 /**
- * Roster store — Google Sheet backed.
+ * Roster store — Supabase backed.
  *
- * The team's Google Sheet (via an Apps Script web app) is the source of
- * truth. We keep a localStorage cache so the UI renders instantly and works
- * offline; the cache is refreshed from the sheet on load and after every
- * mutation.
+ * `public.roster` is the source of truth (RLS: anyone reads active members,
+ * only admins read/write everything). We keep a localStorage cache of the
+ * public active list so the UI renders instantly and works offline; the cache
+ * is refreshed from Supabase on load and after every mutation.
  *
- * Endpoint: set VITE_ROSTER_ENDPOINT (the Apps Script /exec URL) in a
- * .env file. If empty, the module runs in LOCAL-ONLY mode (serves the
- * bundled roster.json) so dev still works without a sheet.
+ * If Supabase isn't configured (VITE_SUPABASE_* unset) the module runs in
+ * LOCAL-ONLY mode (serves the bundled roster.json) so dev still works without
+ * a backend.
  */
 
 import staticRoster from '../data/roster.json';
+import { supabase, isSupabaseConfigured } from './supabase';
 
-const ENDPOINT = (import.meta.env.VITE_ROSTER_ENDPOINT ?? '').trim();
-const isRemote = ENDPOINT.length > 0;
+const isRemote = isSupabaseConfigured;
 
 const CACHE_KEY = 'alpas-roster-v1';
 const CHANGE_EVENT = 'alpas-roster-changed';
@@ -32,7 +32,7 @@ export type Member = {
   photo: string | null;
   status?: MemberStatus;
   // Optional profile stats — surfaced on the Crew Cards when present. Wire these
-  // up from the Sheet/Supabase; cards degrade gracefully when they're absent.
+  // up from Supabase; cards degrade gracefully when they're absent.
   position?: string; // explicit boat position; falls back to `role`
   races?: number; // races completed
   ratings?: Rating[]; // up to ~3 rating bars
@@ -60,70 +60,63 @@ const writeCache = (members: Member[]) => {
 
 /* ----------------------------- network ------------------------------ */
 
+const MEMBER_COLUMNS = 'name, role, side, joined, photo';
+
 /**
- * Pull the authoritative roster from the sheet and refresh the cache.
+ * Pull the public (active-only) roster from Supabase and refresh the cache.
  * In local-only mode this just returns the current cache / static JSON.
  */
 export const fetchRoster = async (): Promise<Member[]> => {
   if (!isRemote) return getAllRoster();
   try {
-    const res = await fetch(ENDPOINT, { method: 'GET' });
-    const data = await res.json();
-    if (data && data.ok && Array.isArray(data.members)) {
-      writeCache(data.members as Member[]);
-      return data.members as Member[];
-    }
+    const { data, error } = await supabase
+      .from('roster')
+      .select(MEMBER_COLUMNS)
+      .eq('status', 'active')
+      .order('joined', { ascending: true });
+    if (error) throw error;
+    const members = (data ?? []) as Member[];
+    writeCache(members);
+    return members;
   } catch {
     // offline — keep serving the cache
   }
   return getAllRoster();
 };
 
-const postToSheet = async (payload: unknown): Promise<unknown> => {
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
-};
-
 /* ----------------------------- mutations ---------------------------- */
 
-/** Add a new member. Writes to the sheet (remote) or just the cache (local). */
+/** Add a new member. Writes to Supabase (remote) or just the cache (local). */
 export const addMember = async (m: Omit<Member, 'photo'> & { photo?: string | null }): Promise<Member> => {
   const member: Member = { photo: null, ...m };
   if (!isRemote) {
     writeCache([...getAllRoster(), member]);
     return member;
   }
-  const result = (await postToSheet({ action: 'add', member })) as {
-    ok?: boolean;
-    member?: Member;
-    error?: string;
-  };
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not save member. Please try again.');
-  }
-  const saved = result.member ?? member;
+  const { data, error } = await supabase
+    .from('roster')
+    .insert({ name: member.name, role: member.role, side: member.side, joined: member.joined, photo: member.photo })
+    .select(MEMBER_COLUMNS)
+    .single();
+  if (error) throw new Error(error.message);
   await fetchRoster();
-  return saved;
+  return data as Member;
 };
 
 /**
  * Fetch ALL members (including inactive) for admin use.
- * Passes ?admin=1 so the sheet returns status fields.
  */
 export const fetchAllRoster = async (): Promise<Member[]> => {
   if (!isRemote) {
     return getAllRoster().map((m) => ({ ...m, status: 'active' as MemberStatus }));
   }
   try {
-    const res = await fetch(`${ENDPOINT}?admin=1`, { method: 'GET' });
-    const data = await res.json();
-    if (data && data.ok && Array.isArray(data.members)) {
-      return data.members as Member[];
-    }
+    const { data, error } = await supabase
+      .from('roster')
+      .select(`${MEMBER_COLUMNS}, status`)
+      .order('joined', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as Member[];
   } catch {
     // offline — fall back
   }
@@ -144,13 +137,8 @@ export const editMember = async (
     );
     return;
   }
-  const result = (await postToSheet({ action: 'edit', originalName, member: updates })) as {
-    ok?: boolean;
-    error?: string;
-  };
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not update member.');
-  }
+  const { error } = await supabase.from('roster').update(updates).eq('name', originalName);
+  if (error) throw new Error(error.message);
   await fetchRoster();
 };
 
@@ -166,30 +154,20 @@ export const setMemberStatus = async (
     }
     return;
   }
-  const result = (await postToSheet({ action: 'setStatus', name, status })) as {
-    ok?: boolean;
-    error?: string;
-  };
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not update status.');
-  }
+  const { error } = await supabase.from('roster').update({ status }).eq('name', name);
+  if (error) throw new Error(error.message);
   await fetchRoster();
 };
 
-/** Remove a member by name. Marks the sheet row as inactive. */
+/** Remove a member by name. Marks the row as inactive (soft delete). */
 export const removeMember = async (name: string): Promise<void> => {
   if (!isRemote) {
     const lc = name.trim().toLowerCase();
     writeCache(getAllRoster().filter((m) => m.name.toLowerCase() !== lc));
     return;
   }
-  const result = (await postToSheet({ action: 'remove', name })) as {
-    ok?: boolean;
-    error?: string;
-  };
-  if (!result || !result.ok) {
-    throw new Error(result?.error ?? 'Could not remove member. Please try again.');
-  }
+  const { error } = await supabase.from('roster').update({ status: 'inactive' }).eq('name', name);
+  if (error) throw new Error(error.message);
   await fetchRoster();
 };
 
