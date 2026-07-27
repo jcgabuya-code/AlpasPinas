@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors, bandilaHero, type ColorPalette } from '../styles/colors';
 import { VideoModal } from './VideoModal';
@@ -115,8 +116,8 @@ export const NextRaceTicket: React.FC<{
   const maskImage = `${notch('0')}, ${notch('100%')}`;
 
   return (
-    <a
-      href="#contact"
+    <Link
+      to="/join-team"
       aria-label={`${actionLabel} for ${event.name}`}
       title={`${actionLabel} for ${event.name}`}
       onMouseEnter={() => setHover(true)}
@@ -231,7 +232,7 @@ export const NextRaceTicket: React.FC<{
         )}
         <ArrowGlyph size={compact ? 15 : 16} />
       </span>
-    </a>
+    </Link>
   );
 };
 
@@ -363,8 +364,8 @@ export const Hero: React.FC = () => {
       {isDark ? (
         <>
           {/* Book a Session — messages the crew (WhatsApp green) */}
-          <a
-            href="#contact"
+          <Link
+            to="/join-team"
             aria-label="Book your first session"
             style={{
               background: 'linear-gradient(135deg, #1faa4d, #25D366)',
@@ -387,7 +388,7 @@ export const Hero: React.FC = () => {
           >
             <WhatsAppGlyph size={isMobile ? 30 : 34} />
             Book a Session
-          </a>
+          </Link>
           {/* Watch Race — opens the highlight reel (YouTube red) */}
           <button
             type="button"
@@ -422,8 +423,8 @@ export const Hero: React.FC = () => {
         <>
           {/* Light mode (Alpas Hero spec): blue-filled primary that harmonizes with the
               water, WhatsApp mark tucked into a small green badge. */}
-          <a
-            href="#contact"
+          <Link
+            to="/join-team"
             aria-label="Book your first session"
             style={{
               background: specBlue,
@@ -448,7 +449,7 @@ export const Hero: React.FC = () => {
               <WhatsAppGlyph size={15} />
             </span>
             Book a Session
-          </a>
+          </Link>
           {/* Ghost/outline secondary, play mark in a small red badge. */}
           <button
             type="button"

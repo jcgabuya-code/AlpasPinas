@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarDays, Backpack, MessageCircle, Shirt, Trophy, Lock, Check } from 'lucide-react';
 import { checkRegistrationToken, registerWithEmail, type UserGender, type UserSide } from '../utils/users';
+import { ageFromBirthday } from '../utils/bookings';
 import {
   OnboardingShell,
   OnbInfoRow,
@@ -41,6 +42,7 @@ export const Register: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [gender, setGender] = useState<UserGender | ''>('');
+  const [birthday, setBirthday] = useState('');
   const [side, setSide] = useState<UserSide | ''>('');
   const [weight, setWeight] = useState('');
   const [emName, setEmName] = useState('');
@@ -94,6 +96,9 @@ export const Register: React.FC = () => {
     }
     if (step === 2) {
       if (!gender) return 'Please select your gender.';
+      if (!birthday) return 'Please enter your date of birth.';
+      const age = ageFromBirthday(birthday);
+      if (age === undefined || age < 8 || age > 100) return 'Please enter a valid date of birth.';
       const w = Number(weight);
       if (!weight.trim() || Number.isNaN(w) || w < 30 || w > 200) return 'Please enter a weight in kg between 30 and 200.';
     }
@@ -120,6 +125,7 @@ export const Register: React.FC = () => {
       await registerWithEmail(token, password, {
         mobile,
         name,
+        birthday,
         gender: gender as UserGender,
         side: side || null,
         weight: Number(weight),
@@ -220,7 +226,7 @@ export const Register: React.FC = () => {
       <p style={{ color: onb.sub, fontSize: '0.9rem', margin: '0 0 1.4rem', lineHeight: 1.55, animation: 'onbRiseIn .5s .15s both' }}>{STEP_SUB[step]}</p>
 
       {error && (
-        <div style={{ background: '#ef444418', border: '1px solid #fca5a5', borderRadius: '0.7rem', padding: '0.75rem 0.85rem', color: '#fca5a5', fontSize: '0.9rem', marginBottom: '1.1rem' }}>
+        <div style={{ background: '#ef444418', border: '1px solid #fca5a5', borderRadius: '0.7rem', padding: '0.75rem 0.85rem', color: onb.danger, fontSize: '0.9rem', marginBottom: '1.1rem' }}>
           {error}
         </div>
       )}
@@ -279,6 +285,11 @@ export const Register: React.FC = () => {
               <option value="" disabled>Select…</option>
               {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
+          </div>
+          <div style={{ marginBottom: '1.1rem', animation: 'onbRiseIn .5s .23s both' }}>
+            <label style={onbLabelStyle(onb)}>Date of Birth</label>
+            <input className="onb-field" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} max={new Date().toISOString().slice(0, 10)} style={onbFieldStyle(onb)} />
+            <div style={{ fontSize: '0.72rem', color: onb.sub, marginTop: '0.4rem' }}>Used for age-based crews (e.g. Masters 40+) — kept private.</div>
           </div>
           <div style={{ marginBottom: '1.1rem', animation: 'onbRiseIn .5s .27s both' }}>
             <label style={onbLabelStyle(onb)}>Paddling Side / Role</label>

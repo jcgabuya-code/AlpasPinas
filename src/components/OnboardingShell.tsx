@@ -34,6 +34,7 @@ export const useOnbTokens = () => {
     accent: c.accent,
     accentLight: theme === 'light' ? c.accent : c.primaryLight,
     sun: c.sun,
+    danger: c.danger,
     gradient: brandGradient('bandila', theme),
   };
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { colors, brandGradient, bandilaHero, type ColorPalette } from '../../styles/colors';
@@ -116,6 +116,7 @@ const SCROLL_CSS = '.apn-mobile-scroll::-webkit-scrollbar{display:none}.apn-mobi
 type SectionKey = 'home' | 'about' | 'training' | 'gear' | 'races' | 'contact';
 
 export const MobileHome: React.FC = () => {
+  const navigate = useNavigate();
   const { theme, mode, brand } = useTheme();
   const { user } = useAuth();
   const c = colors[brand][theme];
@@ -312,7 +313,7 @@ export const MobileHome: React.FC = () => {
         {pills.map((p) => (
           <button
             key={p.key}
-            onClick={() => scrollTo(p.key)}
+            onClick={() => (p.key === 'contact' ? navigate('/join-team') : scrollTo(p.key))}
             style={{
               flex: '1 1 0%',
               minWidth: 0,
@@ -438,7 +439,7 @@ export const MobileHome: React.FC = () => {
               <>
                 {/* Book a Session — messages the crew (WhatsApp green) */}
                 <button
-                  onClick={() => scrollTo('contact')}
+                  onClick={() => navigate('/join-team')}
                   style={{
                     background: 'linear-gradient(135deg, #1faa4d, #25D366)',
                     color: '#fff',
@@ -488,7 +489,7 @@ export const MobileHome: React.FC = () => {
                 {/* Light mode (Alpas Hero spec): blue-filled primary with WhatsApp mark
                     in a green badge, over the photo. */}
                 <button
-                  onClick={() => scrollTo('contact')}
+                  onClick={() => navigate('/join-team')}
                   style={{
                     background: heroAccentLight,
                     color: '#fff',

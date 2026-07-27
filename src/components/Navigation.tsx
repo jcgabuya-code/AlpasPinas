@@ -254,7 +254,6 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
         { label: 'Training', to: user ? '/training' : '/', hash: user ? undefined : '#training' },
         { label: 'Merch', to: '/shop' },
         { label: 'Races', to: '/', hash: '#races' },
-        ...(user ? [] : [{ label: 'Join Us', to: '/', hash: '#contact' }]),
       ];
 
   return (
@@ -873,7 +872,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                 to="/login"
                 onClick={closeMenu}
                 className={menuOpen ? 'drawer-item-in' : undefined}
-                style={{ animationDelay: '0.56s', padding: '16px 4px', textDecoration: 'none', color: c.text, fontWeight: 600, fontSize: '1rem', borderBottom: `1px solid ${c.border}` }}
+                style={{ animationDelay: '0.56s', marginTop: '20px', textAlign: 'center', background: 'transparent', border: `1.5px solid ${accent}`, color: accent, padding: '0.95rem 1.3rem', borderRadius: '999px', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', letterSpacing: '0.02em' }}
               >
                 Login
               </Link>
@@ -885,7 +884,7 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                 to="/join-team"
                 onClick={closeMenu}
                 className={menuOpen ? 'drawer-item-in' : undefined}
-                style={{ animationDelay: '0.64s', marginTop: '20px', textAlign: 'center', background: brandGradient(brand, theme), color: '#fff', padding: '1rem 1.3rem', borderRadius: '999px', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', letterSpacing: '0.02em', boxShadow: `0 6px 18px ${c.primary}47` }}
+                style={{ animationDelay: '0.64s', marginTop: '12px', textAlign: 'center', background: brandGradient(brand, theme), color: '#fff', padding: '1rem 1.3rem', borderRadius: '999px', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', letterSpacing: '0.02em', boxShadow: `0 6px 18px ${c.primary}47` }}
               >
                 Join the Team
               </Link>

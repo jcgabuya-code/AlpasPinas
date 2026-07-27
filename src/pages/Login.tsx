@@ -127,7 +127,7 @@ export const Login: React.FC = () => {
                 border: `1px solid #fca5a5`,
                 borderRadius: '0.55rem',
                 padding: '0.75rem 0.85rem',
-                color: '#fca5a5',
+                color: c.danger,
                 fontSize: '0.9rem',
               }}
             >

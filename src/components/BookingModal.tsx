@@ -7,7 +7,6 @@ import { colors, brandGradient, type ColorPalette } from '../styles/colors';
 import type { TrainingEvent } from './TrainingCard';
 import {
   addBooking,
-  ageFromBirthday,
   fetchBookings,
   fetchEventCounts,
   formatShortDate,
@@ -32,13 +31,6 @@ const GENDERS: Gender[] = ['Male', 'Female'];
 const SIDES: SideRole[] = ['Left', 'Right', 'Coxswain', 'Coach'];
 const YES_NO: YesNo[] = ['Yes', 'No'];
 
-const formatBirthday = (iso: string) => {
-  if (!iso) return '—';
-  const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(y, (m ?? 1) - 1, d ?? 1);
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
 export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
@@ -52,11 +44,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   // all — the sign-up covers that one day, full stop.
   const singleDay = (event?.days.length ?? 0) <= 1;
 
-  // Form state — name/gender/birthday/side/weight default from the logged-in
+  // Form state — name/gender/side/weight default from the logged-in
   // user's profile (captured at registration) but stay editable per sign-up.
+  // Birthday is captured mandatorily at registration and read straight off
+  // the profile — no editable field here.
   const [name, setName] = useState(user?.name ?? '');
   const [gender, setGender] = useState<Gender>(user?.gender ?? 'Male');
-  const [birthday, setBirthday] = useState<string>(user?.birthday ?? '');
   const [side, setSide] = useState<SideRole>(user?.side ?? 'Left');
   const [weight, setWeight] = useState<string>(user?.weight ? String(user.weight) : '');
   const [needPFD, setNeedPFD] = useState<YesNo>('No');
@@ -73,7 +66,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
     if (open && event) {
       setName(user?.name ?? '');
       setGender(user?.gender ?? 'Male');
-      setBirthday(user?.birthday ?? '');
       setSide(user?.side ?? 'Left');
       setWeight(user?.weight ? String(user.weight) : '');
       setNeedPFD('No');
@@ -125,10 +117,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
     setError(null);
 
     if (!name.trim()) return setError('Please enter your name.');
-    if (!birthday) return setError('Please enter your date of birth.');
-    const age = ageFromBirthday(birthday);
-    if (age === undefined || age < 8 || age > 100)
-      return setError('Please enter a valid date of birth.');
     const weightNum = Number(weight);
     if (!isLand && (!weight || Number.isNaN(weightNum) || weightNum < 30 || weightNum > 200))
       return setError('Please enter a weight in kg between 30 and 200.');
@@ -162,7 +150,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
         attending,
         name: name.trim(),
         gender,
-        birthday,
+        birthday: user?.birthday ?? undefined,
         status,
         ...(isLand ? {} : { side, weight: weightNum, needPFD, needPaddle }),
       });
@@ -336,30 +324,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
               )}
             </Field>
 
-            <Field label="Date of birth" c={c}>
-              {user?.birthday ? (
-                <>
-                  <ReadOnlyValue value={formatBirthday(birthday)} c={c} isMobile={isMobile} />
-                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                    From your profile — used for age-based crews (e.g. Masters 40+), kept private.
-                  </div>
-                </>
-              ) : (
-                <>
-                  <input
-                    type="date"
-                    value={birthday}
-                    onChange={(e) => setBirthday(e.target.value)}
-                    max={new Date().toISOString().slice(0, 10)}
-                    style={inputStyle(c, isMobile)}
-                  />
-                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                    Used for age-based crews (e.g. Masters 40+) — kept private.
-                  </div>
-                </>
-              )}
-            </Field>
-
             {!isLand && (
               <>
                 <Field label="Paddling side / role" c={c}>
@@ -438,7 +402,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                   borderRadius: '0.5rem',
                   backgroundColor: '#ef444418',
                   border: '1px solid #ef444466',
-                  color: '#fca5a5',
+                  color: c.danger,
                   fontSize: '0.85rem',
                 }}
               >

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { colors } from '../styles/colors';
 import type { Brand, ColorMode } from '../styles/colors';
@@ -38,6 +38,13 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // The general palette follows the setting directly; the hero opts into dark on its
   // own (see LEGACY_LIGHT_HERO), so light mode is a dark hero over a light page.
   const theme: ColorMode = mode;
+
+  // Keep native form controls (scrollbars, date pickers, select arrows) in sync
+  // with the app theme — index.css hardcodes color-scheme: dark as the initial
+  // paint default (matches the default mode), this overrides it once mounted.
+  useEffect(() => {
+    document.documentElement.style.colorScheme = mode;
+  }, [mode]);
 
   const toggleTheme = () => {
     setMode((prev) => {

@@ -65,7 +65,7 @@ export const JoinTeam: React.FC = () => {
   };
 
   const errorBanner = error && (
-    <div style={{ background: '#ef444418', border: '1px solid #fca5a5', borderRadius: '0.7rem', padding: '0.75rem 0.85rem', color: '#fca5a5', fontSize: '0.9rem', marginBottom: '1.1rem' }}>
+    <div style={{ background: '#ef444418', border: '1px solid #fca5a5', borderRadius: '0.7rem', padding: '0.75rem 0.85rem', color: onb.danger, fontSize: '0.9rem', marginBottom: '1.1rem' }}>
       {error}
     </div>
   );
