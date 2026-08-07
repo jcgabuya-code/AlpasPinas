@@ -26,6 +26,7 @@ const longDate = (iso: string) => {
 export const MyOrders: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const [orders, setOrders] = useState<MerchOrder[] | null>(null);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export const MyOrders: React.FC = () => {
           ← Back to the shop
         </Link>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.25rem, 6vw, 3.5rem)', color: c.text, margin: '0 0 0.5rem', letterSpacing: '0.02em' }}>
-          MY <span style={{ color: c.primary }}>ORDERS</span>
+          MY <span style={{ color: accent }}>ORDERS</span>
         </h1>
         <p style={{ color: c.textSecondary, fontSize: '1rem', margin: '0 0 2rem', lineHeight: 1.6 }}>
           Track your reservations and see past orders. We'll reach out by email as each one moves along.

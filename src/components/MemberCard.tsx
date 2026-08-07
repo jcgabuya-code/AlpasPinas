@@ -35,6 +35,7 @@ export const avatarColor = (name: string, brand: Brand = 'emerald') => {
 export const MemberCard: React.FC<{ member: Member }> = ({ member: m }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
 
   return (
     <article
@@ -106,7 +107,7 @@ export const MemberCard: React.FC<{ member: Member }> = ({ member: m }) => {
           style={{
             fontSize: '0.7rem',
             fontWeight: 600,
-            color: c.primary,
+            color: accent,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             marginBottom: '0.25rem',

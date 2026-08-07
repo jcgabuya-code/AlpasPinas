@@ -11,6 +11,7 @@ const emailValid = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 export const Cart: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const { lines, subtotal, setQty, removeItem, clear } = useCart();
   const { user } = useAuth();
 
@@ -153,7 +154,7 @@ export const Cart: React.FC = () => {
           ← Continue shopping
         </Link>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.25rem, 6vw, 3.5rem)', color: c.text, margin: '0 0 1.75rem', letterSpacing: '0.02em' }}>
-          YOUR <span style={{ color: c.primary }}>CART</span>
+          YOUR <span style={{ color: accent }}>CART</span>
         </h1>
 
         <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', alignItems: 'start' }}>

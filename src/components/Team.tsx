@@ -36,13 +36,13 @@ export const Team: React.FC = () => {
           trailing={
             <div style={{ color: c.textSecondary, fontSize: '0.9rem' }}>
               {allMembers.length} paddlers ·{' '}
-              <Link to="/roster" style={{ color: c.primary, textDecoration: 'none' }}>
+              <Link to="/roster" style={{ color: accent, textDecoration: 'none' }}>
                 See full roster →
               </Link>
             </div>
           }
         >
-          MEET THE <span style={{ color: c.primary }}>CREW</span>
+          MEET THE <span style={{ color: accent }}>CREW</span>
         </SectionHeader>
 
         {/* Crew cards — photo + profile stats, with a closing "join" card */}

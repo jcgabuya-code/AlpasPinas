@@ -10,6 +10,7 @@ type SortKey = 'name' | 'joined';
 export const Roster: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const [all, setAll] = useState<Member[]>(() => getAllRoster());
   const [roleFilter, setRoleFilter] = useState('All');
   const [sideFilter, setSideFilter] = useState('All');
@@ -105,7 +106,7 @@ export const Roster: React.FC = () => {
               borderRadius: '999px',
               border: `1px solid ${c.primary}55`,
               backgroundColor: `${c.primary}15`,
-              color: c.primary,
+              color: accent,
               fontSize: '0.75rem',
               fontWeight: 600,
               letterSpacing: '0.12em',
@@ -126,7 +127,7 @@ export const Roster: React.FC = () => {
               lineHeight: 1,
             }}
           >
-            THE <span style={{ color: c.primary }}>CREW</span>
+            THE <span style={{ color: accent }}>CREW</span>
           </h1>
 
           <p
@@ -242,7 +243,7 @@ export const Roster: React.FC = () => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: c.primary,
+                    color: accent,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
                     padding: 0,
@@ -300,7 +301,7 @@ export const Roster: React.FC = () => {
             }}
           >
             Roster is sample data — edit{' '}
-            <code style={{ color: c.primary }}>src/data/roster.json</code> to plug
+            <code style={{ color: accent }}>src/data/roster.json</code> to plug
             in the real team.
           </p>
         </div>

@@ -20,6 +20,7 @@ const CATEGORIES: Category[] = ['Training', 'Races', 'Off-water'];
 export const Gallery: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const all = galleryData as Photo[];
 
   const [filter, setFilter] = useState<'All' | Category>('All');
@@ -121,7 +122,7 @@ export const Gallery: React.FC = () => {
               borderRadius: '999px',
               border: `1px solid ${c.primary}55`,
               backgroundColor: `${c.primary}15`,
-              color: c.primary,
+              color: accent,
               fontSize: '0.75rem',
               fontWeight: 600,
               letterSpacing: '0.12em',
@@ -142,7 +143,7 @@ export const Gallery: React.FC = () => {
               lineHeight: 1,
             }}
           >
-            THE <span style={{ color: c.primary }}>CREW</span> IN FRAMES
+            THE <span style={{ color: accent }}>CREW</span> IN FRAMES
           </h1>
 
           <p
@@ -290,8 +291,8 @@ export const Gallery: React.FC = () => {
             }}
           >
             Some shots are placeholders — edit{' '}
-            <code style={{ color: c.primary }}>src/data/gallery.json</code> and drop real
-            photos in <code style={{ color: c.primary }}>public/gallery/</code> to swap them in.
+            <code style={{ color: accent }}>src/data/gallery.json</code> and drop real
+            photos in <code style={{ color: accent }}>public/gallery/</code> to swap them in.
           </p>
         </div>
       </section>

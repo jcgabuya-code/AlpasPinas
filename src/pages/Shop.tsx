@@ -11,6 +11,7 @@ import { fetchProducts, type Product } from '../utils/merch';
 export const Shop: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
   // Muted-but-AA body color — textSecondary is borderline on the dark bg.
   const muted = `color-mix(in srgb, ${c.text} 74%, ${c.background})`;
@@ -130,7 +131,7 @@ export const Shop: React.FC = () => {
           >
             TEAM{' '}
             {/* Signature: the wake-line traces left→right under GEAR, echoing the hero. */}
-            <span style={{ position: 'relative', display: 'inline-block', color: c.primary }}>
+            <span style={{ position: 'relative', display: 'inline-block', color: accent }}>
               GEAR
               <span
                 aria-hidden="true"

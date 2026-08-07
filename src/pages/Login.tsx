@@ -19,6 +19,7 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
 
   const labelStyle: React.CSSProperties = {
     fontSize: '0.72rem',
@@ -170,7 +171,7 @@ export const Login: React.FC = () => {
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: c.primary,
+                  color: accent,
                   cursor: 'pointer',
                   fontSize: '0.72rem',
                   fontWeight: 700,
@@ -214,7 +215,7 @@ export const Login: React.FC = () => {
               style={{
                 background: 'none',
                 border: 'none',
-                color: c.primary,
+                color: accent,
                 cursor: 'pointer',
                 textDecoration: 'underline',
                 fontSize: 'inherit',

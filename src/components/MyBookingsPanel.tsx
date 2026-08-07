@@ -18,6 +18,7 @@ export const MyBookingsPanel: React.FC<{
 }> = ({ bookings, eventById, onCancel }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.primaryLight : c.primary;
   const isMobile = useIsMobile();
   const [pendingCancel, setPendingCancel] = useState<string | null>(null);
 
@@ -28,8 +29,8 @@ export const MyBookingsPanel: React.FC<{
           style={{
             padding: '1.25rem',
             borderRadius: '0.85rem',
-            border: `1px solid ${c.primary}55`,
-            backgroundColor: `${c.primary}10`,
+            border: `1px solid ${accent}55`,
+            backgroundColor: `${accent}10`,
           }}
         >
           <div
@@ -37,7 +38,7 @@ export const MyBookingsPanel: React.FC<{
               fontSize: '0.72rem',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              color: c.primary,
+              color: accent,
               fontWeight: 700,
               marginBottom: '0.75rem',
             }}
@@ -85,9 +86,9 @@ export const MyBookingsPanel: React.FC<{
                           fontWeight: 700,
                           letterSpacing: '0.06em',
                           textTransform: 'uppercase' as const,
-                          backgroundColor: `${c.primary}20`,
-                          color: c.primary,
-                          border: `1px solid ${c.primary}44`,
+                          backgroundColor: `${accent}20`,
+                          color: accent,
+                          border: `1px solid ${accent}44`,
                         }}
                       >
                         {attendingLabel(b.attending, ev)}
@@ -104,9 +105,9 @@ export const MyBookingsPanel: React.FC<{
                             fontWeight: 700,
                             letterSpacing: '0.06em',
                             textTransform: 'uppercase' as const,
-                            backgroundColor: `${c.primary}20`,
-                            color: c.primary,
-                            border: `1px solid ${c.primary}44`,
+                            backgroundColor: `${accent}20`,
+                            color: accent,
+                            border: `1px solid ${accent}44`,
                           }}
                         >
                           <span style={{ fontSize: '0.6rem' }}>✓</span> Confirmed

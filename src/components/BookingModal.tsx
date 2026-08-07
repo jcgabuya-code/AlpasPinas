@@ -34,6 +34,7 @@ const YES_NO: YesNo[] = ['Yes', 'No'];
 export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -244,7 +245,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                   fontSize: '0.72rem',
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  color: c.primary,
+                  color: accent,
                   fontWeight: 700,
                   marginBottom: '0.35rem',
                 }}

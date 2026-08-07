@@ -13,6 +13,7 @@ export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
   const { addItem } = useCart();
   // Muted-but-AA body color — textSecondary is borderline on the dark bg.
@@ -83,7 +84,7 @@ export const ProductDetail: React.FC = () => {
           </p>
           <Link
             to="/shop"
-            style={{ color: c.primary, textDecoration: 'none', fontWeight: 600 }}
+            style={{ color: accent, textDecoration: 'none', fontWeight: 600 }}
           >
             ← Back to the shop
           </Link>
@@ -265,7 +266,7 @@ export const ProductDetail: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setShowFullDesc((v) => !v)}
-                    style={{ background: 'none', border: 'none', padding: '0.3rem 0 0', margin: 0, color: c.primary, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', padding: '0.3rem 0 0', margin: 0, color: accent, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
                   >
                     {showFullDesc ? 'Show less' : 'Read more'}
                   </button>
@@ -360,7 +361,7 @@ export const ProductDetail: React.FC = () => {
                   onClick={() => navigate('/cart')}
                   style={{
                     background: 'transparent',
-                    color: c.primary,
+                    color: accent,
                     border: `1px solid ${c.primary}55`,
                     padding: '0.85rem 1.3rem',
                     borderRadius: '0.6rem',

@@ -13,6 +13,7 @@ import {
 export const Events: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const all = eventsData as RaceEvent[];
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [typeFilter, setTypeFilter] = useState('All');
@@ -99,7 +100,7 @@ export const Events: React.FC = () => {
               borderRadius: '999px',
               border: `1px solid ${c.primary}55`,
               backgroundColor: `${c.primary}15`,
-              color: c.primary,
+              color: accent,
               fontSize: '0.75rem',
               fontWeight: 600,
               letterSpacing: '0.12em',
@@ -120,7 +121,7 @@ export const Events: React.FC = () => {
               lineHeight: 1,
             }}
           >
-            ON THE <span style={{ color: c.primary }}>WATER</span>
+            ON THE <span style={{ color: accent }}>WATER</span>
           </h1>
 
           <p
@@ -245,7 +246,7 @@ export const Events: React.FC = () => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: c.primary,
+                    color: accent,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
                     padding: 0,
@@ -304,7 +305,7 @@ export const Events: React.FC = () => {
             }}
           >
             Events are sample data — edit{' '}
-            <code style={{ color: c.primary }}>src/data/events.json</code> to plug in
+            <code style={{ color: accent }}>src/data/events.json</code> to plug in
             the real season.
           </p>
         </div>

@@ -14,6 +14,7 @@ import { effectivePrice, formatPrice, inStock, type Product } from '../utils/mer
 export const FeaturedSpotlight: React.FC<{ product: Product }> = ({ product }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
   const isMobile = useIsMobile();
   const [hovered, setHovered] = useState(false);
 
@@ -94,7 +95,7 @@ export const FeaturedSpotlight: React.FC<{ product: Product }> = ({ product }) =
               {product.promoLabel}
             </span>
           ) : (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: c.primary }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: accent }}>
               {/* Cadence beat-tick — ties the spotlight to the hero's stroke signature. */}
               <span aria-hidden="true" className="cadence-beat" style={{ width: '7px', height: '7px', borderRadius: '999px', backgroundColor: c.sun, flexShrink: 0 }} />
               Featured

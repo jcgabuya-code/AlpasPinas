@@ -147,8 +147,8 @@ export const Training: React.FC = () => {
     height: 40,
     flexShrink: 0,
     borderRadius: '0.7rem',
-    background: `${c.primary}1f`,
-    border: `1px solid ${c.primary}59`,
+    background: `${accent}1f`,
+    border: `1px solid ${accent}59`,
   };
 
   const renderLaneHeader = (glyph: React.ReactNode, label: string, inView: boolean) => (
@@ -170,7 +170,7 @@ export const Training: React.FC = () => {
         style={{
           animationDelay: '0.08s',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
           gap: '1.25rem',
           alignContent: 'start',
         }}
@@ -220,7 +220,7 @@ export const Training: React.FC = () => {
         <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
           <Link
             to="/"
-            style={{ display: 'inline-block', color: c.textSecondary, textDecoration: 'none', fontSize: '0.85rem', marginBottom: isMobile ? '1.25rem' : '2rem' }}
+            style={{ display: 'inline-block', color: c.accent, textDecoration: 'none', fontSize: '0.85rem', marginBottom: isMobile ? '1.25rem' : '2rem' }}
           >
             ← Back to home
           </Link>
@@ -249,7 +249,7 @@ export const Training: React.FC = () => {
               }}
             >
               TRAIN WITH{' '}
-              <span style={{ position: 'relative', display: 'inline-block', color: c.primary }}>
+              <span style={{ position: 'relative', display: 'inline-block', color: accent }}>
                 US
                 <span
                   aria-hidden="true"
@@ -261,7 +261,7 @@ export const Training: React.FC = () => {
                     bottom: '0.02em',
                     height: '0.07em',
                     borderRadius: '999px',
-                    background: `linear-gradient(90deg, ${c.primary}, ${c.sun})`,
+                    background: `linear-gradient(90deg, ${accent}, ${c.sun})`,
                   }}
                 />
               </span>
@@ -269,7 +269,7 @@ export const Training: React.FC = () => {
 
             <p
               style={{
-                color: c.textSecondary,
+                color: c.text,
                 fontSize: isMobile ? '1rem' : '1.05rem',
                 maxWidth: isMobile ? '640px' : 'none',
                 lineHeight: 1.65,
@@ -298,7 +298,7 @@ export const Training: React.FC = () => {
       {isMobile ? (
         <>
           {/* On Land — weeknight conditioning */}
-          <section ref={landRef} style={{ backgroundColor: c.sand, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
+          <section ref={landRef} style={{ backgroundColor: c.background, borderTop: `1px solid ${c.border}`, ...sectionShell }}>
             <div style={{ maxWidth: contentMaxWidth, margin: '0 auto' }}>
               {landHeader}
               {landBody}

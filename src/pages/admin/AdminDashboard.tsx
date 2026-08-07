@@ -211,7 +211,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, theme, onNavigate }) => {
                 color: c.background,
               }}
             >
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.primary }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent }}>
                 Next up
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '1.35rem' : '1.6rem', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>

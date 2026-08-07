@@ -16,6 +16,7 @@ export const ConfirmedNotification: React.FC<{
 }> = ({ bookings, eventById, onClose }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
+  const accent = theme === 'dark' ? c.accent : c.primary;
 
   return (
     <>
@@ -87,7 +88,7 @@ export const ConfirmedNotification: React.FC<{
                 >
                   YOU'RE CONFIRMED!
                 </div>
-                <div style={{ fontSize: '0.78rem', color: c.primary, fontWeight: 600, marginTop: '0.2rem' }}>
+                <div style={{ fontSize: '0.78rem', color: accent, fontWeight: 600, marginTop: '0.2rem' }}>
                   {bookings.length === 1 ? 'Your spot is locked in' : `${bookings.length} bookings confirmed`}
                 </div>
               </div>
@@ -149,9 +150,9 @@ export const ConfirmedNotification: React.FC<{
                       fontWeight: 700,
                       letterSpacing: '0.06em',
                       textTransform: 'uppercase' as const,
-                      backgroundColor: `${c.primary}20`,
-                      color: c.primary,
-                      border: `1px solid ${c.primary}44`,
+                      backgroundColor: `${accent}20`,
+                      color: accent,
+                      border: `1px solid ${accent}44`,
                     }}
                   >
                     ✓ Confirmed
