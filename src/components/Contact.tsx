@@ -5,6 +5,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { SectionHeader } from './SectionHeader';
 import { sectionShell, cadenceAccentUri } from '../styles/tokens';
 import { submitApplication, type ApplicationResult } from '../utils/users';
+import { useContent } from '../context/SiteContentContext';
 
 // Country dialing codes for the mobile field — mirrors JoinTeam's list so the
 // "claim a seat" application carries the same mobile format the account is keyed on.
@@ -72,6 +73,10 @@ export const Contact: React.FC = () => {
   const c = colors[brand][theme];
   const isMobile = useIsMobile();
   const accent = theme === 'dark' ? c.accent : c.primary;
+  const invite = useContent(
+    'contact.invite',
+    "There's a seat in the boat with your name on it. Come try a session — no experience needed, all gear provided. We'll get you on the water within a week or two.",
+  );
 
   const [values, setValues] = useState<Values>({ name: '', email: '', countryCode: '+60', mobile: '' });
   const [errors, setErrors] = useState<Errors>({});
@@ -165,9 +170,7 @@ export const Contact: React.FC = () => {
           />
 
           <p style={{ color: c.textSecondary, fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem', maxWidth: '400px' }}>
-            There's a seat in the boat with your name on it. Come try a session —
-            no experience needed, all gear provided. We'll get you on the water
-            within a week or two.
+            {invite}
           </p>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>

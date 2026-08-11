@@ -8,6 +8,7 @@ import { SectionHeader } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { PinGlyph, StarGlyph, LandGlyph, WaveGlyph } from './icons/trainingGlyphs';
 import { CalendarCheck } from 'lucide-react';
+import { useContent } from '../context/SiteContentContext';
 
 // The weekly training rhythm — two weeknight land/technique sessions plus the
 // weekend full-crew water time. `open` sessions welcome drop-ins; the closed one
@@ -74,6 +75,14 @@ export const TrainingSchedule: React.FC = () => {
   const isMobile = useIsMobile();
   const [ref, inView] = useInView<HTMLDivElement>();
   const [reserveHover, setReserveHover] = useState(false);
+  const intro = useContent(
+    'training.intro',
+    'Four sessions a week — weeknights for fitness and technique, weekends for full-crew water time. Sessions marked open welcome drop-ins, no confirmation needed.',
+  );
+  const cta = useContent(
+    'training.cta',
+    'Weekend sessions are beginner-friendly and all gear is provided. Message us to reserve your seat for this week.',
+  );
 
   const accent = isDark ? c.accent : c.primary;
   const cardBg = c.surface;
@@ -185,9 +194,7 @@ export const TrainingSchedule: React.FC = () => {
           style={{ marginBottom: isMobile ? '2.25rem' : '2.75rem' }}
           trailing={
             <p style={{ maxWidth: '350px', color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.55, margin: 0 }}>
-              Four sessions a week — weeknights for fitness and technique, weekends for full-crew
-              water time. Sessions marked <span style={{ color: accent, fontWeight: 700 }}>open</span> welcome
-              drop-ins, no confirmation needed.
+              {intro}
             </p>
           }
         >
@@ -354,8 +361,7 @@ export const TrainingSchedule: React.FC = () => {
               New here? Start on a Saturday.
             </h3>
             <p style={{ color: c.textSecondary, fontSize: '0.9rem', lineHeight: 1.5, margin: 0 }}>
-              Weekend sessions are beginner-friendly and all gear is provided. Message us to reserve
-              your seat for this week.
+              {cta}
             </p>
           </div>
           <Link

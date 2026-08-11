@@ -29,6 +29,7 @@ import { WhatsAppGlyph, YouTubeGlyph } from '../Hero';
 import { ContactRow, LocationIcon, MailIcon, InstagramIcon } from '../Contact';
 import { submitApplication, type ApplicationResult } from '../../utils/users';
 import { cadenceAccentUri } from '../../styles/tokens';
+import { useContent } from '../../context/SiteContentContext';
 
 /**
  * MobileHome — the phone-width Home page, rebuilt to the AlpasPinas mobile
@@ -123,6 +124,26 @@ export const MobileHome: React.FC = () => {
   const isDark = theme === 'dark';
   const accent = isDark ? c.accent : c.primary;
   const grad = brandGradient(brand, theme);
+  const manifesto = useContent(
+    'about.manifesto',
+    "AlpasPinas is a Filipino dragon boat crew in Malaysia — a home away from home that moves on a single beat. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.",
+  );
+  const trainingIntro = useContent(
+    'training.intro',
+    'Four sessions a week — weeknights for fitness and technique, weekends for full-crew water time. Sessions marked open welcome drop-ins, no confirmation needed.',
+  );
+  const trainingCta = useContent(
+    'training.cta',
+    'Weekend sessions are beginner-friendly and all gear is provided. Message us to reserve your seat for this week.',
+  );
+  const gearNote = useContent(
+    'featuredGear.note',
+    'Members race in club kit. Your jersey, paddle, and PFD are provided once you join the crew.',
+  );
+  const raceIntro = useContent(
+    'raceRecord.intro',
+    "Seasons of racing across the region and a growing trophy shelf. Here's where we've lined up lately.",
+  );
 
   // The hero band renders dark over an otherwise light page (light mode = dark hero +
   // light page). `heroC` / `heroIsDark` / `heroAccent` drive the hero section only; the
@@ -431,7 +452,7 @@ export const MobileHome: React.FC = () => {
             </span>
           </div>
           {/* <div className="stroke-in" style={{ fontSize: '0.9rem', lineHeight: 1.5, color: isDark ? c.textSecondary : heroSubLight, maxWidth: '300px', animationDelay: '0.72s', textShadow: isDark ? 'none' : heroShadowLight }}>
-            Start with a weekend session. No experience needed, all gear provided, and a crew that will get you on the water fast.
+            {heroIntro}
           </div> */}
           <div className="stroke-in" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '4px', animationDelay: '0.8s' }}>
 
@@ -567,7 +588,7 @@ export const MobileHome: React.FC = () => {
           ))}
         </div>
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
-          AlpasPinas is a Filipino dragon boat crew in Malaysia — a home away from home that moves on a single beat. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.
+          {manifesto}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '6px' }}>
           {FACTS.map((f) => statTile(f.value, f.label))}
@@ -579,7 +600,7 @@ export const MobileHome: React.FC = () => {
         {eyebrow('The Weekly Rhythm')}
         {heading('TRAINING SCHEDULE')}
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
-          Four sessions a week — weeknights for fitness and technique, weekends for full-crew water time. Sessions marked <b style={{ color: c.text }}>open</b> welcome drop-ins, no confirmation needed.
+          {trainingIntro}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
@@ -592,7 +613,7 @@ export const MobileHome: React.FC = () => {
         <div style={{ background: `linear-gradient(135deg, ${c.primary}1a, ${c.primaryDark}0d)`, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '16px', marginTop: '6px' }}>
           <div style={{ fontWeight: 800, fontSize: '0.95rem', color: c.text }}>New here? Start on a Saturday.</div>
           <div style={{ fontSize: '0.85rem', color: c.textSecondary, lineHeight: 1.5, margin: '6px 0 12px' }}>
-            Weekend sessions are beginner-friendly and all gear is provided. Message us to reserve your seat for this week.
+            {trainingCta}
           </div>
           <Link to="/training" style={{ ...primaryBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', padding: '0.7rem 1.2rem', fontSize: '0.85rem' }}>Reserve a seat →</Link>
         </div>
@@ -634,7 +655,7 @@ export const MobileHome: React.FC = () => {
           })}
         </div>
         <div style={{ fontSize: '0.8rem', color: c.textSecondary, lineHeight: 1.5 }}>
-          Members race in club kit — your jersey, paddle, and PFD are provided once you join the crew.
+          {gearNote}
         </div>
       </section>
 
@@ -655,7 +676,7 @@ export const MobileHome: React.FC = () => {
           ))}
         </div>
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
-          Seasons of racing across the region and a growing trophy shelf. Here's where we've lined up lately.
+          {raceIntro}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
@@ -715,6 +736,10 @@ const ClaimYourSeat: React.FC<{
   const [status, setStatus] = useState<Status>('idle');
   const [result, setResult] = useState<ApplicationResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const contactInvite = useContent(
+    'contact.invite',
+    "There's a seat in the boat with your name on it. Come try a session — no experience needed, all gear provided. We'll get you on the water within a week or two.",
+  );
 
   const set = (k: keyof Values) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
@@ -777,7 +802,7 @@ const ClaimYourSeat: React.FC<{
         }}
       />
       <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
-        There's a seat in the boat with your name on it. Come try a session — no experience needed, all gear provided. We'll get you on the water within a week or two.
+        {contactInvite}
       </div>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.9rem' }}>

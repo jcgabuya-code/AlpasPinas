@@ -18,6 +18,7 @@ import {
   Download,
   Sun,
   Moon,
+  FileText,
 } from 'lucide-react';
 import { downloadAdminExport } from '../utils/adminExport';
 
@@ -30,10 +31,11 @@ import { AdminRoster } from './admin/AdminRoster';
 import { AdminApplications } from './admin/AdminApplications';
 import { AdminProducts } from './admin/AdminProducts';
 import { AdminOrders } from './admin/AdminOrders';
+import { AdminContent } from './admin/AdminContent';
 
 /* ------------------------------------------------------------------ */
 
-export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster' | 'applications' | 'products' | 'orders';
+export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'events' | 'roster' | 'applications' | 'products' | 'orders' | 'content';
 export type ToastType = 'success' | 'error' | 'info';
 export type ShowToast = (msg: string, type?: ToastType) => void;
 
@@ -44,6 +46,7 @@ const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] =
   { id: 'boats',     label: 'Boat Assignments',  icon: Anchor         },
   { id: 'events',    label: 'Events',            icon: CalendarDays   },
   { id: 'roster',    label: 'Roster',            icon: Users          },
+  { id: 'content',   label: 'Site Content',      icon: FileText       },
   { id: 'products',  label: 'Shop Products',     icon: Package        },
   { id: 'orders',    label: 'Shop Orders',       icon: ShoppingBag    },
 ];
@@ -549,6 +552,7 @@ const SectionContent: React.FC<{
     case 'boats':     return <AdminBoats     showToast={showToast} c={c} theme={theme} />;
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;
     case 'roster':    return <AdminRoster    showToast={showToast} c={c} theme={theme} />;
+    case 'content':   return <AdminContent   showToast={showToast} c={c} />;
     case 'products':  return <AdminProducts  showToast={showToast} c={c} />;
     case 'orders':    return <AdminOrders    showToast={showToast} c={c} theme={theme} />;
     default:          return null;

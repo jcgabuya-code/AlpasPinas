@@ -8,6 +8,7 @@ import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HERO_OPTIONS, useHeroPick } from './HeroPicker';
 import { LEGACY_LIGHT_HERO } from '../config/homeHero';
+import { useContent } from '../context/SiteContentContext';
 
 
 // Keyword tagline — echoes the team's identity, separated by emerald marks.
@@ -260,6 +261,10 @@ export const Hero: React.FC = () => {
   const [videoOpen, setVideoOpen] = useState(false);
   const [heroPick] = useHeroPick();
   const heroPhoto = HERO_OPTIONS[heroPick];
+  const heroIntro = useContent(
+    'hero.intro',
+    'Start with a weekend session. No experience needed, all gear provided, and a crew that will get you on the water fast.',
+  );
 
   // Theme-aware surface — the hero is dark-forward but honors light mode and the
   // ocean/bandila brands by reading every color from the active palette. The panel
@@ -351,8 +356,7 @@ export const Hero: React.FC = () => {
         textShadow: isMobile ? undefined : heroTextHalo,
       }}
     >
-      Start with a weekend session. No experience needed, all gear provided,
-      and a crew that will get you on the water fast.
+      {heroIntro}
     </p>
   );
 

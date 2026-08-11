@@ -5,6 +5,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useInView } from '../hooks/useInView';
 import { Eyebrow } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
+import { useContent } from '../context/SiteContentContext';
 const teamPhoto1 = new URL('../../images/alpas team.JPG', import.meta.url).href;
 const teamPhoto2 = new URL('../../images/alpas team 2.JPG', import.meta.url).href;
 import melakaTeam1 from '../../images/melaka-team1.jpg';
@@ -57,6 +58,10 @@ export const About: React.FC = () => {
   const isDark = theme === 'dark';
   const isMobile = useIsMobile();
   const [ref, inView] = useInView<HTMLDivElement>();
+  const manifesto = useContent(
+    'about.manifesto',
+    "AlpasPinas is a Filipino dragon boat crew in Malaysia — a home away from home that moves on a single beat. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.",
+  );
 
   const accent = isDark ? c.accent : c.primary;
   // The manifesto is the emotional core — keep it near-ink for contrast rather than
@@ -179,10 +184,7 @@ export const About: React.FC = () => {
                 textWrap: 'pretty' as React.CSSProperties['textWrap'],
               }}
             >
-              AlpasPinas is a Filipino dragon boat crew in Malaysia — a home away from home
-              that moves on a single beat. We paddle to break away: from the pack on the
-              start line, and from anything that says a crew this far from home can't line
-              up and win.
+              {manifesto}
             </p>
           </div>
 

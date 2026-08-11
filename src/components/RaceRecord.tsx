@@ -7,6 +7,7 @@ import { useInView } from '../hooks/useInView';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { parseEventDate, medalColor, medalLabel, type RaceEvent } from './EventCard';
 import eventsData from '../data/events.json';
+import { useContent } from '../context/SiteContentContext';
 import race1 from '../../images/race-1.jpg';
 import race2 from '../../images/race-2.jpg';
 import race3 from '../../images/race-3.jpeg';
@@ -33,6 +34,10 @@ export const RaceRecord: React.FC = () => {
   const isMobile = useIsMobile();
   const [ref, inView] = useInView<HTMLDivElement>();
   const [photo, setPhoto] = useState(0);
+  const intro = useContent(
+    'raceRecord.intro',
+    "Seasons of racing across the region and a growing trophy shelf. Here's where we've lined up lately.",
+  );
 
   const accent = isDark ? c.accent : c.primary;
 
@@ -202,8 +207,7 @@ export const RaceRecord: React.FC = () => {
           style={{ marginBottom: isMobile ? '1.75rem' : '2.5rem' }}
           trailing={
             <p style={{ maxWidth: '360px', color: c.textSecondary, fontSize: '1.05rem', lineHeight: 1.6, margin: 0 }}>
-              Seasons of racing across the region and a growing trophy shelf. Here's where we've
-              lined up lately.
+              {intro}
             </p>
           }
         >

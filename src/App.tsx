@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { SiteContentProvider } from './context/SiteContentContext';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { ScrollToHash } from './components/ScrollToHash';
@@ -26,6 +27,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <CartProvider>
+        <SiteContentProvider>
         <BrowserRouter>
           <ScrollToHash />
           <Routes>
@@ -56,6 +58,7 @@ function App() {
             />
           </Routes>
         </BrowserRouter>
+        </SiteContentProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>

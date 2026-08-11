@@ -7,6 +7,7 @@ import { SectionHeader } from './SectionHeader';
 import { useInView } from '../hooks/useInView';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { fetchProducts, effectivePrice, formatPrice, inStock, type Product } from '../utils/merch';
+import { useContent } from '../context/SiteContentContext';
 
 /**
  * Home-page teaser for the shop ("The Locker" / GEAR UP). Leads with one large
@@ -48,6 +49,10 @@ export const FeaturedGear: React.FC = () => {
   const [ref, inView] = useInView<HTMLDivElement>();
   const [products, setProducts] = useState<Product[] | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const note = useContent(
+    'featuredGear.note',
+    'Members race in club kit. Your jersey, paddle, and PFD are provided once you join the crew.',
+  );
 
   useEffect(() => {
     let active = true;
@@ -315,8 +320,7 @@ export const FeaturedGear: React.FC = () => {
         <KitGlyph color={accent} />
       </span>
       <p style={{ fontSize: '0.82rem', color: c.textSecondary, lineHeight: 1.5, margin: 0 }}>
-        <span style={{ color: c.text, fontWeight: 800 }}>Members race in club kit.</span> Your jersey, paddle,
-        and PFD are provided once you join the crew.
+        {note}
       </p>
     </div>
   );
