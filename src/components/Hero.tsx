@@ -288,10 +288,10 @@ export const Hero: React.FC = () => {
   const heroTopFade = `linear-gradient(180deg, rgba(${scrimRgb},${isDark ? 0.6 : 0.5}), transparent)`;
 
   // Alpas Hero spec accents for light mode — the bandila brand gets a brighter blue
-  // that harmonizes with the water + a warm flag yellow; other brands fall back to
+  // that harmonizes with the water + a signature flag red; other brands fall back to
   // their own palette (the dark theme always keeps the app's own accent).
   const specBlue = brand === 'bandila' ? bandilaHero.blue : c.primary;
-  const specYellow = brand === 'bandila' ? bandilaHero.yellow : c.sun;
+  const specRed = brand === 'bandila' ? bandilaHero.red : c.sun;
 
   const heroText = c.text;
   const heroSub = isDark ? 'rgba(245, 247, 245, 0.82)' : c.textSecondary;
@@ -587,7 +587,7 @@ export const Hero: React.FC = () => {
                       borderRadius: '999px',
                       background: isDark
                         ? `linear-gradient(90deg, ${c.accent}, ${c.sun})`
-                        : `linear-gradient(90deg, ${specBlue}, ${specYellow})`,
+                        : `linear-gradient(90deg, ${specBlue}, ${specRed})`,
                     }}
                   />
                 )}
@@ -782,7 +782,7 @@ export const Hero: React.FC = () => {
                       borderRadius: '999px',
                       background: isDark
                         ? `linear-gradient(90deg, ${c.accent}, ${c.sun})`
-                        : `linear-gradient(90deg, ${specBlue}, ${specYellow})`,
+                        : `linear-gradient(90deg, ${specBlue}, ${specRed})`,
                     }}
                   />
                 )}
