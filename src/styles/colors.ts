@@ -91,7 +91,7 @@ const bandila = {
     hover: '#161f2c',
     overlay: 'rgba(0, 0, 0, 0.55)',
     sand: '#1a1013',             // alternating band — a touch lifted/warm vs background (nods to the red)
-    sun: '#ff3b3b',               // signature red — flag's red field, cadence/beat motif only
+    sun: '#ffd60a',               // vibrant golden-yellow — PH flag sun/stars, cadence/beat motif only
     danger: '#fca5a5',           // error/alert text — legible coral on dark surfaces
   },
   light: {
@@ -108,18 +108,18 @@ const bandila = {
     hover: '#f3ecd7',
     overlay: 'rgba(255, 255, 255, 0.6)',
     sand: '#f0e4c4',             // deeper gold-cream band — nods to the sun/stars motif
-    sun: '#d4183d',              // signature red, darkened for contrast on light bg — cadence/beat motif only
+    sun: '#dc9600',              // vibrant golden-yellow, darkened for contrast on light bg — cadence/beat motif only
     danger: '#b91c1c',           // error/alert text — darkened for contrast on light bg
   },
 };
 
 export const colors = { emerald, ocean, bandila };
 
-// Alpas Hero light-mode accents — a brighter bandila blue + flag red the home
+// Alpas Hero light-mode accents — a brighter bandila blue + flag yellow the home
 // hero/header use in light mode (per the Alpas Hero design spec). Kept out of the
 // per-mode palette because they only apply to the hero showcase, not general UI;
 // gate their use on `brand === 'bandila'`.
-export const bandilaHero = { blue: '#2f6bff', red: '#ff3b3b' } as const;
+export const bandilaHero = { blue: '#2f6bff', yellow: '#ffd60a' } as const;
 
 export type Brand = keyof typeof colors;        // 'emerald' | 'ocean' | 'bandila'
 export type ColorMode = keyof typeof emerald;   // 'dark' | 'light'

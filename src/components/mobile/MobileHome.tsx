@@ -165,9 +165,9 @@ export const MobileHome: React.FC = () => {
   const heroTextLight = '#f7f9f7';
   const heroSubLight = 'rgba(247, 249, 247, 0.92)';
   // Alpas Hero spec accents (light) — bandila gets the brighter hero blue + flag
-  // red (matches the desktop hero); other brands keep their own light palette.
+  // yellow (matches the desktop hero); other brands keep their own light palette.
   const heroAccentLight = brand === 'bandila' ? bandilaHero.blue : c.primaryLight;
-  const heroRedLight = brand === 'bandila' ? bandilaHero.red : c.sun;
+  const heroYellowLight = brand === 'bandila' ? bandilaHero.yellow : c.sun;
   const heroShadowLight = '0 2px 14px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.5)';
 
   // Section refs so the pill bar and hero CTAs can jump to each band.
@@ -430,7 +430,7 @@ export const MobileHome: React.FC = () => {
               <span
                 aria-hidden="true"
                 className="wake-underline"
-                style={{ position: 'absolute', left: 0, right: 0, bottom: '0.04em', height: '0.07em', borderRadius: '999px', background: heroIsDark ? `linear-gradient(90deg, ${heroC.accent}, ${heroC.sun})` : `linear-gradient(90deg, ${heroAccentLight}, ${heroRedLight})` }}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: '0.04em', height: '0.07em', borderRadius: '999px', background: heroIsDark ? `linear-gradient(90deg, ${heroC.accent}, ${heroC.sun})` : `linear-gradient(90deg, ${heroAccentLight}, ${heroYellowLight})` }}
               />
             </span>
           </div>
