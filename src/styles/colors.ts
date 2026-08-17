@@ -1,7 +1,7 @@
 // Three brand palettes, each with a dark + light mode.
 //  - emerald: the original AlpasPinas look (dark is the primary aesthetic)
 //  - ocean:   client-requested alt — pure ocean-blue accent + gradient
-//  - bandila: royal-blue base, blue→crimson signature gradient (echoes the PH flag's blue + red)
+//  - bandila: royal-blue base, electric blue→red signature gradient (echoes the PH flag's blue + red)
 const emerald = {
   dark: {
     background: '#0b1014',       // near-black with slight green tint
@@ -128,13 +128,13 @@ export type ColorPalette = typeof emerald.dark;
 // Signature gradient per brand.
 //  - emerald: primaryDark → primary → primaryLight (3-green sweep)
 //  - ocean:   pure ocean-blue sweep (deep → ocean → bright sky)
-//  - bandila: royal blue → crimson red (PH flag's two field colors)
+//  - bandila: electric blue → red (PH flag's two field colors, saturated)
 export const brandGradient = (brand: Brand = 'emerald', mode: ColorMode = 'dark') => {
   if (brand === 'ocean') {
     return 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 55%, #7dd3fc 100%)';
   }
   if (brand === 'bandila') {
-    return 'linear-gradient(135deg, #0038a8 0%, #3b5bdb 55%, #ce1126 100%)';
+    return 'linear-gradient(135deg, #0136f8 0%, #7f1b7c 50%, #fe0001 100%)';
   }
   const c = colors.emerald[mode];
   return `linear-gradient(135deg, ${c.primaryDark} 0%, ${c.primary} 55%, ${c.primaryLight} 100%)`;
