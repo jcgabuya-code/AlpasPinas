@@ -25,8 +25,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [mode, setMode] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('theme');
-    // Default to dark — matches the AlpasPinas visual direction
-    return saved && (MODES as string[]).includes(saved) ? (saved as ThemeMode) : 'dark';
+    // Default to light for new visitors
+    return saved && (MODES as string[]).includes(saved) ? (saved as ThemeMode) : 'light';
   });
 
   const [brand, setBrand] = useState<Brand>(() => {
@@ -40,7 +40,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const theme: ColorMode = mode;
 
   // Keep native form controls (scrollbars, date pickers, select arrows) in sync
-  // with the app theme — index.css hardcodes color-scheme: dark as the initial
+  // with the app theme — index.css hardcodes color-scheme: light as the initial
   // paint default (matches the default mode), this overrides it once mounted.
   useEffect(() => {
     document.documentElement.style.colorScheme = mode;
