@@ -5,26 +5,32 @@ import { useAuth } from '../../context/AuthContext';
 import { colors, brandGradient, bandilaHero, type ColorPalette } from '../../styles/colors';
 import { LEGACY_LIGHT_HERO } from '../../config/homeHero';
 import { Marquee } from '../Marquee';
+import { TrainingSchedule } from '../TrainingSchedule';
 import {
   fetchProducts,
   effectivePrice,
   formatPrice,
   type Product,
 } from '../../utils/merch';
-import eventsData from '../../data/events.json';
+import { useRaceEvents } from '../../utils/raceEvents';
 import {
   parseEventDate,
   isUpcoming,
   medalColor,
-  medalLabel,
+  resultBadge,
   type RaceEvent,
 } from '../EventCard';
 import { HERO_OPTIONS, useHeroPick } from '../HeroPicker';
-import melakaTeam1 from '../../../images/melaka-team1.jpg';
-import melakaTeam2 from '../../../images/melaka-team2.jpg';
-import race1 from '../../../images/race-1.jpg';
-import race2 from '../../../images/race-2.jpg';
-import race3 from '../../../images/race-3.jpeg';
+import melakaTeam1 from '../../../images/about/melaka-team1.jpg';
+import alpasTeam1 from '../../../images/about/alpasTeam-1.jpg';
+import alpasTeam2 from '../../../images/about/alpasTeam-2.jpg';
+import alpasTeam3 from '../../../images/about/alpasTeam-3.jpg';
+import alpasTeam4 from '../../../images/about/alpasTeam-4.jpg';
+import race1 from '../../../images/race/race-1.jpg';
+import race2 from '../../../images/race/race-2.jpg';
+import race3 from '../../../images/race/race-3.jpeg';
+const alpasFemales = new URL('../../../images/about/alpas-females.JPG', import.meta.url).href;
+const alpasTeamTitiwangsa = new URL('../../../images/about/alpasTeam-titiwangsa.JPG', import.meta.url).href;
 import { WhatsAppGlyph, YouTubeGlyph } from '../Hero';
 import { ContactRow, LocationIcon, MailIcon, InstagramIcon } from '../Contact';
 import { submitApplication, type ApplicationResult } from '../../utils/users';
@@ -40,13 +46,18 @@ import { useContent } from '../../context/SiteContentContext';
  *
  * The sticky app nav + drawer live in Navigation.tsx (mobile branch). This owns
  * the quick-jump pill bar and the section stack below it, wired to real data:
- * products from the shop, race results from events.json, the training rhythm,
+ * products from the shop, race results from the live race_events table, the training rhythm,
  * and the crew photos. Desktop renders the original section components untouched.
  */
 
 const ABOUT_PHOTOS = [
   { src: melakaTeam1, alt: 'The AlpasPinas crew gathered by the Melaka River', pos: 'center 55%' },
-  { src: melakaTeam2, alt: 'AlpasPinas at the Melaka Dragonboat Championship', pos: 'center 45%' },
+  { src: alpasTeamTitiwangsa, alt: 'AlpasPinas paddlers by Titiwangsa Lake with the Kuala Lumpur skyline behind them', pos: 'center 65%' },
+  { src: alpasTeam4, alt: 'The crew at the Love Boracay International Dragonboat Festival, Philippines', pos: 'center 60%' },
+  { src: alpasTeam3, alt: 'AlpasPinas celebrating on a white-sand beach with the dragon boat behind them', pos: 'center 55%' },
+  { src: alpasTeam2, alt: 'The crew flying the AlpasPinas flag by the lake in Titiwangsa', pos: 'center 68%' },
+  { src: alpasTeam1, alt: 'AlpasPinas gathered under cover with the team banner after training', pos: 'center 45%' },
+  { src: alpasFemales, alt: 'The AlpasPinas women paddlers before boarding, tent lights on at dusk', pos: 'center 62%' },
 ];
 
 const RACE_PHOTOS = [
@@ -56,27 +67,13 @@ const RACE_PHOTOS = [
 ];
 
 const FACTS = [
-  { value: 'Five', label: 'Seasons on the water' },
+  { value: '2024', label: 'Founded' },
   { value: '20+', label: 'Paddlers, one crew' },
   { value: 'Malaysia', label: 'Home water' },
 ];
 
 
 // The weekly rhythm, grouped land / water — mirrors TrainingSchedule's data.
-const LAND = {
-  label: 'On Land — Strength & Erg',
-  cadence: 'TUE & THU · 7–9 PM',
-  spots: 'Open',
-  title: 'Land & Erg Conditioning',
-  copy: 'Strength circuit, paddle ergs, and core work to build the engine off the water. Subang PARC · All levels · Drop-ins welcome.',
-};
-const WATER = {
-  label: 'On the Water — Boat Time',
-  cadence: 'SAT & SUN · 7–10 AM',
-  spots: '8 spots left',
-  title: 'Full Crew Session',
-  copy: 'Full-boat pieces, race starts, and crew building. The best place to try paddling. Marina Putrajaya / Subang PARC · Beginner friendly.',
-};
 
 const CONTACT_INFO: { label: string; value: string; icon: React.ReactNode }[] = [
   { label: 'Training base', value: 'Marina Putrajaya / Subang PARC', icon: <LocationIcon /> },
@@ -126,15 +123,7 @@ export const MobileHome: React.FC = () => {
   const grad = brandGradient(brand, theme);
   const manifesto = useContent(
     'about.manifesto',
-    "AlpasPinas is a Filipino dragon boat crew in Malaysia — a home away from home that moves on a single beat. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.",
-  );
-  const trainingIntro = useContent(
-    'training.intro',
-    'Four sessions a week — weeknights for fitness and technique, weekends for full-crew water time. Sessions marked open welcome drop-ins, no confirmation needed.',
-  );
-  const trainingCta = useContent(
-    'training.cta',
-    'Weekend sessions are beginner-friendly and all gear is provided. Message us to reserve your seat for this week.',
+    "Founded in 2024 by Filipino expats in Malaysia, AlpasPinas began as a way to bring a piece of home closer — dragon boat is just the excuse. Filipino spirit and camaraderie come first — we work hard on the water and laugh harder off it — and we've built a name for being the crew that welcomes anyone with open arms, no experience required. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.",
   );
   const gearNote = useContent(
     'featuredGear.note',
@@ -142,7 +131,7 @@ export const MobileHome: React.FC = () => {
   );
   const raceIntro = useContent(
     'raceRecord.intro',
-    "Seasons of racing across the region and a growing trophy shelf. Here's where we've lined up lately.",
+    "Two races into our story so far — an international debut in Singapore and a Bronze on home turf in Malaysia. Here's where we've lined up.",
   );
 
   // The hero band renders dark over an otherwise light page (light mode = dark hero +
@@ -222,13 +211,16 @@ export const MobileHome: React.FC = () => {
     <div style={{ fontFamily: 'var(--font-display)', fontSize: size, lineHeight: 1, color: c.text }}>{children}</div>
   );
 
-  // ---- Next race (hero badge) — soonest upcoming event from events.json ----
+  // ---- Race calendar, live from the admin-managed race_events table ----
+  const { events: raceEvents } = useRaceEvents();
+
+  // ---- Next race (hero badge) — soonest upcoming event ----
   const nextEvent = useMemo(() => {
-    const upcoming = (eventsData as RaceEvent[])
+    const upcoming = raceEvents
       .filter((e) => isUpcoming(e.date))
       .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
     return upcoming[0] ?? null;
-  }, []);
+  }, [raceEvents]);
   const nextRace = useMemo(() => {
     if (!nextEvent) return null;
     const when = parseEventDate(nextEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -238,12 +230,26 @@ export const MobileHome: React.FC = () => {
   // ---- Race record (results, newest first) ----
   const results = useMemo(
     () =>
-      (eventsData as RaceEvent[])
+      raceEvents
         .filter((e) => e.result)
         .sort((a, b) => parseEventDate(b.date).getTime() - parseEventDate(a.date).getTime()),
-    [],
+    [raceEvents],
   );
-  const podiums = results.filter((e) => (e.result?.rank ?? 99) <= 3).length;
+  // Same event/date entered multiple categories collapses to one row —
+  // category isn't shown here, so per-category rows just read as duplicates.
+  const resultGroups = useMemo(() => {
+    const map = new Map<string, RaceEvent[]>();
+    for (const e of results) {
+      const key = `${e.name}|${e.date}`;
+      const group = map.get(key);
+      if (group) group.push(e);
+      else map.set(key, [e]);
+    }
+    return Array.from(map.values());
+  }, [results]);
+
+  // Podium/race counts follow the same one-row-per-event grouping as the list below.
+  const podiums = resultGroups.filter((group) => group.some((e) => (e.result?.rank ?? 99) <= 3)).length;
 
   // ---- Products (shop teaser) ----
   const [products, setProducts] = useState<Product[] | null>(null);
@@ -276,37 +282,10 @@ export const MobileHome: React.FC = () => {
     };
   }, []);
 
-  const primaryBtn: React.CSSProperties = {
-    background: grad,
-    color: '#fff',
-    border: 'none',
-    padding: '0.75rem 1.3rem',
-    borderRadius: '999px',
-    fontWeight: 700,
-    fontSize: '0.9rem',
-    letterSpacing: '0.02em',
-    boxShadow: `0 4px 14px ${c.primary}40`,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  };
-
   const statTile = (value: React.ReactNode, label: string) => (
     <div key={label} style={{ background: c.background, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '14px 10px', textAlign: 'center' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: c.text }}>{value}</div>
       <div style={{ fontSize: '0.7rem', color: c.textSecondary, marginTop: '4px', lineHeight: 1.3 }}>{label}</div>
-    </div>
-  );
-
-  const trainingCard = (s: typeof LAND) => (
-    <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: accent, letterSpacing: '0.03em' }}>{s.cadence}</span>
-        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: c.textSecondary, background: c.background, border: `1px solid ${c.border}`, padding: '3px 9px', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-          {s.spots}
-        </span>
-      </div>
-      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: c.text }}>{s.title}</div>
-      <div style={{ fontSize: '0.85rem', color: c.textSecondary, lineHeight: 1.5 }}>{s.copy}</div>
     </div>
   );
 
@@ -460,7 +439,7 @@ export const MobileHome: React.FC = () => {
               <>
                 {/* Book a Session — messages the crew (WhatsApp green) */}
                 <button
-                  onClick={() => navigate('/join-team')}
+                  onClick={() => navigate(user ? '/training' : '/join-team')}
                   style={{
                     background: 'linear-gradient(135deg, #1faa4d, #25D366)',
                     color: '#fff',
@@ -510,7 +489,7 @@ export const MobileHome: React.FC = () => {
                 {/* Light mode (Alpas Hero spec): blue-filled primary with WhatsApp mark
                     in a green badge, over the photo. */}
                 <button
-                  onClick={() => navigate('/join-team')}
+                  onClick={() => navigate(user ? '/training' : '/join-team')}
                   style={{
                     background: heroAccentLight,
                     color: '#fff',
@@ -596,27 +575,8 @@ export const MobileHome: React.FC = () => {
       </section>
 
       {/* ===== TRAINING ===== */}
-      <section ref={refs.training} id="training" style={sectionBase(c.background)}>
-        {eyebrow('The Weekly Rhythm')}
-        {heading('TRAINING SCHEDULE')}
-        <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
-          {trainingIntro}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: c.textSecondary }}>{LAND.label}</div>
-          {trainingCard(LAND)}
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: c.textSecondary, marginTop: '8px' }}>{WATER.label}</div>
-          {trainingCard(WATER)}
-        </div>
-
-        <div style={{ background: `linear-gradient(135deg, ${c.primary}1a, ${c.primaryDark}0d)`, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '16px', marginTop: '6px' }}>
-          <div style={{ fontWeight: 800, fontSize: '0.95rem', color: c.text }}>New here? Start on a Saturday.</div>
-          <div style={{ fontSize: '0.85rem', color: c.textSecondary, lineHeight: 1.5, margin: '6px 0 12px' }}>
-            {trainingCta}
-          </div>
-          <Link to="/training" style={{ ...primaryBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', padding: '0.7rem 1.2rem', fontSize: '0.85rem' }}>Reserve a seat →</Link>
-        </div>
+      <section ref={refs.training} id="training-anchor">
+        <TrainingSchedule />
       </section>
 
       <Marquee />
@@ -685,25 +645,39 @@ export const MobileHome: React.FC = () => {
             <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>Podium finishes</div>
           </div>
           <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.7rem', color: c.text }}>{results.length}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.7rem', color: c.text }}>{resultGroups.length}</div>
             <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>Races logged</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-          {results.map((e) => {
-            const rank = e.result!.rank;
-            const medal = medalColor(rank, isDark);
+          {resultGroups.map((group) => {
+            const e = group[0];
+            const badges = Array.from(
+              new Map(
+                group.map((g) => {
+                  const rank = g.result!.rank;
+                  const label = resultBadge(g.result!) ?? '';
+                  const medal = rank ? medalColor(rank, isDark) : null;
+                  return [`${label}-${medal}`, { label, medal }];
+                }),
+              ).values(),
+            );
+            const time = group.length === 1 ? group[0].result!.time : undefined;
             return (
               <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: c.surface, border: `1px solid ${c.border}`, borderRadius: '12px', padding: '12px 14px' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: c.textSecondary, width: '34px', flexShrink: 0 }}>{parseEventDate(e.date).getFullYear()}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: '0.85rem', color: c.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>{e.result!.category} · {e.result!.time}</div>
+                  {time && <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>{time}</div>}
                 </div>
-                <span style={{ flexShrink: 0, fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', background: medal ? `${medal}22` : 'transparent', border: `1px solid ${medal ? `${medal}66` : c.border}`, color: medal ?? c.textSecondary }}>
-                  {medalLabel(rank)}
-                </span>
+                <div style={{ flexShrink: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '4px' }}>
+                  {badges.map((b, bi) => (
+                    <span key={bi} style={{ fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', background: b.medal ? `${b.medal}22` : 'transparent', border: `1px solid ${b.medal ? `${b.medal}66` : c.border}`, color: b.medal ?? c.textSecondary }}>
+                      {b.label}
+                    </span>
+                  ))}
+                </div>
               </div>
             );
           })}

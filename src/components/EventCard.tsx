@@ -3,9 +3,10 @@ import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 
 export type EventResult = {
-  rank: number;
+  rank?: number;      // podium/final placement — omit when only a stage was reached
+  stage?: string;     // e.g. "Semi-Final" — shown in place of a medal when rank is absent
   category: string;
-  time: string;
+  time?: string;
   notes?: string;
 };
 
@@ -55,6 +56,10 @@ export const medalLabel = (rank: number) => {
   return `${rank}${suffix}`;
 };
 
+/** Badge text for a result: the medal/place when ranked, else the stage reached (e.g. "Semi-Final"). */
+export const resultBadge = (result: EventResult) =>
+  result.rank ? medalLabel(result.rank) : result.stage;
+
 export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
@@ -64,7 +69,8 @@ export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
   const month = MONTHS_SHORT[d.getMonth()];
   const year = d.getFullYear();
   const upcoming = isUpcoming(e.date);
-  const medal = e.result ? medalColor(e.result.rank, theme === 'dark') : null;
+  const medal = e.result?.rank ? medalColor(e.result.rank, theme === 'dark') : null;
+  const badge = e.result ? resultBadge(e.result) : undefined;
 
   return (
     <article
@@ -172,8 +178,8 @@ export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
           </span>
         </div>
 
-        {/* Medal — top-right (only for ranked past results) */}
-        {medal && e.result && (
+        {/* Result badge — top-right: medal color when ranked, neutral for a stage reached */}
+        {badge && (
           <span
             style={{
               position: 'absolute',
@@ -187,8 +193,8 @@ export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
               backgroundColor: 'rgba(11, 16, 20, 0.78)',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
-              border: `1px solid ${medal}88`,
-              color: medal,
+              border: `1px solid ${medal ? `${medal}88` : 'rgba(255,255,255,0.3)'}`,
+              color: medal ?? '#fff',
               fontSize: '0.72rem',
               fontWeight: 700,
               letterSpacing: '0.06em',
@@ -196,7 +202,7 @@ export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
             }}
           >
             <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>●</span>
-            {medalLabel(e.result.rank)}
+            {badge}
           </span>
         )}
       </div>
@@ -302,11 +308,13 @@ export const EventCard: React.FC<{ event: RaceEvent }> = ({ event: e }) => {
                   letterSpacing: '0.02em',
                 }}
               >
-                {medalLabel(e.result.rank)}
+                {resultBadge(e.result)}
               </span>
-              <span style={{ fontSize: '0.85rem', color: c.textSecondary }}>
-                · {e.result.time}
-              </span>
+              {e.result.time && (
+                <span style={{ fontSize: '0.85rem', color: c.textSecondary }}>
+                  · {e.result.time}
+                </span>
+              )}
             </div>
             {e.result.notes && (
               <div style={{ fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.15rem' }}>

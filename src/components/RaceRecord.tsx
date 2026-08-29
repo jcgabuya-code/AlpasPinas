@@ -5,12 +5,12 @@ import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { SectionHeader } from './SectionHeader';
 import { useInView } from '../hooks/useInView';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { parseEventDate, medalColor, medalLabel, type RaceEvent } from './EventCard';
-import eventsData from '../data/events.json';
+import { parseEventDate, medalColor, resultBadge, type RaceEvent } from './EventCard';
+import { useRaceEvents } from '../utils/raceEvents';
 import { useContent } from '../context/SiteContentContext';
-import race1 from '../../images/race-1.jpg';
-import race2 from '../../images/race-2.jpg';
-import race3 from '../../images/race-3.jpeg';
+import race1 from '../../images/race/race-1.jpg';
+import race2 from '../../images/race/race-2.jpg';
+import race3 from '../../images/race/race-3.jpeg';
 
 // Race-day action that cross-fades in the Race Record card. Each source is a ~3:2
 // landscape shot, so the card frame is 3:2 and the whole image fits (minimal crop).
@@ -22,8 +22,8 @@ const RACE_PHOTOS = [
 ];
 
 /**
- * "On the Water" — the crew's race record. Binds to the real results in
- * events.json (any event with a `result`), newest first: a sticky team photo with
+ * "On the Water" — the crew's race record. Binds to the live race_events
+ * table (any event with a `result`), newest first: a sticky team photo with
  * derived stats on the left, a results table on the right. Reuses EventCard's
  * medal helpers so podium colors stay consistent across the site.
  */
@@ -36,7 +36,7 @@ export const RaceRecord: React.FC = () => {
   const [photo, setPhoto] = useState(0);
   const intro = useContent(
     'raceRecord.intro',
-    "Seasons of racing across the region and a growing trophy shelf. Here's where we've lined up lately.",
+    "Two races into our story so far — an international debut in Singapore and a Bronze on home turf in Malaysia. Here's where we've lined up.",
   );
 
   const accent = isDark ? c.accent : c.primary;
@@ -50,18 +50,38 @@ export const RaceRecord: React.FC = () => {
     return () => window.clearInterval(id);
   }, []);
 
+  // Race calendar, live from the admin-managed race_events table. `loaded`
+  // distinguishes "still fetching" from "genuinely no races" so the section
+  // doesn't flash away on every page load before the first fetch resolves.
+  const { events, loaded } = useRaceEvents();
+
   // Past races with a recorded result, newest first.
   const results = useMemo(
     () =>
-      (eventsData as RaceEvent[])
+      events
         .filter((e) => e.result)
         .sort((a, b) => parseEventDate(b.date).getTime() - parseEventDate(a.date).getTime()),
-    [],
+    [events],
   );
 
-  const podiums = results.filter((e) => (e.result?.rank ?? 99) <= 3).length;
+  // Same event/date entered multiple categories (e.g. Open + Mixed + Women) are
+  // one row on the page — category isn't shown here, so listing each category's
+  // near-identical entry separately just reads as duplicate rows.
+  const resultGroups = useMemo(() => {
+    const map = new Map<string, RaceEvent[]>();
+    for (const e of results) {
+      const key = `${e.name}|${e.date}`;
+      const group = map.get(key);
+      if (group) group.push(e);
+      else map.set(key, [e]);
+    }
+    return Array.from(map.values());
+  }, [results]);
 
-  if (results.length === 0) return null;
+  // Podium/race counts follow the same one-row-per-event grouping as the list below.
+  const podiums = resultGroups.filter((group) => group.some((e) => (e.result?.rank ?? 99) <= 3)).length;
+
+  if (loaded && resultGroups.length === 0) return null;
 
   const stat = (value: string | number, label: string) => (
     <div>
@@ -109,7 +129,7 @@ export const RaceRecord: React.FC = () => {
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: isMobile ? '1.2rem 1.3rem' : '1.4rem 1.5rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '1.6rem', alignItems: 'flex-end' }}>
           {stat(podiums, 'Podium finishes')}
-          {stat(results.length, 'Races logged')}
+          {stat(resultGroups.length, 'Races logged')}
         </div>
         {/* Photo dots — indicate + jump between shots */}
         <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, paddingBottom: '0.2rem' }}>
@@ -139,10 +159,22 @@ export const RaceRecord: React.FC = () => {
     </div>
   );
 
-  // One results row: year · event/category · time · place badge.
-  const row = (e: RaceEvent, i: number) => {
-    const rank = e.result!.rank;
-    const medal = medalColor(rank, isDark);
+  // One results row per event: year · event name · time · place badge(s).
+  // A group with several categories collapses its badges to the distinct
+  // outcomes reached (e.g. one Bronze + one Semi-Final, not four near-duplicates).
+  const row = (group: RaceEvent[], i: number) => {
+    const e = group[0];
+    const badges = Array.from(
+      new Map(
+        group.map((g) => {
+          const rank = g.result!.rank;
+          const label = resultBadge(g.result!) ?? '';
+          const medal = rank ? medalColor(rank, isDark) : null;
+          return [`${label}-${medal}`, { label, medal }];
+        }),
+      ).values(),
+    );
+    const time = group.length === 1 ? group[0].result!.time : undefined;
     return (
       <div
         key={e.id}
@@ -160,32 +192,43 @@ export const RaceRecord: React.FC = () => {
         </div>
         <div style={{ minWidth: 0, gridColumn: isMobile ? '1 / -1' : undefined, order: isMobile ? 2 : undefined }}>
           <div style={{ fontWeight: 700, fontSize: isMobile ? '1.08rem' : '1.22rem', color: c.text, lineHeight: 1.25 }}>{e.name}</div>
-          <div style={{ fontSize: '0.9rem', color: c.textSecondary, marginTop: '0.25rem' }}>{e.result!.category}</div>
         </div>
         {!isMobile && (
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>
-            {e.result!.time}
+            {time ?? ''}
           </div>
         )}
-        <span
+        <div
           style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.4rem',
             justifySelf: isMobile ? 'end' : 'center',
+            justifyContent: isMobile ? 'flex-end' : 'center',
             order: isMobile ? 1 : undefined,
-            minWidth: '84px',
-            textAlign: 'center',
-            padding: '0.45rem 0.9rem',
-            borderRadius: '999px',
-            fontWeight: 800,
-            fontSize: '0.86rem',
-            letterSpacing: '0.03em',
-            background: medal ? `${medal}22` : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${medal ? `${medal}66` : c.border}`,
-            color: medal ?? c.textSecondary,
-            whiteSpace: 'nowrap',
           }}
         >
-          {medalLabel(rank)}
-        </span>
+          {badges.map((b, bi) => (
+            <span
+              key={bi}
+              style={{
+                minWidth: '84px',
+                textAlign: 'center',
+                padding: '0.45rem 0.9rem',
+                borderRadius: '999px',
+                fontWeight: 800,
+                fontSize: '0.86rem',
+                letterSpacing: '0.03em',
+                background: b.medal ? `${b.medal}22` : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${b.medal ? `${b.medal}66` : c.border}`,
+                color: b.medal ?? c.textSecondary,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {b.label}
+            </span>
+          ))}
+        </div>
       </div>
     );
   };
@@ -225,7 +268,7 @@ export const RaceRecord: React.FC = () => {
           }}
         >
           {photoCard}
-          <div>{results.map((e, i) => row(e, i))}</div>
+          <div>{resultGroups.map((group, i) => row(group, i))}</div>
         </div>
       </div>
     </section>

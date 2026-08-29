@@ -10,79 +10,67 @@ import {
   deleteTrainingEvent,
 } from '../../utils/trainingEvents';
 import {
-  getRaceEvents,
+  fetchRaceEvents,
   createRaceEvent,
   updateRaceEvent,
   deleteRaceEvent,
-  type RaceEvent,
-} from '../../utils/adminRaceEvents';
+} from '../../utils/raceEvents';
+import { type RaceEvent } from '../../components/EventCard';
 import { type TrainingEvent, type TrainingDay } from '../../components/TrainingCard';
 import { getAllBookings, cancelBooking, attendingLabel, formatShortDate, isUpcomingDate, type Booking } from '../../utils/bookings';
 
-type Tab = 'training' | 'races';
 type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
 
 /* ------------------------------------------------------------------ */
 
-export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
-  const [tab, setTab] = useState<Tab>('training');
-  const isMobile = useIsMobile();
+// Shared keyframes/transition classes for both admin calendar pages.
+const sharedStyles = (c: ColorPalette) => `
+  .admin-focus:focus-visible { outline: 2px solid ${c.primary}; outline-offset: 2px; }
+  @keyframes adm-ev-reveal { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .anim-reveal { animation: adm-ev-reveal 280ms cubic-bezier(0.25, 1, 0.5, 1); }
+  .anim-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms cubic-bezier(0.25, 1, 0.5, 1); }
+  .anim-collapse.is-open { grid-template-rows: 1fr; }
+  .anim-collapse > div { overflow: hidden; min-height: 0; }
+  .anim-chevron { transition: transform 250ms cubic-bezier(0.25, 1, 0.5, 1); }
+  .anim-chevron.is-open { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) {
+    .anim-reveal { animation: none; }
+    .anim-collapse, .anim-chevron { transition: none; }
+  }
+`;
 
+export const AdminTraining: React.FC<Props> = ({ c, showToast }) => {
+  const isMobile = useIsMobile();
   return (
     <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
-      <style>{`
-        .admin-focus:focus-visible { outline: 2px solid ${c.primary}; outline-offset: 2px; }
-        @keyframes adm-ev-reveal { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        .anim-reveal { animation: adm-ev-reveal 280ms cubic-bezier(0.25, 1, 0.5, 1); }
-        .anim-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms cubic-bezier(0.25, 1, 0.5, 1); }
-        .anim-collapse.is-open { grid-template-rows: 1fr; }
-        .anim-collapse > div { overflow: hidden; min-height: 0; }
-        .anim-chevron { transition: transform 250ms cubic-bezier(0.25, 1, 0.5, 1); }
-        .anim-chevron.is-open { transform: rotate(180deg); }
-        @media (prefers-reduced-motion: reduce) {
-          .anim-reveal { animation: none; }
-          .anim-collapse, .anim-chevron { transition: none; }
-        }
-      `}</style>
+      <style>{sharedStyles(c)}</style>
+
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
+        TRAINING SCHEDULE
+      </h1>
+      <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
+        Weeknight land conditioning and weekend lake sessions on the calendar
+      </p>
+
+      <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
+    </div>
+  );
+};
+
+export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
+      <style>{sharedStyles(c)}</style>
 
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
         EVENTS
       </h1>
       <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
-        Training sessions, races, socials and clinics on the calendar
+        Races and results on the calendar
       </p>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: isMobile ? '1.25rem' : '1.75rem', flexWrap: 'wrap' }}>
-        {(['training', 'races'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            aria-pressed={tab === t}
-            className="admin-focus"
-            style={{
-              padding: '0.5rem 1rem',
-              minHeight: 40,
-              borderRadius: '999px',
-              border: `1px solid ${tab === t ? c.primary : c.border}`,
-              background: tab === t ? c.primary : 'transparent',
-              color: tab === t ? '#fff' : c.text,
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {t === 'training' ? 'Training Sessions' : 'Race Events'}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'training'
-        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
-        : <RaceTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />}
+      <RaceTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />
     </div>
   );
 };
@@ -319,12 +307,12 @@ const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: b
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        <button type="button" onClick={() => openPreset(presetLandSession(events))} className="admin-focus" style={ghostBtn(c)}>
-          <Plus size={14} /> Land Session
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <button type="button" onClick={() => openPreset(presetLandSession(events))} className="admin-focus" style={addBtnOutline(c)}>
+          <Plus size={16} /> Add Land Session
         </button>
         <button type="button" onClick={() => openPreset(presetLakeWeekend(events))} className="admin-focus" style={addBtn(c)}>
-          <Plus size={14} /> Lake Weekend
+          <Plus size={16} /> Add Lake Weekend
         </button>
       </div>
 
@@ -525,32 +513,47 @@ const blankRace = (): RaceEvent => ({
 });
 
 const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, isMobile, theme }) => {
-  const [events, setEvents] = useState<RaceEvent[]>(() => getRaceEvents());
+  const [events, setEvents] = useState<RaceEvent[]>([]);
   const [editing, setEditing] = useState<RaceEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const reload = () => setEvents(getRaceEvents());
+  const reload = () => fetchRaceEvents().then(setEvents);
+
+  useEffect(() => { reload(); }, []);
 
   const openNew = () => { setEditing(blankRace()); setIsNew(true); };
   const openEdit = (ev: RaceEvent) => { setEditing(JSON.parse(JSON.stringify(ev))); setIsNew(false); };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.name.trim()) { showToast('Name is required.', 'error'); return; }
     if (!editing.date) { showToast('Date is required.', 'error'); return; }
-    if (isNew) createRaceEvent(editing);
-    else updateRaceEvent(editing.id, editing);
-    reload();
-    setEditing(null);
-    showToast(isNew ? 'Race event created.' : 'Race event updated.');
+    setSaving(true);
+    try {
+      if (isNew) await createRaceEvent(editing);
+      else await updateRaceEvent(editing.id, editing);
+      await reload();
+      setEditing(null);
+      showToast(isNew ? 'Race event created.' : 'Race event updated.');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not save the race event.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const remove = (id: string) => {
-    deleteRaceEvent(id);
-    reload();
-    setConfirmDelete(null);
-    showToast('Event deleted.', 'info');
+  const remove = async (id: string) => {
+    try {
+      await deleteRaceEvent(id);
+      await reload();
+      showToast('Event deleted.', 'info');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Could not delete the race event.', 'error');
+    } finally {
+      setConfirmDelete(null);
+    }
   };
 
   return (
@@ -562,7 +565,7 @@ const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boole
       </div>
 
       {editing && (
-        <RaceForm ev={editing} setEv={setEditing} c={c} onSave={save} onCancel={() => setEditing(null)} isNew={isNew} />
+        <RaceForm ev={editing} setEv={setEditing} c={c} onSave={save} onCancel={() => setEditing(null)} isNew={isNew} saving={saving} />
       )}
 
       {events.length === 0 && !editing && <EmptyMsg c={c} msg="No race events yet." />}
@@ -606,8 +609,10 @@ const dateChip = (iso: string): { mon: string; day: string } => {
   return { mon: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(), day: String(d.getDate()) };
 };
 
-// Podium (rank 1–3) gets a warm medal accent; other finishes stay neutral.
-const medalColor = (rank: number): string => (rank === 1 ? '#d4a017' : rank === 2 ? '#9ca3af' : rank === 3 ? '#c2703d' : '');
+// Podium (rank 1–3) gets a warm medal accent; other finishes (or a stage-only
+// result with no rank, e.g. "Semi-Final") stay neutral.
+const medalColor = (rank?: number): string =>
+  rank === 1 ? '#d4a017' : rank === 2 ? '#9ca3af' : rank === 3 ? '#c2703d' : '';
 
 const RaceCard: React.FC<{
   ev: RaceEvent;
@@ -654,7 +659,7 @@ const RaceCard: React.FC<{
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: medalColor(ev.result.rank) || c.textSecondary, fontWeight: 600 }}>
               <Trophy size={13} strokeWidth={1.9} aria-hidden style={{ flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                #{ev.result.rank} · {ev.result.category}
+                {ev.result.rank ? `#${ev.result.rank}` : ev.result.stage} · {ev.result.category}
               </span>
             </span>
           ) : (
@@ -686,7 +691,8 @@ const RaceForm: React.FC<{
   onSave: () => void;
   onCancel: () => void;
   isNew: boolean;
-}> = ({ ev, setEv, c, onSave, onCancel, isNew }) => {
+  saving: boolean;
+}> = ({ ev, setEv, c, onSave, onCancel, isNew, saving }) => {
   const set = (patch: Partial<RaceEvent>) => setEv({ ...ev, ...patch });
   const hasResult = !!ev.result;
 
@@ -719,23 +725,30 @@ const RaceForm: React.FC<{
           <input
             type="checkbox"
             checked={hasResult}
-            onChange={(e) => set({ result: e.target.checked ? { rank: 1, category: '', time: '', notes: '' } : null })}
+            onChange={(e) => set({ result: e.target.checked ? { category: '' } : null })}
           />
           Add race result
         </label>
         {hasResult && ev.result && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem', marginTop: '0.65rem', padding: '0.85rem', backgroundColor: c.surface, borderRadius: '0.6rem', border: `1px solid ${c.border}` }}>
-            <Field label="Rank" value={String(ev.result.rank)} onChange={(v) => set({ result: { ...ev.result!, rank: Number(v) || 1 } })} c={c} type="number" />
-            <Field label="Category" value={ev.result.category} onChange={(v) => set({ result: { ...ev.result!, category: v } })} c={c} />
-            <Field label="Time" value={ev.result.time} onChange={(v) => set({ result: { ...ev.result!, time: v } })} c={c} placeholder="2:14.32" />
-            <Field label="Notes" value={ev.result.notes} onChange={(v) => set({ result: { ...ev.result!, notes: v } })} c={c} />
-          </div>
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem', marginTop: '0.65rem', padding: '0.85rem', backgroundColor: c.surface, borderRadius: '0.6rem', border: `1px solid ${c.border}` }}>
+              <Field label="Rank" value={ev.result.rank != null ? String(ev.result.rank) : ''} onChange={(v) => set({ result: { ...ev.result!, rank: v === '' ? undefined : Number(v) } })} c={c} type="number" placeholder="1" />
+              <Field label="Stage (if no rank)" value={ev.result.stage ?? ''} onChange={(v) => set({ result: { ...ev.result!, stage: v || undefined } })} c={c} placeholder="Semi-Final" />
+              <Field label="Category" value={ev.result.category} onChange={(v) => set({ result: { ...ev.result!, category: v } })} c={c} />
+              <Field label="Time" value={ev.result.time ?? ''} onChange={(v) => set({ result: { ...ev.result!, time: v } })} c={c} placeholder="2:14.32" />
+            </div>
+            <div style={{ marginTop: '0.5rem' }}>
+              <Field label="Notes" value={ev.result.notes ?? ''} onChange={(v) => set({ result: { ...ev.result!, notes: v } })} c={c} />
+            </div>
+          </>
         )}
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-        <button type="button" onClick={onSave} style={primaryBtn(c)}>Save</button>
-        <button type="button" onClick={onCancel} style={ghostBtn(c)}>Cancel</button>
+        <button type="button" onClick={onSave} disabled={saving} style={{ ...primaryBtn(c), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        <button type="button" onClick={onCancel} disabled={saving} style={{ ...ghostBtn(c), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>Cancel</button>
       </div>
     </div>
   );
@@ -917,6 +930,24 @@ const addBtn = (c: ColorPalette): React.CSSProperties => ({
   border: 'none',
   background: c.primary,
   color: '#fff',
+  fontWeight: 600,
+  fontSize: '0.82rem',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+});
+
+// Same "add" affordance as addBtn (accent-colored, bold, plus icon) but outlined
+// rather than filled — for a secondary add action sitting next to a primary one,
+// so it still reads as actionable instead of fading into a muted ghost button.
+const addBtnOutline = (c: ColorPalette): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  padding: '0.5rem 1rem',
+  borderRadius: '999px',
+  border: `1.5px solid ${c.primary}`,
+  background: 'transparent',
+  color: c.primary,
   fontWeight: 600,
   fontSize: '0.82rem',
   cursor: 'pointer',

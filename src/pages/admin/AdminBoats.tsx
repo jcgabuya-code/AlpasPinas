@@ -200,7 +200,9 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
 
   useEffect(() => {
     fetchTrainingEvents().then((all) => {
-      const lake = all.filter((ev) => (ev.venue ?? 'lake') === 'lake');
+      const lake = all
+        .filter((ev) => (ev.venue ?? 'lake') === 'lake')
+        .sort((a, b) => (b.days[0]?.date ?? '').localeCompare(a.days[0]?.date ?? ''));
       setEvents(lake);
       setEventId((cur) => cur || lake[0]?.id || '');
       setDayKey((cur) => cur || lake[0]?.days[0]?.key || '');

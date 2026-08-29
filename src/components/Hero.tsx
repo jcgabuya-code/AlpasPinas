@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { colors, bandilaHero, type ColorPalette } from '../styles/colors';
 import { VideoModal } from './VideoModal';
-import eventsData from '../data/events.json';
+import { useRaceEvents } from '../utils/raceEvents';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HERO_OPTIONS, useHeroPick } from './HeroPicker';
@@ -252,6 +253,7 @@ const HEADLINE_LINES = [
 
 export const Hero: React.FC = () => {
   const { mode, brand } = useTheme();
+  const { user } = useAuth();
   // The hero is dark in both modes (dark page or light page) — light mode is a dark
   // hero over a light page. The original light hero is stashed behind LEGACY_LIGHT_HERO.
   const heroMode = LEGACY_LIGHT_HERO && mode === 'light' ? 'light' : 'dark';
@@ -300,12 +302,13 @@ export const Hero: React.FC = () => {
   const chipBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.7)';
   const chipBorder = isDark ? 'rgba(255, 255, 255, 0.16)' : c.border;
 
+  const { events: raceEvents } = useRaceEvents();
   const nextEvent = useMemo(() => {
-    const upcoming = (eventsData as RaceEvent[])
+    const upcoming = raceEvents
       .filter((e) => isUpcoming(e.date))
       .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
     return upcoming[0] ?? null;
-  }, []);
+  }, [raceEvents]);
 
   // ── Shared trailing blocks (identical on mobile + desktop; sizing keys off
   //    isMobile). Kept as locals so both layouts stay in lockstep. ───────────────
@@ -369,7 +372,7 @@ export const Hero: React.FC = () => {
         <>
           {/* Book a Session — messages the crew (WhatsApp green) */}
           <Link
-            to="/join-team"
+            to={user ? '/training' : '/join-team'}
             aria-label="Book your first session"
             style={{
               background: 'linear-gradient(135deg, #1faa4d, #25D366)',
@@ -831,12 +834,13 @@ export const HeroPhoto: React.FC = () => {
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
   const [heroPick] = useHeroPick();
 
+  const { events: raceEvents } = useRaceEvents();
   const nextEvent = useMemo(() => {
-    const upcoming = (eventsData as RaceEvent[])
+    const upcoming = raceEvents
       .filter((e) => isUpcoming(e.date))
       .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
     return upcoming[0] ?? null;
-  }, []);
+  }, [raceEvents]);
 
   // The lead slide mirrors the desktop hero pick so the team can compare candidates
   // on mobile too; the remaining slides carry the rest of the carousel.

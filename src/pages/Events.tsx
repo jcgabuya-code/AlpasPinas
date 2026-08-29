@@ -2,19 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors, type ColorPalette } from '../styles/colors';
-import eventsData from '../data/events.json';
-import {
-  EventCard,
-  isUpcoming,
-  parseEventDate,
-  type RaceEvent,
-} from '../components/EventCard';
+import { useRaceEvents } from '../utils/raceEvents';
+import { EventCard, isUpcoming, parseEventDate } from '../components/EventCard';
 
 export const Events: React.FC = () => {
   const { theme, brand } = useTheme();
   const c = colors[brand][theme];
   const accent = theme === 'dark' ? c.accent : c.primary;
-  const all = eventsData as RaceEvent[];
+  const { events: all } = useRaceEvents();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [typeFilter, setTypeFilter] = useState('All');
 
@@ -304,9 +299,7 @@ export const Events: React.FC = () => {
               opacity: 0.7,
             }}
           >
-            Events are sample data — edit{' '}
-            <code style={{ color: accent }}>src/data/events.json</code> to plug in
-            the real season.
+            Manage the race calendar from the admin Events panel.
           </p>
         </div>
       </section>

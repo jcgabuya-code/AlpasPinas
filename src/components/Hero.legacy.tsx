@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { colors, brandGradient, type ColorPalette } from '../styles/colors';
 import { VideoModal } from './VideoModal';
-import eventsData from '../data/events.json';
+import { useRaceEvents } from '../utils/raceEvents';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
 import hero4Image from '../../images/alpas-hero4.png';
@@ -278,12 +278,13 @@ export const Hero: React.FC = () => {
   const heroChipBorder = onPhoto ? 'rgba(255,255,255,0.34)' : chipBorder;
   const heroTextShadow = onPhoto ? '0 1px 3px rgba(0,0,0,0.7), 0 2px 16px rgba(0,0,0,0.45)' : 'none';
 
+  const { events: raceEvents } = useRaceEvents();
   const nextEvent = useMemo(() => {
-    const upcoming = (eventsData as RaceEvent[])
+    const upcoming = raceEvents
       .filter((e) => isUpcoming(e.date))
       .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
     return upcoming[0] ?? null;
-  }, []);
+  }, [raceEvents]);
 
   return (
     <section
@@ -680,12 +681,13 @@ export const HeroPhoto: React.FC = () => {
   const isDark = theme === 'dark';
   const panelRgb = isDark ? '11, 16, 20' : '247, 250, 248';
 
+  const { events: raceEvents } = useRaceEvents();
   const nextEvent = useMemo(() => {
-    const upcoming = (eventsData as RaceEvent[])
+    const upcoming = raceEvents
       .filter((e) => isUpcoming(e.date))
       .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
     return upcoming[0] ?? null;
-  }, []);
+  }, [raceEvents]);
 
   // Photo slider state.
   const count = HERO_PHOTOS.length;

@@ -17,7 +17,8 @@ import {
 } from '../../utils/bookings';
 import { fetchTrainingEvents } from '../../utils/trainingEvents';
 import { type TrainingEvent } from '../../components/TrainingCard';
-import { getRaceEvents, type RaceEvent } from '../../utils/adminRaceEvents';
+import { fetchRaceEvents } from '../../utils/raceEvents';
+import { type RaceEvent } from '../../components/EventCard';
 import { getAllRoster } from '../../utils/roster';
 import { getApplications, type Application } from '../../utils/users';
 import {
@@ -55,6 +56,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, theme, onNavigate }) => {
   const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
   const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
   const [trainingEvents, setTrainingEvents] = useState<TrainingEvent[]>([]);
+  const [raceEvents, setRaceEvents] = useState<RaceEvent[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,11 +65,11 @@ export const AdminDashboard: React.FC<Props> = ({ c, theme, onNavigate }) => {
       fetchBookings().then(setBookings),
       fetchEventCounts().then(setCounts),
       fetchTrainingEvents().then(setTrainingEvents),
+      fetchRaceEvents().then(setRaceEvents),
       getApplications().then(setApplications).catch(() => setApplications([])),
     ]).finally(() => setLoading(false));
   }, []);
 
-  const raceEvents = getRaceEvents();
   const pending = applications.filter((a) => a.status === 'pending').length;
   const confirmed = bookings.filter((b) => b.status === 'confirmed').length;
   const members = getAllRoster().length;
@@ -111,7 +113,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, theme, onNavigate }) => {
 
   const quickActions: { label: string; icon: React.ElementType; go: AdminSection }[] = [
     { label: 'Approve registrations', icon: ClipboardList, go: 'applications' },
-    { label: 'Log training session', icon: CalendarDays, go: 'events' },
+    { label: 'Log training session', icon: CalendarDays, go: 'training' },
     { label: 'Assign boats', icon: Anchor, go: 'boats' },
     { label: 'Add new event', icon: PlusCircle, go: 'events' },
   ];
