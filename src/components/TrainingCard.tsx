@@ -11,7 +11,9 @@ import {
   type EventCounts,
 } from '../utils/bookings';
 import { Clock, MapPin, Users, ArrowRight, Check } from 'lucide-react';
-import { LandGlyph, WaveGlyph } from './icons/trainingGlyphs';
+import { BarsGlyph, LinesGlyph } from './icons/trainingGlyphs';
+import landPhoto from '../../images/training/land-training.jpg';
+import waterPhoto from '../../images/training/water-training.jpg';
 
 export type TrainingDay = {
   key: string;        // 'sat' | 'sun' (free-form so future events can have any day key)
@@ -58,18 +60,77 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, myBooking
   const anyOpen = dayStats.some((s) => !s.full);
   const stillUpcoming = event.days.some((d) => isUpcomingDate(d.date));
 
+  const isLand = event.venue === 'land';
+  const photo = isLand ? landPhoto : waterPhoto;
+  const kicker = isLand ? 'Strength & Erg' : 'Boat Time';
+
   return (
     <article
       style={{
         backgroundColor: alreadyBooked ? `${c.primary}0a` : c.surface,
-        borderRadius: '0.85rem',
+        borderRadius: '1.4rem',
         border: `1px solid ${alreadyBooked ? c.primary + '80' : c.border}`,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: '0 20px 45px -28px rgba(11,11,12,0.5)',
       }}
     >
+      {/* Photo banner — same cinematic treatment as the home page Training Reel:
+          dark still, bottom gradient, kicker chip, cream uppercase title. */}
+      <div style={{ position: 'relative', height: isMobile ? '200px' : 'clamp(220px, 22vw, 300px)', flexShrink: 0, background: isLand ? '#14121A' : '#0F1A22' }}>
+        <img
+          src={photo}
+          alt=""
+          loading="lazy"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 38%' }}
+        />
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(190deg, rgba(12,14,18,0.1) 0%, rgba(12,14,18,0.3) 45%, rgba(12,14,18,0.9) 100%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '0.9rem',
+            left: '1rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.35rem 0.7rem',
+            borderRadius: '999px',
+            background: c.background,
+          }}
+        >
+          {isLand ? <BarsGlyph color={c.primary} /> : <LinesGlyph color={c.primary} />}
+          <span style={{ fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: c.text }}>
+            {kicker}
+          </span>
+        </div>
+        <h3
+          style={{
+            position: 'absolute',
+            left: '1rem',
+            right: '1rem',
+            bottom: '0.85rem',
+            fontFamily: 'var(--font-display)',
+            fontSize: isMobile ? '1.4rem' : '1.6rem',
+            margin: 0,
+            color: '#FBF3E4',
+            letterSpacing: '0.02em',
+            lineHeight: 1.05,
+            textTransform: 'uppercase',
+          }}
+        >
+          {event.title}
+        </h3>
+      </div>
+
       {/* Body */}
       <div
         style={{
@@ -80,39 +141,9 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, myBooking
           flex: 1,
         }}
       >
-      {/* Title + description */}
+      {/* Status + description */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
-          <h3
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: isMobile ? '1.45rem' : '1.7rem',
-              margin: 0,
-              color: c.text,
-              letterSpacing: '0.02em',
-              lineHeight: 1.05,
-            }}
-          >
-            {event.title.toUpperCase()}
-          </h3>
-          <span
-            aria-hidden="true"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '2rem',
-              height: '2rem',
-              flexShrink: 0,
-              borderRadius: '999px',
-              backgroundColor: `${c.primary}1f`,
-              border: `1px solid ${c.primary}59`,
-            }}
-          >
-            {event.venue === 'land' ? <LandGlyph color={c.primary} size={15} /> : <WaveGlyph color={c.primary} size={15} />}
-          </span>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
           <span
             style={{
               display: 'inline-block',

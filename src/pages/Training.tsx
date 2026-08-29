@@ -6,8 +6,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useInView } from '../hooks/useInView';
 import { colors } from '../styles/colors';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
-import { SectionHeader } from '../components/SectionHeader';
-import { LandGlyph, WaveGlyph } from '../components/icons/trainingGlyphs';
+import { Eyebrow } from '../components/SectionHeader';
 import { TrainingCard, type TrainingEvent } from '../components/TrainingCard';
 import { fetchTrainingEvents, subscribeTrainingEvents } from '../utils/trainingEvents';
 import { BookingModal } from '../components/BookingModal';
@@ -138,28 +137,12 @@ export const Training: React.FC = () => {
   const [lakeRef, lakeInView] = useInView<HTMLDivElement>();
 
   // Shared lane pieces so the mobile stack and the desktop split-waterline layout
-  // render from one source instead of duplicating the header/grid markup.
-  const chipStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 40,
-    height: 40,
-    flexShrink: 0,
-    borderRadius: '0.7rem',
-    background: `${accent}1f`,
-    border: `1px solid ${accent}59`,
-  };
-
-  const renderLaneHeader = (glyph: React.ReactNode, label: string, inView: boolean) => (
-    <div
-      className={`reveal${inView ? ' is-visible' : ''}`}
-      style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: isMobile ? '1.5rem' : '2rem' }}
-    >
-      <span aria-hidden="true" style={chipStyle}>
-        {glyph}
-      </span>
-      <SectionHeader style={{ margin: 0 }}>{label}</SectionHeader>
+  // render from one source instead of duplicating the header/grid markup. Each
+  // card already carries its own discipline kicker (photo banner), so the lane
+  // itself only needs a small caption, not a duplicate icon+label.
+  const renderLaneHeader = (label: string, inView: boolean) => (
+    <div className={`reveal${inView ? ' is-visible' : ''}`} style={{ marginBottom: isMobile ? '1.25rem' : '1.5rem' }}>
+      <Eyebrow>{label}</Eyebrow>
     </div>
   );
 
@@ -189,8 +172,8 @@ export const Training: React.FC = () => {
       <p style={{ color: c.textSecondary, fontSize: '0.95rem', lineHeight: 1.6, margin: '0.5rem 0' }}>{emptyText}</p>
     );
 
-  const landHeader = renderLaneHeader(<LandGlyph color={accent} size={19} />, 'ON LAND', landInView);
-  const lakeHeader = renderLaneHeader(<WaveGlyph color={accent} size={19} />, 'ON THE WATER', lakeInView);
+  const landHeader = renderLaneHeader('ON LAND', landInView);
+  const lakeHeader = renderLaneHeader('ON THE WATER', lakeInView);
   const landBody = renderLaneCards(landEvents, landInView, 'No land sessions scheduled right now — check back soon.');
   const lakeBody = renderLaneCards(lakeEvents, lakeInView, 'No upcoming weekends scheduled right now — check back soon.');
   const adminNote = (

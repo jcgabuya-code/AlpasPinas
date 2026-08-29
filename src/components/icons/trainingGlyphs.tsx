@@ -31,6 +31,25 @@ export const WaveGlyph: React.FC<{ color: string; size?: number }> = ({ color, s
   </svg>
 );
 
+// Kicker marks — a rising bar-chart for the strength/erg side, staggered ripple
+// lines for the boat side. Matches the reference reel design exactly (plain
+// colored bars, not an icon-library glyph).
+export const BarsGlyph: React.FC<{ color: string }> = ({ color }) => (
+  <span style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '14px' }} aria-hidden="true">
+    <span style={{ width: '3px', height: '6px', background: color }} />
+    <span style={{ width: '3px', height: '11px', background: color }} />
+    <span style={{ width: '3px', height: '14px', background: color }} />
+  </span>
+);
+
+export const LinesGlyph: React.FC<{ color: string }> = ({ color }) => (
+  <span style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '16px' }} aria-hidden="true">
+    <span style={{ height: '2px', borderRadius: '2px', background: color }} />
+    <span style={{ height: '2px', borderRadius: '2px', marginLeft: '4px', background: color }} />
+    <span style={{ height: '2px', borderRadius: '2px', background: color }} />
+  </span>
+);
+
 export const WhatsAppGlyph: React.FC<{ size?: number }> = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
     <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z" />

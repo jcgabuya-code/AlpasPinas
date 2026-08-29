@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -293,18 +294,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
               </div>
             </div>
 
-            <Field label="Name" c={c}>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Brendz Reyes"
-                readOnly={!!user}
-                style={{
-                  ...inputStyle(c, isMobile),
-                  ...(user ? { opacity: 0.7, cursor: 'not-allowed' } : null),
-                }}
-              />
+            <Field label="Name" locked={!!user} c={c}>
+              {user ? (
+                <ReadOnlyValue value={name} c={c} isMobile={isMobile} />
+              ) : (
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Brendz Reyes"
+                  style={inputStyle(c, isMobile)}
+                />
+              )}
               {user && (
                 <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
                   Signing up as your account name.
@@ -312,7 +313,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
               )}
             </Field>
 
-            <Field label="Gender" c={c}>
+            <Field label="Gender" locked={!!user?.gender} c={c}>
               {user?.gender ? (
                 <>
                   <ReadOnlyValue value={gender} c={c} isMobile={isMobile} />
@@ -703,15 +704,18 @@ const WaitingView: React.FC<{
   );
 };
 
-const Field: React.FC<{ label: string; c: ColorPalette; children: React.ReactNode }> = ({
+const Field: React.FC<{ label: string; locked?: boolean; c: ColorPalette; children: React.ReactNode }> = ({
   label,
+  locked,
   c,
   children,
 }) => (
   <div style={{ marginBottom: '1rem' }}>
     <label
       style={{
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.35rem',
         fontSize: '0.72rem',
         fontWeight: 700,
         letterSpacing: '0.1em',
@@ -721,11 +725,15 @@ const Field: React.FC<{ label: string; c: ColorPalette; children: React.ReactNod
       }}
     >
       {label}
+      {locked && <Lock size={11} aria-label="Locked — from your profile" />}
     </label>
     {children}
   </div>
 );
 
+// Visually distinct from an editable input: flat surface tint + dashed border
+// + muted text, so a glance across the form tells locked fields from ones the
+// paddler can actually change (solid border, background = c.background).
 const ReadOnlyValue: React.FC<{ value: string; c: ColorPalette; isMobile: boolean }> = ({
   value,
   c,
@@ -734,7 +742,9 @@ const ReadOnlyValue: React.FC<{ value: string; c: ColorPalette; isMobile: boolea
   <div
     style={{
       ...inputStyle(c, isMobile),
-      opacity: 0.7,
+      backgroundColor: c.surfaceAlt,
+      border: `1px dashed ${c.border}`,
+      color: c.textSecondary,
       cursor: 'not-allowed',
     }}
   >
