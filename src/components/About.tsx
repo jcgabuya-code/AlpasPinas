@@ -6,13 +6,16 @@ import { useInView } from '../hooks/useInView';
 import { Eyebrow } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { useContent } from '../context/SiteContentContext';
-const teamPhoto1 = new URL('../../images/alpas team.JPG', import.meta.url).href;
-const teamPhoto2 = new URL('../../images/alpas team 2.JPG', import.meta.url).href;
-import melakaTeam1 from '../../images/melaka-team1.jpg';
-import melakaTeam2 from '../../images/melaka-team2.jpg';
+import melakaTeam1 from '../../images/about/melaka-team1.jpg';
+import alpasTeam1 from '../../images/about/alpasTeam-1.jpg';
+import alpasTeam2 from '../../images/about/alpasTeam-2.jpg';
+import alpasTeam3 from '../../images/about/alpasTeam-3.jpg';
+import alpasTeam4 from '../../images/about/alpasTeam-4.jpg';
+const alpasFemales = new URL('../../images/about/alpas-females.JPG', import.meta.url).href;
+const alpasTeamTitiwangsa = new URL('../../images/about/alpasTeam-titiwangsa.JPG', import.meta.url).href;
 
 // Hand-picked crew shots that cross-fade in the About frame. To add a photo from
-// Instagram: download it into images/, import it above, and add an entry here with
+// Instagram: download it into images/about/, import it above, and add an entry here with
 // its own crop (objectPosition) so faces/subject stay framed in the 4:5 window.
 // Each alt line is part of the voice — write it, don't leave it generic.
 const ABOUT_PHOTOS: { src: string; alt: string; objectPosition: string }[] = [
@@ -22,19 +25,34 @@ const ABOUT_PHOTOS: { src: string; alt: string; objectPosition: string }[] = [
     objectPosition: 'center 55%',
   },
   {
-    src: melakaTeam2,
-    alt: 'AlpasPinas at the Melaka Dragonboat Championship',
+    src: alpasTeamTitiwangsa,
+    alt: 'AlpasPinas paddlers by Titiwangsa Lake with the Kuala Lumpur skyline behind them',
+    objectPosition: 'center 65%',
+  },
+  {
+    src: alpasTeam4,
+    alt: 'The crew at the Love Boracay International Dragonboat Festival, Philippines',
+    objectPosition: 'center 60%',
+  },
+  {
+    src: alpasTeam3,
+    alt: 'AlpasPinas celebrating on a white-sand beach with the dragon boat behind them',
+    objectPosition: 'center 55%',
+  },
+  {
+    src: alpasTeam2,
+    alt: 'The crew flying the AlpasPinas flag by the lake in Titiwangsa',
+    objectPosition: 'center 68%',
+  },
+  {
+    src: alpasTeam1,
+    alt: 'AlpasPinas gathered under cover with the team banner after training',
     objectPosition: 'center 45%',
   },
   {
-    src: teamPhoto1,
-    alt: 'The AlpasPinas crew together after a session on the water in Malaysia',
-    objectPosition: 'center 32%',
-  },
-  {
-    src: teamPhoto2,
-    alt: 'AlpasPinas paddlers lined up before a race',
-    objectPosition: 'center 30%',
+    src: alpasFemales,
+    alt: 'The AlpasPinas women paddlers before boarding, tent lights on at dusk',
+    objectPosition: 'center 62%',
   },
 ];
 
@@ -43,7 +61,7 @@ const ABOUT_PHOTOS: { src: string; alt: string; objectPosition: string }[] = [
 // a dictionary entry, a crew-voice manifesto, and a cadence-dotted strip of the few
 // facts that ground it. Numbers mirror the hero's stat readout (no new claims).
 const FACTS = [
-  { value: 'Five', label: 'Seasons on the water' },
+  { value: '2024', label: 'Founded' },
   { value: '20+', label: 'Paddlers, one crew' },
   { value: 'Malaysia', label: 'Home water' },
 ];
@@ -60,7 +78,7 @@ export const About: React.FC = () => {
   const [ref, inView] = useInView<HTMLDivElement>();
   const manifesto = useContent(
     'about.manifesto',
-    "AlpasPinas is a Filipino dragon boat crew in Malaysia — a home away from home that moves on a single beat. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.",
+    "Founded in 2024 by Filipino expats in Malaysia, AlpasPinas began as a way to bring a piece of home closer — dragon boat is just the excuse. Filipino spirit and camaraderie come first — we work hard on the water and laugh harder off it — and we've built a name for being the crew that welcomes anyone with open arms, no experience required. We paddle to break away: from the pack on the start line, and from anything that says a crew this far from home can't line up and win.",
   );
 
   const accent = isDark ? c.accent : c.primary;
@@ -169,7 +187,7 @@ export const About: React.FC = () => {
             >
               to break free; to break away.
               <span style={{ color: accent, fontWeight: 700 }}>
-                {' '}For us — twenty paddles slipping the current as one.
+                {' '}For us — every paddle slipping the current as one.
               </span>
             </p>
 
