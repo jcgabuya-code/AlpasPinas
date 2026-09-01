@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import hero5Image from '../../images/hero-5-hd.png';
-import heroAlpasImage from '../../images/alpas-hero5.png';
+import heroAlpasImage from '../../images/AlpasHero.jpg';
 
 // ── Hero photo picker ─────────────────────────────────────────────────────────
 // Edit-mode helper: flip between candidate hero photos live in the browser so the

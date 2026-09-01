@@ -56,6 +56,9 @@ type ReelSession = {
   body: string;
   photo: string;
   photoAlt: string;
+  // object-position for the photo — tuned per image so the crew fills the frame
+  // (land is a wide shot with lots of empty dome above; water is portrait).
+  photoPos: string;
   lightboxTitle: string;
   lightboxBody: string;
   place: string;
@@ -70,6 +73,7 @@ const LAND: ReelSession = {
   body: 'Strength circuit, paddle ergs, and core work to build the engine off the water.',
   photo: landPhoto,
   photoAlt: 'The AlpasPinas crew training under the lit dome at Botanical Gardens',
+  photoPos: '50% 82%',
   lightboxTitle: 'Land & Erg Conditioning',
   lightboxBody:
     'Tuesdays and Thursdays we get loud on dry ground — strength circuits, paddle ergs, and core work to build the engine that shows up on race day.',
@@ -85,6 +89,7 @@ const WATER: ReelSession = {
   body: 'Full-boat pieces and race starts at Marina Putrajaya — the best place to try paddling for the first time.',
   photo: waterPhoto,
   photoAlt: 'The full crew in the dragon boat under the bridge at Marina Putrajaya',
+  photoPos: '50% 42%',
   lightboxTitle: 'Full Crew Session',
   lightboxBody:
     'Weekend mornings are full-boat pieces, race starts, and crew building at Marina Putrajaya. The best place to try paddling for the first time.',
@@ -182,7 +187,7 @@ export const TrainingSchedule: React.FC = () => {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            objectPosition: 'center 38%',
+            objectPosition: s.photoPos,
             transform: on ? 'scale(1.06)' : 'scale(1)',
             filter: on ? 'saturate(1.1) contrast(1.04)' : 'saturate(0.9)',
             transition: 'transform 0.8s cubic-bezier(0.22,1,0.36,1), filter 0.5s ease',
@@ -459,11 +464,15 @@ export const TrainingSchedule: React.FC = () => {
               borderRadius: '1.4rem',
             }}
           >
-            <div style={{ flex: '1 1 28rem', minWidth: 'min(300px, 100%)', maxHeight: '60vh', display: 'flex' }}>
+            {/* Side-by-side on desktop: the image column stretches to match the
+                text column's height (align-items: stretch on the row) so there's
+                no cream gap below a short photo. Stacked on mobile: the wrapper
+                gets an explicit aspect ratio so the photo isn't squashed flat. */}
+            <div style={{ flex: '1 1 28rem', minWidth: 'min(300px, 100%)', display: 'flex', aspectRatio: '4 / 3' }}>
               <img
                 src={lightbox.photo}
                 alt={lightbox.photoAlt}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', maxHeight: '60vh' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: lightbox.photoPos }}
               />
             </div>
             <div style={{ flex: '1 1 19rem', minWidth: 'min(280px, 100%)', padding: 'clamp(22px, 3vw, 40px) clamp(20px, 3vw, 34px)', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
