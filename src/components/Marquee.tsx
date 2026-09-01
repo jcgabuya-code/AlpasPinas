@@ -22,7 +22,7 @@ const MOBILE_ITEMS = [
 
 type Sponsor = { name: string; logo: string; url: string };
 const SPONSORS = sponsorsData as Sponsor[];
-const MARQUEE_SCALE = 0.8;
+const MARQUEE_SCALE = 1.0;
 
 const WaveIcon: React.FC<{ delay: number }> = ({ delay }) => (
   <span
