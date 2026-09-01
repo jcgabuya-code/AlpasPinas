@@ -1,10 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { colors } from '../styles/colors';
 import type { Brand, ColorMode } from '../styles/colors';
-
-// Cycle order for the brand switcher — matches the order palettes are defined.
-const BRANDS = Object.keys(colors) as Brand[];   // ['emerald', 'ocean', 'bandila']
 
 // User-facing appearance setting. Light mode renders a dark hero over an otherwise
 // light page; dark mode is dark throughout. (`mode` and `theme` are the same value —
@@ -17,7 +13,6 @@ interface ThemeContextType {
   mode: ThemeMode;
   toggleTheme: () => void;
   brand: Brand;
-  toggleBrand: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,11 +24,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return saved && (MODES as string[]).includes(saved) ? (saved as ThemeMode) : 'light';
   });
 
-  const [brand, setBrand] = useState<Brand>(() => {
-    const saved = localStorage.getItem('brand');
-    // Default to bandila — the v2 royal-blue + crimson-red direction (the Home v2 reference)
-    return saved && (BRANDS as string[]).includes(saved) ? (saved as Brand) : 'bandila';
-  });
+  // Brand is locked to bandila (v2 royal-blue + crimson-red). The switcher UI is
+  // removed for now; re-add a setter here and the toggle in Navigation/Admin to
+  // bring it back.
+  const brand: Brand = 'bandila';
 
   // The general palette follows the setting directly; the hero opts into dark on its
   // own (see LEGACY_LIGHT_HERO), so light mode is a dark hero over a light page.
@@ -54,16 +48,8 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   };
 
-  const toggleBrand = () => {
-    setBrand((prev) => {
-      const next = BRANDS[(BRANDS.indexOf(prev) + 1) % BRANDS.length];
-      localStorage.setItem('brand', next);
-      return next;
-    });
-  };
-
   return (
-    <ThemeContext.Provider value={{ theme, mode, toggleTheme, brand, toggleBrand }}>
+    <ThemeContext.Provider value={{ theme, mode, toggleTheme, brand }}>
       {children}
     </ThemeContext.Provider>
   );

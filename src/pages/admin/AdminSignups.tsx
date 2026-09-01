@@ -16,7 +16,9 @@ import {
 import { fetchTrainingEvents } from '../../utils/trainingEvents';
 import { type TrainingEvent, type TrainingDay } from '../../components/TrainingCard';
 
-type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
+// `embedded` = rendered inside the Training hub's tab strip, so it drops its
+// own page padding + <h1> (the hub supplies those) and keeps just the content.
+type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light'; embedded?: boolean };
 
 type VenueFilter = 'all' | 'land' | 'lake';
 
@@ -44,7 +46,7 @@ const STATUS = {
   },
 } as const;
 
-export const AdminSignups: React.FC<Props> = ({ c, showToast, theme }) => {
+export const AdminSignups: React.FC<Props> = ({ c, showToast, theme, embedded = false }) => {
   const isMobile = useIsMobile();
   const st = STATUS[theme];
   const [events, setEvents] = useState<TrainingEvent[]>([]);
@@ -124,17 +126,19 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast, theme }) => {
   const columns = '1.8fr 1.5fr 1.4fr 1.5fr 0.9fr';
 
   return (
-    <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
+    <div style={{ padding: embedded ? 0 : (isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem') }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: isMobile ? '0.5rem' : '0.75rem', flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
-            TRAINING SIGN-UPS
-          </h1>
-          <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
-            Manage sessions and paddler capacity
-          </p>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: embedded ? 'flex-end' : 'space-between', gap: '1rem', marginBottom: isMobile ? '0.5rem' : '0.75rem', flexWrap: 'wrap' }}>
+        {!embedded && (
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
+              TRAINING SIGN-UPS
+            </h1>
+            <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
+              Manage sessions and paddler capacity
+            </p>
+          </div>
+        )}
         <button type="button" onClick={reload} disabled={loading} className="admin-focus" style={refreshBtn(c, loading)}>
           <span style={{ display: 'inline-block', animation: loading ? 'spin 0.9s linear infinite' : 'none' }}>↻</span>
           {loading ? 'Syncing…' : 'Refresh'}

@@ -26,9 +26,11 @@ import alpasTeam1 from '../../../images/about/alpasTeam-1.jpg';
 import alpasTeam2 from '../../../images/about/alpasTeam-2.jpg';
 import alpasTeam3 from '../../../images/about/alpasTeam-3.jpg';
 import alpasTeam4 from '../../../images/about/alpasTeam-4.jpg';
-import race1 from '../../../images/race/race-1.jpg';
+import race1 from '../../../images/race/race-1.jpeg';
 import race2 from '../../../images/race/race-2.jpg';
-import race3 from '../../../images/race/race-3.jpeg';
+import race3 from '../../../images/race/race-3.jpg';
+import race4 from '../../../images/race/race-4.jpg';
+import race5 from '../../../images/race/race-5.jpg';
 const alpasFemales = new URL('../../../images/about/alpas-females.JPG', import.meta.url).href;
 const alpasTeamTitiwangsa = new URL('../../../images/about/alpasTeam-titiwangsa.JPG', import.meta.url).href;
 import { WhatsAppGlyph, YouTubeGlyph } from '../Hero';
@@ -61,9 +63,11 @@ const ABOUT_PHOTOS = [
 ];
 
 const RACE_PHOTOS = [
-  { src: race1, alt: 'AlpasPinas mid-stroke during a race, Philippine-flag paddles raised', pos: 'center' },
-  { src: race2, alt: 'AlpasPinas crews racing hard through the course', pos: 'center' },
-  { src: race3, alt: "The AlpasPinas women's crew driving through a race", pos: 'center' },
+  { src: race1, alt: "The AlpasPinas women's crew driving hard through a race, paddles buried mid-stroke", pos: 'center' },
+  { src: race2, alt: 'AlpasPinas powering their dragon boat through the course, Philippine-flag paddles flashing', pos: 'center' },
+  { src: race3, alt: 'AlpasPinas paddlers receiving the team pennant at the Melaka Dragon Boat Festival ceremony', pos: 'center' },
+  { src: race4, alt: 'AlpasPinas dragon boat seen from astern, the full crew in sync down the race lane', pos: 'center' },
+  { src: race5, alt: 'AlpasPinas crew at the catch during the Melaka Dragon Boat Festival, arms raised in unison', pos: 'center' },
 ];
 
 const FACTS = [
@@ -131,7 +135,7 @@ export const MobileHome: React.FC = () => {
   );
   const raceIntro = useContent(
     'raceRecord.intro',
-    "Two races into our story so far — an international debut in Singapore and a Bronze on home turf in Malaysia. Here's where we've lined up.",
+    "We've raced in Malaysia, Singapore, and the Philippines — chasing podiums and having a blast together. Same crew, same rhythm, all in from catch to finish.",
   );
 
   // The hero band renders dark over an otherwise light page (light mode = dark hero +
@@ -227,11 +231,11 @@ export const MobileHome: React.FC = () => {
     return { name: nextEvent.name, when };
   }, [nextEvent]);
 
-  // ---- Race record (results, newest first) ----
+  // ---- Race record (every race already run, newest first; placing optional) ----
   const results = useMemo(
     () =>
       raceEvents
-        .filter((e) => e.result)
+        .filter((e) => !isUpcoming(e.date))
         .sort((a, b) => parseEventDate(b.date).getTime() - parseEventDate(a.date).getTime()),
     [raceEvents],
   );
@@ -622,7 +626,7 @@ export const MobileHome: React.FC = () => {
       {/* ===== RACE RECORD ===== */}
       <section ref={refs.races} id="races" style={sectionBase(c.background)}>
         {eyebrow('On the Water')}
-        {heading('RACE RECORD')}
+        {heading('EVENT RECORDS')}
         <div style={{ position: 'relative', width: '100%', height: '190px', borderRadius: '14px', overflow: 'hidden' }}>
           {RACE_PHOTOS.map((p, i) => (
             <img
@@ -653,9 +657,10 @@ export const MobileHome: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           {resultGroups.map((group) => {
             const e = group[0];
+            const scored = group.filter((g) => g.result);
             const badges = Array.from(
               new Map(
-                group.map((g) => {
+                scored.map((g) => {
                   const rank = g.result!.rank;
                   const label = resultBadge(g.result!) ?? '';
                   const medal = rank ? medalColor(rank, isDark) : null;
@@ -663,7 +668,7 @@ export const MobileHome: React.FC = () => {
                 }),
               ).values(),
             );
-            const time = group.length === 1 ? group[0].result!.time : undefined;
+            const time = scored.length === 1 ? scored[0].result!.time : undefined;
             return (
               <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: c.surface, border: `1px solid ${c.border}`, borderRadius: '12px', padding: '12px 14px' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: c.textSecondary, width: '34px', flexShrink: 0 }}>{parseEventDate(e.date).getFullYear()}</div>
@@ -671,6 +676,7 @@ export const MobileHome: React.FC = () => {
                   <div style={{ fontWeight: 700, fontSize: '0.85rem', color: c.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.name}</div>
                   {time && <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>{time}</div>}
                 </div>
+                {badges.length > 0 && (
                 <div style={{ flexShrink: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '4px' }}>
                   {badges.map((b, bi) => (
                     <span key={bi} style={{ fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', background: b.medal ? `${b.medal}22` : 'transparent', border: `1px solid ${b.medal ? `${b.medal}66` : c.border}`, color: b.medal ?? c.textSecondary }}>
@@ -678,6 +684,7 @@ export const MobileHome: React.FC = () => {
                     </span>
                   ))}
                 </div>
+                )}
               </div>
             );
           })}

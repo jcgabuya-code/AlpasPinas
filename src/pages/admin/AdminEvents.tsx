@@ -18,6 +18,7 @@ import {
 import { type RaceEvent } from '../../components/EventCard';
 import { type TrainingEvent, type TrainingDay } from '../../components/TrainingCard';
 import { getAllBookings, cancelBooking, attendingLabel, formatShortDate, isUpcomingDate, type Booking } from '../../utils/bookings';
+import { AdminSignups } from './AdminSignups';
 
 type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
 
@@ -39,20 +40,49 @@ const sharedStyles = (c: ColorPalette) => `
   }
 `;
 
-export const AdminTraining: React.FC<Props> = ({ c, showToast }) => {
+export const AdminTraining: React.FC<Props> = ({ c, showToast, theme }) => {
   const isMobile = useIsMobile();
+  const [tab, setTab] = useState<'schedule' | 'signups'>('schedule');
+  const activeBg = theme === 'dark' ? c.accent : c.primary;
   return (
     <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
       <style>{sharedStyles(c)}</style>
 
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
-        TRAINING SCHEDULE
+        TRAINING
       </h1>
-      <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
-        Weeknight land conditioning and weekend lake sessions on the calendar
+      <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: '0 0 1.25rem' }}>
+        Weeknight land conditioning and weekend lake sessions — schedule and sign-ups
       </p>
 
-      <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
+        {([['schedule', 'Schedule'], ['signups', 'Sign-ups']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            aria-pressed={tab === id}
+            className="admin-focus"
+            style={{
+              padding: '0.5rem 1.1rem',
+              borderRadius: '999px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: `1px solid ${tab === id ? activeBg : c.border}`,
+              background: tab === id ? activeBg : 'transparent',
+              color: tab === id ? '#fff' : c.text,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'schedule'
+        ? <TrainingTab c={c} showToast={showToast} isMobile={isMobile} />
+        : <AdminSignups c={c} showToast={showToast} theme={theme} embedded />}
     </div>
   );
 };
@@ -64,7 +94,7 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
       <style>{sharedStyles(c)}</style>
 
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
-        EVENTS
+        EVENT RECORDS
       </h1>
       <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
         Races and results on the calendar

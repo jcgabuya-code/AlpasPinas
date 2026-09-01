@@ -35,8 +35,8 @@ const FIELDS: { key: (typeof CONTENT_KEYS)[number]; label: string; fallback: str
   },
   {
     key: 'raceRecord.intro',
-    label: 'Race Record — intro line',
-    fallback: "Seasons of racing across the region and a growing trophy shelf. Here's where we've lined up lately.",
+    label: 'Event Records — intro line',
+    fallback: "We've raced in Malaysia, Singapore, and the Philippines — chasing podiums and having a blast together. Same crew, same rhythm, all in from catch to finish.",
   },
   {
     key: 'contact.invite',

@@ -153,7 +153,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedHome = false }) => {
-  const { theme, mode, toggleTheme, brand, toggleBrand } = useTheme();
+  const { theme, mode, toggleTheme, brand } = useTheme();
   const { user, logout } = useAuth();
   const { count: cartCount } = useCart();
   const isMobile = useIsMobile();
@@ -417,36 +417,10 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
               })}
             </ul>
 
-            {/* Right rail: quiet cosmetic duo → divider → functional/session actions,
+            {/* Right rail: light/dark toggle → divider → functional/session actions,
                 Join the Team (or the account chip) carries the most visual weight. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <button
-                  onClick={toggleBrand}
-                  aria-label={`Switch color theme (currently ${brand})`}
-                  title={`Color: ${brand} — click to switch`}
-                  style={{
-                    background: 'transparent',
-                    border: `1px solid ${chromeBorder}`,
-                    width: '1.9rem',
-                    height: '1.9rem',
-                    borderRadius: '999px',
-                    cursor: 'pointer',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: '0.95rem',
-                      height: '0.95rem',
-                      borderRadius: '999px',
-                      background: brandGradient(brand, theme),
-                    }}
-                  />
-                </button>
                 <button
                   onClick={toggleTheme}
                   aria-label="Toggle theme"
@@ -633,50 +607,28 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
           </div>
         )}
 
-        {/* Mobile: appearance duo + cart + animated hamburger, all in the top bar. */}
+        {/* Mobile: light/dark toggle + cart + animated hamburger, all in the top bar. */}
         {isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <button
-                onClick={toggleBrand}
-                aria-label={`Switch color theme (currently ${brand})`}
-                title={`Color: ${brand} — tap to switch`}
-                style={{
-                  background: 'transparent',
-                  border: `1px solid ${c.border}`,
-                  width: '2.25rem',
-                  height: '2.25rem',
-                  borderRadius: '999px',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{ width: '1rem', height: '1rem', borderRadius: '999px', background: brandGradient(brand, theme) }} />
-              </button>
-              <button
-                onClick={toggleTheme}
-                aria-label="Toggle light or dark theme"
-                style={{
-                  background: 'transparent',
-                  color: c.text,
-                  border: `1px solid ${c.border}`,
-                  width: '2.25rem',
-                  height: '2.25rem',
-                  borderRadius: '999px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {mode === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
-              </button>
-            </div>
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle light or dark theme"
+              style={{
+                background: 'transparent',
+                color: c.text,
+                border: `1px solid ${c.border}`,
+                width: '2.25rem',
+                height: '2.25rem',
+                borderRadius: '999px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {mode === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+            </button>
             <CartBadge count={cartCount} onClick={closeMenu} />
             <button
               onClick={() => setMenuOpen((o) => !o)}
@@ -727,8 +679,8 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
       )}
 
       {/* Mobile full-screen drawer — matches the AlpasPinas mobile reference: a
-          fade-in overlay with oversized Anton nav links, an Appearance row (brand
-          swatch + light/dark toggle), and auth-aware actions below. */}
+          fade-in overlay with oversized Anton nav links and auth-aware actions
+          below. (Light/dark toggle lives in the top bar.) */}
       {isMobile && (
         <div
           role="dialog"

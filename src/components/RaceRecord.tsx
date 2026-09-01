@@ -5,20 +5,24 @@ import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { SectionHeader } from './SectionHeader';
 import { useInView } from '../hooks/useInView';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { parseEventDate, medalColor, resultBadge, type RaceEvent } from './EventCard';
+import { parseEventDate, isUpcoming, medalColor, resultBadge, type RaceEvent } from './EventCard';
 import { useRaceEvents } from '../utils/raceEvents';
 import { useContent } from '../context/SiteContentContext';
-import race1 from '../../images/race/race-1.jpg';
+import race1 from '../../images/race/race-1.jpeg';
 import race2 from '../../images/race/race-2.jpg';
-import race3 from '../../images/race/race-3.jpeg';
+import race3 from '../../images/race/race-3.jpg';
+import race4 from '../../images/race/race-4.jpg';
+import race5 from '../../images/race/race-5.jpg';
 
-// Race-day action that cross-fades in the Race Record card. Each source is a ~3:2
-// landscape shot, so the card frame is 3:2 and the whole image fits (minimal crop).
-// Team/roster photos live in the About section now — this card stays race action only.
+// Race-day shots that cross-fade in the Race Record card. The frame is 3:2
+// landscape and cover-crops; race-3 is a portrait ceremony shot so it centres
+// on the crew on stage.
 const RACE_PHOTOS = [
-  { src: race1, alt: 'AlpasPinas mid-stroke during a race, Philippine-flag paddles raised', objectPosition: 'center' },
-  { src: race2, alt: 'AlpasPinas crews racing hard through the course', objectPosition: 'center' },
-  { src: race3, alt: 'The AlpasPinas women’s crew driving through a race', objectPosition: 'center' },
+  { src: race1, alt: "The AlpasPinas women's crew driving hard through a race, paddles buried mid-stroke", objectPosition: 'center' },
+  { src: race2, alt: 'AlpasPinas powering their dragon boat through the course, Philippine-flag paddles flashing', objectPosition: 'center' },
+  { src: race3, alt: 'AlpasPinas paddlers receiving the team pennant at the Melaka Dragon Boat Festival ceremony', objectPosition: 'center' },
+  { src: race4, alt: 'AlpasPinas dragon boat seen from astern, the full crew in sync down the race lane', objectPosition: 'center' },
+  { src: race5, alt: 'AlpasPinas crew at the catch during the Melaka Dragon Boat Festival, arms raised in unison', objectPosition: 'center' },
 ];
 
 /**
@@ -36,7 +40,7 @@ export const RaceRecord: React.FC = () => {
   const [photo, setPhoto] = useState(0);
   const intro = useContent(
     'raceRecord.intro',
-    "Two races into our story so far — an international debut in Singapore and a Bronze on home turf in Malaysia. Here's where we've lined up.",
+    "We've raced in Malaysia, Singapore, and the Philippines — chasing podiums and having a blast together. Same crew, same rhythm, all in from catch to finish.",
   );
 
   const accent = isDark ? c.accent : c.primary;
@@ -55,11 +59,12 @@ export const RaceRecord: React.FC = () => {
   // doesn't flash away on every page load before the first fetch resolves.
   const { events, loaded } = useRaceEvents();
 
-  // Past races with a recorded result, newest first.
+  // Every race that has already happened, newest first — a result isn't
+  // required (placing/category are optional here, shown only when recorded).
   const results = useMemo(
     () =>
       events
-        .filter((e) => e.result)
+        .filter((e) => !isUpcoming(e.date))
         .sort((a, b) => parseEventDate(b.date).getTime() - parseEventDate(a.date).getTime()),
     [events],
   );
@@ -164,9 +169,10 @@ export const RaceRecord: React.FC = () => {
   // outcomes reached (e.g. one Bronze + one Semi-Final, not four near-duplicates).
   const row = (group: RaceEvent[], i: number) => {
     const e = group[0];
+    const scored = group.filter((g) => g.result);
     const badges = Array.from(
       new Map(
-        group.map((g) => {
+        scored.map((g) => {
           const rank = g.result!.rank;
           const label = resultBadge(g.result!) ?? '';
           const medal = rank ? medalColor(rank, isDark) : null;
@@ -174,7 +180,7 @@ export const RaceRecord: React.FC = () => {
         }),
       ).values(),
     );
-    const time = group.length === 1 ? group[0].result!.time : undefined;
+    const time = scored.length === 1 ? scored[0].result!.time : undefined;
     return (
       <div
         key={e.id}
@@ -198,6 +204,7 @@ export const RaceRecord: React.FC = () => {
             {time ?? ''}
           </div>
         )}
+        {badges.length > 0 && (
         <div
           style={{
             display: 'flex',
@@ -229,6 +236,7 @@ export const RaceRecord: React.FC = () => {
             </span>
           ))}
         </div>
+        )}
       </div>
     );
   };
@@ -254,7 +262,7 @@ export const RaceRecord: React.FC = () => {
             </p>
           }
         >
-          RACE <span style={{ color: accent }}>RECORD</span>
+          EVENT <span style={{ color: accent }}>RECORDS</span>
         </SectionHeader>
 
         <div

@@ -25,7 +25,6 @@ import { downloadAdminExport } from '../utils/adminExport';
 
 // Section components — lazy-loaded inline after the shell
 import { AdminDashboard } from './admin/AdminDashboard';
-import { AdminSignups } from './admin/AdminSignups';
 import { AdminBoats } from './admin/AdminBoats';
 import { AdminTraining, AdminEvents } from './admin/AdminEvents';
 import { AdminRoster } from './admin/AdminRoster';
@@ -36,17 +35,16 @@ import { AdminContent } from './admin/AdminContent';
 
 /* ------------------------------------------------------------------ */
 
-export type AdminSection = 'dashboard' | 'signups' | 'boats' | 'training' | 'events' | 'roster' | 'applications' | 'products' | 'orders' | 'content';
+export type AdminSection = 'dashboard' | 'boats' | 'training' | 'events' | 'roster' | 'applications' | 'products' | 'orders' | 'content';
 export type ToastType = 'success' | 'error' | 'info';
 export type ShowToast = (msg: string, type?: ToastType) => void;
 
 const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard',        icon: LayoutDashboard },
   { id: 'applications', label: 'User Registrations',  icon: ClipboardList  },
-  { id: 'signups',   label: 'Training Sign-ups',          icon: ClipboardList  },
   { id: 'boats',     label: 'Boat Assignments',  icon: Anchor         },
-  { id: 'training',  label: 'Training Schedule', icon: CalendarDays   },
-  { id: 'events',    label: 'Events',            icon: Trophy         },
+  { id: 'training',  label: 'Training',          icon: CalendarDays   },
+  { id: 'events',    label: 'Event Records',     icon: Trophy         },
   { id: 'roster',    label: 'Roster',            icon: Users          },
   { id: 'content',   label: 'Site Content',      icon: FileText       },
   { id: 'products',  label: 'Shop Products',     icon: Package        },
@@ -183,7 +181,7 @@ const AdminGate: React.FC<{
 type ToastState = { msg: string; type: ToastType } | null;
 
 const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const { theme, brand, toggleTheme, toggleBrand } = useTheme();
+  const { theme, brand, toggleTheme } = useTheme();
   // Deep-navy `primary` is unreadable as text on dark surfaces — use the brighter
   // dark-bg accent for text/icons, keeping `primary` only for tinted backgrounds.
   const navigate = useNavigate();
@@ -325,7 +323,7 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       {/* Appearance + export + sign out */}
       <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {/* Appearance — same bordered-pill chrome as Export/Sign out, with the
-            palette swatch + light/dark toggle as the tappable bits on the right. */}
+            light/dark toggle as the tappable bit on the right. */}
         <div
           style={{
             display: 'flex',
@@ -338,26 +336,6 @@ const AdminShell: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           }}
         >
           <span style={{ flex: 1, fontSize: '0.85rem', color: c.textSecondary }}>Appearance</span>
-          <button
-            type="button"
-            onClick={toggleBrand}
-            title={`Color: ${brand} — click to switch`}
-            aria-label={`Switch color palette (currently ${brand})`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '1.9rem',
-              height: '1.9rem',
-              borderRadius: '999px',
-              border: `1px solid ${c.border}`,
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <span style={{ width: '0.9rem', height: '0.9rem', borderRadius: '999px', background: brandGradient(brand, theme) }} />
-          </button>
           <button
             type="button"
             onClick={toggleTheme}
@@ -550,7 +528,6 @@ const SectionContent: React.FC<{
   switch (active) {
     case 'dashboard': return <AdminDashboard showToast={showToast} c={c} theme={theme} onNavigate={onNavigate} />;
     case 'applications': return <AdminApplications showToast={showToast} c={c} theme={theme} />;
-    case 'signups':   return <AdminSignups   showToast={showToast} c={c} theme={theme} />;
     case 'boats':     return <AdminBoats     showToast={showToast} c={c} theme={theme} />;
     case 'training':  return <AdminTraining  showToast={showToast} c={c} theme={theme} />;
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;
