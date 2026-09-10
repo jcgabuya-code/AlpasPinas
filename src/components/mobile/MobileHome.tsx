@@ -611,7 +611,14 @@ export const MobileHome: React.FC = () => {
       <Marquee />
 
       {/* ===== GEAR ===== */}
-      <section ref={refs.gear} id="gear" style={sectionBase(c.surface)}>
+      <section
+        ref={refs.gear}
+        id="gear"
+        style={{
+          ...sectionBase(c.surface),
+          minHeight: '560px',
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {eyebrow('The Locker')}

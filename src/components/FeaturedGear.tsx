@@ -101,7 +101,7 @@ export const FeaturedGear: React.FC = () => {
         border: `1px solid ${hoverId === lead.id ? `${accent}66` : c.border}`,
         backgroundColor: c.surfaceAlt,
         textDecoration: 'none',
-        minHeight: isMobile ? '360px' : '440px',
+        minHeight: isMobile ? '360px' : '460px',
         boxShadow: hoverId === lead.id ? '0 18px 40px rgba(0,0,0,0.32)' : 'none',
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
       }}
@@ -334,7 +334,8 @@ export const FeaturedGear: React.FC = () => {
       style={{
         ...sectionShell,
         // Tighten the top so the section sits closer to the marquee band above.
-        paddingTop: 'clamp(1.75rem, 3vw, 2.75rem)',
+        minHeight: isMobile ? '500px' : '650px',
+        paddingTop: 'clamp(2.75rem, 3vw, 2.75rem)',
         backgroundColor: c.background,
         borderTop: `1px solid ${c.border}`,
       }}
@@ -366,7 +367,7 @@ export const FeaturedGear: React.FC = () => {
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : '1.1fr 1fr',
             gap: isMobile ? '1rem' : '1.4rem',
-            alignItems: 'stretch',
+            alignItems: 'start',
           }}
         >
           {featuredCard}
