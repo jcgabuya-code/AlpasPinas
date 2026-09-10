@@ -52,7 +52,7 @@ export const AdminTraining: React.FC<Props> = ({ c, showToast, theme }) => {
         TRAINING
       </h1>
       <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: '0 0 1.25rem' }}>
-        Weeknight land conditioning and weekend lake sessions — schedule and sign-ups
+        Add a session here and paddlers book their own seat on the site — Duplicate copies a past week instead of retyping it.
       </p>
 
       {/* Tabs */}
@@ -97,7 +97,7 @@ export const AdminEvents: React.FC<Props> = ({ c, showToast, theme }) => {
         EVENT RECORDS
       </h1>
       <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
-        Races and results on the calendar
+        Add a race before it happens; check "Add race result" once it's run to record how the crew placed.
       </p>
 
       <RaceTab c={c} showToast={showToast} isMobile={isMobile} theme={theme} />
@@ -250,7 +250,7 @@ const isPastEvent = (ev: TrainingEvent) => !ev.days.some((d) => isUpcomingDate(d
 const earliestDay = (ev: TrainingEvent) => ev.days.reduce((min, d) => (d.date < min ? d.date : min), ev.days[0]?.date ?? '');
 const latestDay = (ev: TrainingEvent) => ev.days.reduce((max, d) => (d.date > max ? d.date : max), ev.days[0]?.date ?? '');
 
-const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast, isMobile }) => {
+export const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast, isMobile }) => {
   const [events, setEvents] = useState<TrainingEvent[]>([]);
   const [editing, setEditing] = useState<TrainingEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -485,8 +485,8 @@ const TrainingForm: React.FC<{
           <label style={labelStyle(c)}>Title (auto)</label>
           <div style={{ ...inputStyle(c), color: c.textSecondary, backgroundColor: c.surface }}>{ev.title}</div>
         </div>
-        <Field label="Description" value={ev.description} onChange={(v) => set({ description: v })} c={c} multiline />
-        <Field label="Thumbnail URL" value={ev.thumbnail ?? ''} onChange={(v) => set({ thumbnail: v })} c={c} placeholder="/marina-putrajaya.jpg" />
+        <Field label="Description" value={ev.description} onChange={(v) => set({ description: v })} c={c} multiline hint="Shown on the training card — what to bring, what to expect." />
+        <Field label="Thumbnail URL" value={ev.thumbnail ?? ''} onChange={(v) => set({ thumbnail: v })} c={c} placeholder="/marina-putrajaya.jpg" hint="Blank shows a plain color card instead of a photo." />
 
         {ev.days.map((d, i) => (
           <div key={i} className="anim-reveal" style={{ padding: '0.85rem', backgroundColor: c.surface, borderRadius: '0.6rem', border: `1px solid ${c.border}` }}>
@@ -503,8 +503,8 @@ const TrainingForm: React.FC<{
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
               <Field label="Date" value={d.date} onChange={(v) => setDay(i, { date: v })} c={c} type="date" />
               <Field label="Time" value={d.time} onChange={(v) => setDay(i, { time: v })} c={c} type="time" />
-              <Field label="Location" value={d.location} onChange={(v) => setDay(i, { location: v })} c={c} />
-              <Field label="Capacity" value={String(d.capacity)} onChange={(v) => setDay(i, { capacity: Number(v) || 22 })} c={c} type="number" />
+              <Field label="Location" value={d.location} onChange={(v) => setDay(i, { location: v })} c={c} placeholder="Subang PARC" hint="Where paddlers show up — shown on their booking." />
+              <Field label="Capacity" value={String(d.capacity)} onChange={(v) => setDay(i, { capacity: Number(v) || 22 })} c={c} type="number" hint="Sign-ups beyond this go to the waitlist." />
             </div>
           </div>
         ))}
@@ -542,7 +542,7 @@ const blankRace = (): RaceEvent => ({
   result: null,
 });
 
-const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, isMobile, theme }) => {
+export const RaceTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean; theme: 'dark' | 'light' }> = ({ c, showToast, isMobile, theme }) => {
   const [events, setEvents] = useState<RaceEvent[]>([]);
   const [editing, setEditing] = useState<RaceEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -733,8 +733,8 @@ const RaceForm: React.FC<{
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.65rem' }}>
         <Field label="Name" value={ev.name} onChange={(v) => set({ name: v })} c={c} />
-        <Field label="Location" value={ev.location} onChange={(v) => set({ location: v })} c={c} />
-        <Field label="Date" value={ev.date} onChange={(v) => set({ date: v })} c={c} type="date" />
+        <Field label="Location" value={ev.location} onChange={(v) => set({ location: v })} c={c} placeholder="Putrajaya, Malaysia" />
+        <Field label="Date" value={ev.date} onChange={(v) => set({ date: v })} c={c} type="date" hint="Add it before race day; fill in Result after." />
         <div>
           <label style={labelStyle(c)}>Type</label>
           <select value={ev.type} onChange={(e) => set({ type: e.target.value })} style={inputStyle(c)}>
@@ -743,10 +743,10 @@ const RaceForm: React.FC<{
             ))}
           </select>
         </div>
-        <Field label="Thumbnail URL" value={ev.thumbnail ?? ''} onChange={(v) => set({ thumbnail: v })} c={c} />
+        <Field label="Thumbnail URL" value={ev.thumbnail ?? ''} onChange={(v) => set({ thumbnail: v })} c={c} hint="Blank shows a plain color card instead of a photo." />
       </div>
       <div style={{ marginTop: '0.65rem' }}>
-        <Field label="Description" value={ev.description} onChange={(v) => set({ description: v })} c={c} multiline />
+        <Field label="Description" value={ev.description} onChange={(v) => set({ description: v })} c={c} multiline hint="Shown when a visitor expands this race's card." />
       </div>
 
       {/* Result toggle */}
@@ -761,14 +761,17 @@ const RaceForm: React.FC<{
         </label>
         {hasResult && ev.result && (
           <>
+            <p style={{ fontSize: '0.75rem', color: c.textSecondary, margin: '0.5rem 0 0' }}>
+              Fill in Rank if the crew placed, or Stage instead if they didn't reach the final (e.g. eliminated in a heat) — not both.
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem', marginTop: '0.65rem', padding: '0.85rem', backgroundColor: c.surface, borderRadius: '0.6rem', border: `1px solid ${c.border}` }}>
-              <Field label="Rank" value={ev.result.rank != null ? String(ev.result.rank) : ''} onChange={(v) => set({ result: { ...ev.result!, rank: v === '' ? undefined : Number(v) } })} c={c} type="number" placeholder="1" />
+              <Field label="Rank" value={ev.result.rank != null ? String(ev.result.rank) : ''} onChange={(v) => set({ result: { ...ev.result!, rank: v === '' ? undefined : Number(v) } })} c={c} type="number" placeholder="1" hint="Final placing, e.g. 1 for gold." />
               <Field label="Stage (if no rank)" value={ev.result.stage ?? ''} onChange={(v) => set({ result: { ...ev.result!, stage: v || undefined } })} c={c} placeholder="Semi-Final" />
-              <Field label="Category" value={ev.result.category} onChange={(v) => set({ result: { ...ev.result!, category: v } })} c={c} />
+              <Field label="Category" value={ev.result.category} onChange={(v) => set({ result: { ...ev.result!, category: v } })} c={c} placeholder="Mixed 500m" hint="The race category, shown next to the result." />
               <Field label="Time" value={ev.result.time ?? ''} onChange={(v) => set({ result: { ...ev.result!, time: v } })} c={c} placeholder="2:14.32" />
             </div>
             <div style={{ marginTop: '0.5rem' }}>
-              <Field label="Notes" value={ev.result.notes ?? ''} onChange={(v) => set({ result: { ...ev.result!, notes: v } })} c={c} />
+              <Field label="Notes" value={ev.result.notes ?? ''} onChange={(v) => set({ result: { ...ev.result!, notes: v } })} c={c} placeholder="Optional — e.g. first international podium" />
             </div>
           </>
         )}
@@ -892,7 +895,8 @@ const Field: React.FC<{
   multiline?: boolean;
   type?: string;
   placeholder?: string;
-}> = ({ label, value, onChange, c, multiline, type = 'text', placeholder }) => (
+  hint?: string;
+}> = ({ label, value, onChange, c, multiline, type = 'text', placeholder, hint }) => (
   <div>
     <label style={labelStyle(c)}>{label}</label>
     {multiline ? (
@@ -900,6 +904,7 @@ const Field: React.FC<{
     ) : (
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle(c)} />
     )}
+    {hint && <span style={{ display: 'block', fontSize: '0.7rem', color: c.textSecondary, marginTop: '0.25rem' }}>{hint}</span>}
   </div>
 );
 

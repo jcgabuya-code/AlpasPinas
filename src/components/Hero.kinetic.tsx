@@ -9,7 +9,7 @@ import { VideoModal } from './VideoModal';
 import { useRaceEvents } from '../utils/raceEvents';
 import { isUpcoming, parseEventDate, type RaceEvent } from './EventCard';
 import { useIsMobile } from '../hooks/useIsMobile';
-import hero4Image from '../../images/alpas-hero4.png';
+import hero4Image from '../../images/Banner/AlpasHero.jpg';
 
 // Split so the numeric part can count up on load while the prefix/suffix stay put
 // — "#3" keeps its hash, "5 YRS" keeps its unit, "12+" keeps its plus.

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import hero5Image from '../../images/hero-5-hd.png';
-import heroAlpasImage from '../../images/AlpasHero.jpg';
+import hero5Image from '../../images/Banner/hero-5-hd.png';
+import heroAlpasImage from '../../images/Banner/alpas-hero-1.png';
 
 // ── Hero photo picker ─────────────────────────────────────────────────────────
 // Edit-mode helper: flip between candidate hero photos live in the browser so the
@@ -10,7 +10,7 @@ import heroAlpasImage from '../../images/AlpasHero.jpg';
 // custom event, so the pill can live in the nav while the heroes just read the pick.
 export const HERO_PICKER = false;
 export const HERO_OPTIONS = [
-  { src: heroAlpasImage, label: 'Alpas hero 5', short: 'Hero 5', objectPosition: '68% 42%' },
+  { src: heroAlpasImage, label: 'Alpas hero 5', short: 'Hero 5', objectPosition: '0% 0%' },
   { src: hero5Image, label: 'Mountain lake', short: 'Lake', objectPosition: '50% 36%' },
 ];
 const HERO_PICK_KEY = 'alpas.heroPick';

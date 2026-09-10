@@ -157,7 +157,7 @@ export const AdminRoster: React.FC<Props> = ({ c, showToast, theme }) => {
             ROSTER
           </h1>
           <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
-            Full member directory
+            Full member directory — deactivate someone who's left instead of removing them, to keep their history.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -396,7 +396,7 @@ const MemberForm: React.FC<{
           </select>
         </div>
         <FieldInput label="Year Joined" value={String(data.joined)} onChange={(v) => set({ joined: Number(v) || data.joined })} c={c} type="number" />
-        <FieldInput label="Photo URL" value={data.photo ?? ''} onChange={(v) => set({ photo: v || null })} c={c} placeholder="/photos/name.jpg" />
+        <FieldInput label="Photo URL" value={data.photo ?? ''} onChange={(v) => set({ photo: v || null })} c={c} placeholder="/photos/name.jpg" hint="Blank shows their initial instead." />
       </div>
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
         <button type="button" onClick={onSave} disabled={busy} className="admin-focus" style={{ ...addBtnStyle(c), minHeight: 40, opacity: busy ? 0.6 : 1 }}>
@@ -408,10 +408,11 @@ const MemberForm: React.FC<{
   );
 };
 
-const FieldInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; c: ColorPalette; type?: string; placeholder?: string }> = ({ label, value, onChange, c, type = 'text', placeholder }) => (
+const FieldInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; c: ColorPalette; type?: string; placeholder?: string; hint?: string }> = ({ label, value, onChange, c, type = 'text', placeholder, hint }) => (
   <div>
     <label style={labelStyle(c)}>{label}</label>
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="admin-focus" style={inputStyle(c)} />
+    {hint && <span style={{ display: 'block', fontSize: '0.7rem', color: c.textSecondary, marginTop: '0.25rem' }}>{hint}</span>}
   </div>
 );
 

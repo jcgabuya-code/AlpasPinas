@@ -38,6 +38,9 @@ import { ContactRow, LocationIcon, MailIcon, InstagramIcon } from '../Contact';
 import { submitApplication, type ApplicationResult } from '../../utils/users';
 import { cadenceAccentUri } from '../../styles/tokens';
 import { useContent } from '../../context/SiteContentContext';
+import { RaceRecordEditor } from '../RaceRecordEditor';
+import { AboutEditor } from '../AboutEditor';
+import { GearEditor } from '../GearEditor';
 
 /**
  * MobileHome — the phone-width Home page, rebuilt to the AlpasPinas mobile
@@ -175,8 +178,19 @@ export const MobileHome: React.FC = () => {
 
   // The app nav scrolls away on mobile (its Layout wrapper is only nav-height
   // tall, so its sticky doesn't persist), so the pill bar pins to the very top
-  // and takes over as the persistent quick-jump rail once the nav clears.
+  // and takes over as the persistent quick-jump rail once the nav clears. It
+  // stays hidden until then — a sentinel sitting at the very top of this page
+  // (i.e. right where the nav ends) flags the moment it scrolls out of view.
   const PILL_H = 44;
+  const navClearedRef = useRef<HTMLDivElement>(null);
+  const [pillBarVisible, setPillBarVisible] = useState(false);
+  useEffect(() => {
+    const el = navClearedRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setPillBarVisible(!entry.isIntersecting));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const scrollTo = (key: SectionKey) => {
     refs[key].current?.scrollIntoView({
       behavior: prefersReducedMotion() ? 'auto' : 'smooth',
@@ -297,21 +311,32 @@ export const MobileHome: React.FC = () => {
     <div style={{ background: c.background }}>
       <style>{SCROLL_CSS}</style>
 
-      {/* Quick-jump pill bar — sticky beneath the app nav. Pills share the width
-          evenly (flex: 1, no overflow-x) so every label fits on one row without
-          a horizontal scroll, at any phone width. */}
+      {/* Marks the top of the page (right where the app nav ends) so the pill
+          bar below knows when the nav has scrolled out of view. */}
+      <div ref={navClearedRef} />
+
+      {/* Quick-jump pill bar — hidden until the nav clears, then sticks to the
+          top and takes over as the persistent quick-jump rail. Pills share the
+          width evenly (flex: 1, no overflow-x) so every label fits on one row
+          without a horizontal scroll, at any phone width.
+          Padding stays constant so only `height` + `border-color` animate — a
+          single, rare, user-triggered toggle rather than continuous motion, so
+          the transition here doesn't carry the layout-thrash cost that rule of
+          thumb warns about. */}
       <div
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 40,
-          height: PILL_H,
+          height: pillBarVisible ? PILL_H : 0,
+          overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
           gap: 'clamp(3px, 1.4vw, 8px)',
           padding: '0 clamp(8px, 3vw, 18px)',
           background: c.background,
-          borderBottom: `1px solid ${c.border}`,
+          borderBottom: `1px solid ${pillBarVisible ? c.border : 'transparent'}`,
+          transition: 'height 0.22s ease, border-color 0.22s ease',
         }}
       >
         {pills.map((p) => (
@@ -551,7 +576,10 @@ export const MobileHome: React.FC = () => {
 
       {/* ===== ABOUT ===== */}
       <section ref={refs.about} id="about" style={sectionBase(c.surface)}>
-        {eyebrow('Our Story')}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+          {eyebrow('Our Story')}
+          <AboutEditor />
+        </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: '2.3rem', color: c.text }}>
             AL<span style={{ color: c.sun }}>·</span>PAS
@@ -592,7 +620,10 @@ export const MobileHome: React.FC = () => {
             {eyebrow('The Locker')}
             {heading('GEAR UP')}
           </div>
-          <Link to="/shop" style={{ fontSize: '0.82rem', fontWeight: 700, color: accent, textDecoration: 'none', whiteSpace: 'nowrap' }}>Shop all →</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <Link to="/shop" style={{ fontSize: '0.82rem', fontWeight: 700, color: accent, textDecoration: 'none', whiteSpace: 'nowrap' }}>Shop all →</Link>
+            <GearEditor />
+          </div>
         </div>
 
         <div className="apn-mobile-scroll" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -626,7 +657,10 @@ export const MobileHome: React.FC = () => {
       {/* ===== RACE RECORD ===== */}
       <section ref={refs.races} id="races" style={sectionBase(c.background)}>
         {eyebrow('On the Water')}
-        {heading('EVENT RECORDS')}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+          {heading('EVENT RECORDS')}
+          <RaceRecordEditor />
+        </div>
         <div style={{ position: 'relative', width: '100%', height: '190px', borderRadius: '14px', overflow: 'hidden' }}>
           {RACE_PHOTOS.map((p, i) => (
             <img

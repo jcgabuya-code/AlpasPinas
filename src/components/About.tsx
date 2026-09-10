@@ -6,6 +6,7 @@ import { useInView } from '../hooks/useInView';
 import { Eyebrow } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { useContent } from '../context/SiteContentContext';
+import { AboutEditor } from './AboutEditor';
 import melakaTeam1 from '../../images/about/melaka-team1.jpg';
 import alpasTeam1 from '../../images/about/alpasTeam-1.jpg';
 import alpasTeam2 from '../../images/about/alpasTeam-2.jpg';
@@ -128,7 +129,10 @@ export const About: React.FC = () => {
         >
           {/* Word-led column — the name, its meaning, and the crew's read on it */}
           <div className={`reveal${inView ? ' is-visible' : ''}`}>
-            <Eyebrow>Our Story</Eyebrow>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+              <Eyebrow>Our Story</Eyebrow>
+              <AboutEditor />
+            </div>
 
             {/* The wordmark, set like a dictionary headword: AL·PAS with the raised
                 syllable dot in the cadence amber, and a wake underline beneath. */}

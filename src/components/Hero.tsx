@@ -240,7 +240,7 @@ export const NextRaceTicket: React.FC<{
 
 // Photos for the mobile HeroPhoto slider. Add more entries here to extend the carousel.
 const HERO_PHOTOS = [
-  { src: HERO_OPTIONS[0].src, alt: 'AlpasPinas Dragonboat Team — paddlers with team flag at the beach', objectPosition: '60% 24%' },
+  { src: HERO_OPTIONS[0].src, alt: 'AlpasPinas Dragonboat Team — aerial view of the crew paddling', objectPosition: '38% 50%' },
   { src: '/team-2.jpg', alt: 'AlpasPinas Dragonboat Team', objectPosition: 'center 50%' },
 ];
 
@@ -665,6 +665,8 @@ export const Hero: React.FC = () => {
             height: '100%',
             objectFit: 'cover',
             objectPosition: heroPhoto.objectPosition,
+            transform: 'scale(1.1)',
+            transformOrigin: heroPhoto.objectPosition,
             display: 'block',
           }}
         />
@@ -730,10 +732,10 @@ export const Hero: React.FC = () => {
           width: '100%',
           maxWidth: '1280px',
           margin: '0 auto',
-          padding: '0 clamp(1.5rem, 4vw, 3.5rem) clamp(2.5rem, 6vh, 3.4rem)',
+          padding: '0 clamp(1.5rem, 4vw, 3.5rem) clamp(1.5rem, 3.5vh, 2.25rem)',
         }}
       >
-        <div style={{ maxWidth: '640px' }}>
+        <div style={{ maxWidth: '500px' }}>
           {/* Eyebrow label with a leading cadence beat */}
           <div className="stroke-in" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', animationDelay: '0.04s' }}>
             <span
@@ -750,7 +752,7 @@ export const Hero: React.FC = () => {
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(3.6rem, 8.2vw, 7.4rem)',
+              fontSize: 'clamp(3rem, 6.4vw, 5.5rem)',
               fontWeight: 400,
               color: heroText,
               margin: 0,

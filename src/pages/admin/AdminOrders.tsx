@@ -154,7 +154,7 @@ export const AdminOrders: React.FC<Props> = ({ showToast, c, theme }) => {
         SHOP ORDERS
       </h1>
       <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: '0 0 2rem' }}>
-        Reservations from the shop. Move each through the flow as you confirm and collect payment.
+        Reserved → Paid → Fulfilled — click the button to move an order forward once you've collected payment or handed it over. Set an estimated delivery date before marking Paid so the buyer knows when to expect it.
       </p>
 
       {/* Search + month narrowing — kept on one row, shrinking together */}

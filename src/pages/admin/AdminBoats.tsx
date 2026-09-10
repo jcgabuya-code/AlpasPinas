@@ -590,6 +590,9 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
           <SaveIndicator status={saveStatus} c={c} />
         </div>
       </div>
+      <p style={{ color: c.textSecondary, fontSize: '0.85rem', margin: '0 0 1.25rem', maxWidth: 640 }}>
+        Pick an event and day above, then drag paddlers from the bench into seats — or click Auto-seat to fill the boat by weight. Changes save automatically.
+      </p>
 
       {!eventId || !dayKey ? (
         <p style={{ color: c.textSecondary }}>Select an event and day above.</p>

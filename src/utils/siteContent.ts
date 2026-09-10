@@ -27,4 +27,5 @@ export async function updateSiteContent(key: string, value: string): Promise<voi
     .from('site_content')
     .upsert({ key, value, updated_at: new Date().toISOString() });
   if (error) throw error;
+  window.dispatchEvent(new Event('alpas-site-content-changed'));
 }

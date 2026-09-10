@@ -8,6 +8,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { parseEventDate, isUpcoming, medalColor, resultBadge, type RaceEvent } from './EventCard';
 import { useRaceEvents } from '../utils/raceEvents';
 import { useContent } from '../context/SiteContentContext';
+import { RaceRecordEditor } from './RaceRecordEditor';
 import race1 from '../../images/race/race-1.jpeg';
 import race2 from '../../images/race/race-2.jpg';
 import race3 from '../../images/race/race-3.jpg';
@@ -257,9 +258,12 @@ export const RaceRecord: React.FC = () => {
           size="lg"
           style={{ marginBottom: isMobile ? '1.75rem' : '2.5rem' }}
           trailing={
-            <p style={{ maxWidth: '360px', color: c.textSecondary, fontSize: '1.05rem', lineHeight: 1.6, margin: 0 }}>
-              {intro}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <p style={{ maxWidth: '360px', color: c.textSecondary, fontSize: '1.05rem', lineHeight: 1.6, margin: 0 }}>
+                {intro}
+              </p>
+              <RaceRecordEditor />
+            </div>
           }
         >
           EVENT <span style={{ color: accent }}>RECORDS</span>

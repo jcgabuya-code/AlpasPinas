@@ -8,6 +8,7 @@ import { useInView } from '../hooks/useInView';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { fetchProducts, effectivePrice, formatPrice, inStock, type Product } from '../utils/merch';
 import { useContent } from '../context/SiteContentContext';
+import { GearEditor } from './GearEditor';
 
 /**
  * Home-page teaser for the shop ("The Locker" / GEAR UP). Leads with one large
@@ -56,11 +57,14 @@ export const FeaturedGear: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    fetchProducts().then((p) => {
+    const refresh = () => fetchProducts().then((p) => {
       if (active) setProducts(p);
     });
+    refresh();
+    window.addEventListener('alpas-merch-products-changed', refresh);
     return () => {
       active = false;
+      window.removeEventListener('alpas-merch-products-changed', refresh);
     };
   }, []);
 
@@ -341,12 +345,15 @@ export const FeaturedGear: React.FC = () => {
           size="lg"
           style={{ marginBottom: isMobile ? '1.75rem' : '2.25rem' }}
           trailing={
-            <Link
-              to="/shop"
-              style={{ color: accent, textDecoration: 'none', fontWeight: 700, fontSize: isMobile ? '0.88rem' : '0.95rem', whiteSpace: 'nowrap' }}
-            >
-              Shop all gear →
-            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Link
+                to="/shop"
+                style={{ color: accent, textDecoration: 'none', fontWeight: 700, fontSize: isMobile ? '0.88rem' : '0.95rem', whiteSpace: 'nowrap' }}
+              >
+                Shop all gear →
+              </Link>
+              <GearEditor />
+            </div>
           }
         >
           GEAR <span style={{ color: accent }}>UP</span>

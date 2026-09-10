@@ -7,6 +7,7 @@ import { useInView } from '../hooks/useInView';
 import { SectionHeader } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { useContent } from '../context/SiteContentContext';
+import { TrainingEditor } from './TrainingEditor';
 import landPhoto from '../../images/training/land-training.jpg';
 import waterPhoto from '../../images/training/water-training.jpg';
 import { BarsGlyph, LinesGlyph } from './icons/trainingGlyphs';
@@ -291,9 +292,12 @@ export const TrainingSchedule: React.FC = () => {
           size="lg"
           style={{ marginBottom: isMobile ? '2.25rem' : '2.75rem' }}
           trailing={
-            <p style={{ maxWidth: '26rem', color: c.textSecondary, fontSize: '1.1rem', fontWeight: 500, lineHeight: 1.6, margin: 0 }}>
-              {intro}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <p style={{ maxWidth: '26rem', color: c.textSecondary, fontSize: '1.1rem', fontWeight: 500, lineHeight: 1.6, margin: 0 }}>
+                {intro}
+              </p>
+              <TrainingEditor />
+            </div>
           }
         >
           TRAINING <span style={{ color: accent }}>REEL</span>

@@ -135,7 +135,7 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast, theme, embedded = 
               TRAINING SIGN-UPS
             </h1>
             <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
-              Manage sessions and paddler capacity
+              Sign-ups confirm automatically within capacity; anyone past that lands on the waitlist — no approval needed from you.
             </p>
           </div>
         )}

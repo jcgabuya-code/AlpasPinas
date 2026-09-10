@@ -21,6 +21,9 @@ import { supabase, isSupabaseConfigured } from './supabase';
 const isRemote = isSupabaseConfigured;
 
 const ORDERS_CACHE_KEY = 'alpas-merch-orders-v1';
+const PRODUCTS_CHANGE_EVENT = 'alpas-merch-products-changed';
+
+const notifyProductsChanged = () => window.dispatchEvent(new Event(PRODUCTS_CHANGE_EVENT));
 
 /* ------------------------------- types -------------------------------- */
 
@@ -263,6 +266,7 @@ export const createProduct = async (input: ProductInput): Promise<void> => {
     if (/duplicate|unique/i.test(error.message)) throw new Error('A product with that slug already exists.');
     throw new Error(error.message || 'Could not create the product.');
   }
+  notifyProductsChanged();
 };
 
 export const updateProduct = async (id: string, input: ProductInput): Promise<void> => {
@@ -271,6 +275,7 @@ export const updateProduct = async (id: string, input: ProductInput): Promise<vo
     if (/duplicate|unique/i.test(error.message)) throw new Error('A product with that slug already exists.');
     throw new Error(error.message || 'Could not update the product.');
   }
+  notifyProductsChanged();
 };
 
 /** Quick field flip (active/featured) without a full form submit. */
@@ -281,11 +286,13 @@ export const setProductFlag = async (
 ): Promise<void> => {
   const { error } = await supabase.from('products').update({ [field]: value }).eq('id', id);
   if (error) throw new Error(error.message || 'Could not update the product.');
+  notifyProductsChanged();
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) throw new Error(error.message || 'Could not delete the product.');
+  notifyProductsChanged();
 };
 
 /** Slugify a name for the slug field (admin convenience). */

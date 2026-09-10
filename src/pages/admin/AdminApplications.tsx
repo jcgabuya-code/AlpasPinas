@@ -216,7 +216,7 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
             REGISTRATIONS
           </h1>
           <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
-            Review and confirm new member applications
+            Approve to email them a registration link, or reject with a reason. Pending requests need action first.
           </p>
         </div>
         <button

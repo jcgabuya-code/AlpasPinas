@@ -16,11 +16,14 @@ export const SiteContentProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [content, setContent] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchSiteContent()
+    const refresh = () => fetchSiteContent()
       .then(setContent)
       .catch(() => {
         // Stay on component fallbacks if the fetch fails (e.g. offline).
       });
+    refresh();
+    window.addEventListener('alpas-site-content-changed', refresh);
+    return () => window.removeEventListener('alpas-site-content-changed', refresh);
   }, []);
 
   return <SiteContentContext.Provider value={content}>{children}</SiteContentContext.Provider>;
