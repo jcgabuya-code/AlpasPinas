@@ -84,17 +84,7 @@ export const RaceRecord: React.FC = () => {
     return Array.from(map.values());
   }, [results]);
 
-  // Podium/race counts follow the same one-row-per-event grouping as the list below.
-  const podiums = resultGroups.filter((group) => group.some((e) => (e.result?.rank ?? 99) <= 3)).length;
-
   if (loaded && resultGroups.length === 0) return null;
-
-  const stat = (value: string | number, label: string) => (
-    <div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '2rem' : '2.4rem', color: accent, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '0.66rem', letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(245,247,251,0.72)', marginTop: '0.3rem' }}>{label}</div>
-    </div>
-  );
 
   const photoCard = (
     <div
@@ -132,13 +122,9 @@ export const RaceRecord: React.FC = () => {
         aria-hidden="true"
         style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,16,24,0) 38%, rgba(10,16,24,0.55) 70%, rgba(10,16,24,0.94) 100%)' }}
       />
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: isMobile ? '1.2rem 1.3rem' : '1.4rem 1.5rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1.6rem', alignItems: 'flex-end' }}>
-          {stat(podiums, 'Podium finishes')}
-          {stat(resultGroups.length, 'Races logged')}
-        </div>
+      <div style={{ position: 'absolute', right: 0, bottom: 0, padding: isMobile ? '1.2rem 1.3rem' : '1.4rem 1.5rem' }}>
         {/* Photo dots — indicate + jump between shots */}
-        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, paddingBottom: '0.2rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
           {RACE_PHOTOS.map((p, i) => (
             <button
               key={p.src}

@@ -266,9 +266,6 @@ export const MobileHome: React.FC = () => {
     return Array.from(map.values());
   }, [results]);
 
-  // Podium/race counts follow the same one-row-per-event grouping as the list below.
-  const podiums = resultGroups.filter((group) => group.some((e) => (e.result?.rank ?? 99) <= 3)).length;
-
   // ---- Products (shop teaser) ----
   const [products, setProducts] = useState<Product[] | null>(null);
   useEffect(() => {
@@ -675,17 +672,6 @@ export const MobileHome: React.FC = () => {
         </div>
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
           {raceIntro}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-          <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.7rem', color: c.text }}>{podiums}</div>
-            <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>Podium finishes</div>
-          </div>
-          <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.7rem', color: c.text }}>{resultGroups.length}</div>
-            <div style={{ fontSize: '0.75rem', color: c.textSecondary }}>Races logged</div>
-          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
