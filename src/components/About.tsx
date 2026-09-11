@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Maximize2, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -96,6 +97,7 @@ export const About: React.FC = () => {
   // Cross-fade through the hand-picked shots, unless the user prefers reduced motion
   // (then the first photo holds; the dots still allow manual selection).
   const [photo, setPhoto] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   useEffect(() => {
     if (ABOUT_PHOTOS.length < 2 || reduced) return;
     const id = window.setInterval(
@@ -104,6 +106,22 @@ export const About: React.FC = () => {
     );
     return () => window.clearInterval(id);
   }, [reduced]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [lightboxOpen]);
+
+  const openPhoto = () => setLightboxOpen(true);
 
   return (
     <section
@@ -114,7 +132,7 @@ export const About: React.FC = () => {
         // bottom in further so the facts strip sits closer to the next section.
         paddingBlock: 'clamp(2.75rem, 6vw, 4.5rem)',
         paddingBottom: 'clamp(2rem, 4vw, 3rem)',
-        backgroundColor: c.surface,
+        backgroundColor: c.background,
         borderTop: `1px solid ${c.border}`,
       }}
     >
@@ -216,6 +234,16 @@ export const About: React.FC = () => {
             style={{ animationDelay: '0.12s' }}
           >
             <figure
+              role="button"
+              tabIndex={0}
+              aria-label={`View full photo: ${ABOUT_PHOTOS[photo].alt}`}
+              onClick={openPhoto}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  openPhoto();
+                }
+              }}
               style={{
                 margin: 0,
                 position: 'relative',
@@ -226,6 +254,7 @@ export const About: React.FC = () => {
                 boxShadow: isDark
                   ? '0 26px 60px -30px rgba(0,0,0,0.85)'
                   : '0 26px 60px -30px rgba(15,23,42,0.35)',
+                cursor: 'zoom-in',
               }}
             >
               {/* Cross-fading stack — only the active shot is opaque */}
@@ -280,6 +309,27 @@ export const About: React.FC = () => {
                 AlpasPinas · Malaysia
               </figcaption>
 
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  right: '1rem',
+                  width: '2.25rem',
+                  height: '2.25rem',
+                  borderRadius: '999px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  background: 'rgba(8,13,20,0.66)',
+                  backdropFilter: 'blur(6px)',
+                  WebkitBackdropFilter: 'blur(6px)',
+                }}
+              >
+                <Maximize2 size={17} />
+              </span>
+
               {/* Photo dots — indicate + jump between the hand-picked shots */}
               {ABOUT_PHOTOS.length > 1 && (
                 <div
@@ -297,7 +347,10 @@ export const About: React.FC = () => {
                       type="button"
                       aria-label={`Show photo ${i + 1}`}
                       aria-current={i === photo}
-                      onClick={() => setPhoto(i)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setPhoto(i);
+                      }}
                       style={{
                         width: 20,
                         height: 8,
@@ -378,6 +431,63 @@ export const About: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {lightboxOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Full photo: ${ABOUT_PHOTOS[photo].alt}`}
+          onClick={() => setLightboxOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'clamp(1rem, 4vw, 3rem)',
+            background: 'rgba(8,13,20,0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          <img
+            src={ABOUT_PHOTOS[photo].src}
+            alt={ABOUT_PHOTOS[photo].alt}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '0.8rem',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Close full photo"
+            style={{
+              position: 'fixed',
+              top: '1rem',
+              right: '1rem',
+              width: '2.5rem',
+              height: '2.5rem',
+              border: `1px solid ${c.border}`,
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.78)',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
     </section>
   );
 };

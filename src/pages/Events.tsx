@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Maximize2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors, type ColorPalette } from '../styles/colors';
@@ -12,6 +13,21 @@ export const Events: React.FC = () => {
   const { events: all } = useRaceEvents();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [heroLightboxOpen, setHeroLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    if (!heroLightboxOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setHeroLightboxOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [heroLightboxOpen]);
 
   const typeOptions = useMemo(() => {
     const set = new Set(all.map((e) => e.type));
@@ -38,12 +54,23 @@ export const Events: React.FC = () => {
     <>
       {/* Hero banner */}
       <section
+        role="button"
+        tabIndex={0}
+        aria-label="View full team race photo"
+        onClick={() => setHeroLightboxOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setHeroLightboxOpen(true);
+          }
+        }}
         style={{
           position: 'relative',
           width: '100%',
           height: 'clamp(140px, 22vw, 240px)',
           overflow: 'hidden',
           backgroundColor: c.surface,
+          cursor: 'zoom-in',
         }}
       >
         <img
@@ -65,6 +92,26 @@ export const Events: React.FC = () => {
             background: `linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.15) 45%, ${c.background} 100%)`,
           }}
         />
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            width: '2.25rem',
+            height: '2.25rem',
+            borderRadius: '999px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            background: 'rgba(8,13,20,0.66)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+          }}
+        >
+          <Maximize2 size={17} />
+        </span>
       </section>
 
       {/* Page header */}
@@ -303,6 +350,63 @@ export const Events: React.FC = () => {
           </p>
         </div>
       </section>
+
+      {heroLightboxOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full team race photo"
+          onClick={() => setHeroLightboxOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'clamp(1rem, 4vw, 3rem)',
+            background: 'rgba(8,13,20,0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          <img
+            src="/team.jpg"
+            alt="AlpasPinas Dragonboat Team racing"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '0.8rem',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setHeroLightboxOpen(false)}
+            aria-label="Close full photo"
+            style={{
+              position: 'fixed',
+              top: '1rem',
+              right: '1rem',
+              width: '2.5rem',
+              height: '2.5rem',
+              border: `1px solid ${c.border}`,
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.78)',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
     </>
   );
 };

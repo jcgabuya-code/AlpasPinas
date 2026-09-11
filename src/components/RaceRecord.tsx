@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Maximize2, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { colors } from '../styles/colors';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
@@ -39,6 +40,7 @@ export const RaceRecord: React.FC = () => {
   const isMobile = useIsMobile();
   const [ref, inView] = useInView<HTMLDivElement>();
   const [photo, setPhoto] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const intro = useContent(
     'raceRecord.intro',
     "We've raced in Malaysia, Singapore, and the Philippines — chasing podiums and having a blast together. Same crew, same rhythm, all in from catch to finish.",
@@ -54,6 +56,20 @@ export const RaceRecord: React.FC = () => {
     const id = window.setInterval(() => setPhoto((i) => (i + 1) % RACE_PHOTOS.length), 4500);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [lightboxOpen]);
 
   // Race calendar, live from the admin-managed race_events table. `loaded`
   // distinguishes "still fetching" from "genuinely no races" so the section
@@ -88,6 +104,16 @@ export const RaceRecord: React.FC = () => {
 
   const photoCard = (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`View full race photo: ${RACE_PHOTOS[photo].alt}`}
+      onClick={() => setLightboxOpen(true)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          setLightboxOpen(true);
+        }
+      }}
       style={{
         position: isMobile ? 'relative' : 'sticky',
         top: isMobile ? undefined : '5.5rem',
@@ -95,6 +121,7 @@ export const RaceRecord: React.FC = () => {
         overflow: 'hidden',
         border: `1px solid ${c.border}`,
         aspectRatio: '3 / 2',
+        cursor: 'zoom-in',
       }}
     >
       {/* Cross-fading photos, stacked; only the active one is opaque */}
@@ -122,6 +149,26 @@ export const RaceRecord: React.FC = () => {
         aria-hidden="true"
         style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,16,24,0) 38%, rgba(10,16,24,0.55) 70%, rgba(10,16,24,0.94) 100%)' }}
       />
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          width: '2.25rem',
+          height: '2.25rem',
+          borderRadius: '999px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          background: 'rgba(8,13,20,0.66)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+        }}
+      >
+        <Maximize2 size={17} />
+      </span>
       <div style={{ position: 'absolute', right: 0, bottom: 0, padding: isMobile ? '1.2rem 1.3rem' : '1.4rem 1.5rem' }}>
         {/* Photo dots — indicate + jump between shots */}
         <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -131,7 +178,10 @@ export const RaceRecord: React.FC = () => {
               type="button"
               aria-label={`Show photo ${i + 1}`}
               aria-current={i === photo}
-              onClick={() => setPhoto(i)}
+              onClick={(event) => {
+                event.stopPropagation();
+                setPhoto(i);
+              }}
               style={{
                 width: '20px',
                 height: '8px',
@@ -269,6 +319,63 @@ export const RaceRecord: React.FC = () => {
           <div>{resultGroups.map((group, i) => row(group, i))}</div>
         </div>
       </div>
+
+      {lightboxOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Full race photo: ${RACE_PHOTOS[photo].alt}`}
+          onClick={() => setLightboxOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'clamp(1rem, 4vw, 3rem)',
+            background: 'rgba(8,13,20,0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          <img
+            src={RACE_PHOTOS[photo].src}
+            alt={RACE_PHOTOS[photo].alt}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '0.8rem',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Close full race photo"
+            style={{
+              position: 'fixed',
+              top: '1rem',
+              right: '1rem',
+              width: '2.5rem',
+              height: '2.5rem',
+              border: `1px solid ${c.border}`,
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.78)',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
     </section>
   );
 };

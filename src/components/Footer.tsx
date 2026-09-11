@@ -5,13 +5,10 @@ import { colors, brandGradient } from '../styles/colors';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 const LINKS: { label: string; to: string; hash?: string }[] = [
+  { label: 'Home', to: '/' },
   { label: 'About', to: '/', hash: '#about' },
-  { label: 'Roster', to: '/roster' },
-  { label: 'Events', to: '/events' },
-  { label: 'Training', to: '/training' },
-  { label: 'Gallery', to: '/gallery' },
-  { label: 'Shop', to: '/shop' },
-  { label: 'Contact', to: '/', hash: '#contact' },
+  { label: 'Training', to: '/', hash: '#training' },
+  { label: 'Merch', to: '/shop' },
 ];
 
 export const Footer: React.FC = () => {

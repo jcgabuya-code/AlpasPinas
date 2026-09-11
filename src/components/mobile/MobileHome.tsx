@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Maximize2, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { colors, brandGradient, bandilaHero, type ColorPalette } from '../../styles/colors';
@@ -284,7 +285,9 @@ export const MobileHome: React.FC = () => {
 
   // ---- Cross-fading photo helper (About + Race Record) ----
   const [aboutPhoto, setAboutPhoto] = useState(0);
+  const [aboutLightboxOpen, setAboutLightboxOpen] = useState(false);
   const [racePhoto, setRacePhoto] = useState(0);
+  const [raceLightboxOpen, setRaceLightboxOpen] = useState(false);
   const [heroPick] = useHeroPick();
   const heroPhoto = HERO_OPTIONS[heroPick];
   useEffect(() => {
@@ -296,6 +299,34 @@ export const MobileHome: React.FC = () => {
       window.clearInterval(r);
     };
   }, []);
+
+  useEffect(() => {
+    if (!aboutLightboxOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAboutLightboxOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [aboutLightboxOpen]);
+
+  useEffect(() => {
+    if (!raceLightboxOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRaceLightboxOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [raceLightboxOpen]);
 
   const statTile = (value: React.ReactNode, label: string) => (
     <div key={label} style={{ background: c.background, border: `1px solid ${c.border}`, borderRadius: '14px', padding: '14px 10px', textAlign: 'center' }}>
@@ -376,7 +407,7 @@ export const MobileHome: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
-          paddingBottom: '20%',
+          paddingBottom: '14%',
           overflow: 'hidden',
           background: heroC.surface,
           scrollMarginTop: `${scrollMargin}px`,
@@ -572,7 +603,7 @@ export const MobileHome: React.FC = () => {
       </section>
 
       {/* ===== ABOUT ===== */}
-      <section ref={refs.about} id="about" style={sectionBase(c.surface)}>
+      <section ref={refs.about} id="about" style={sectionBase(c.background)}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
           {eyebrow('Our Story')}
           <AboutEditor />
@@ -584,7 +615,19 @@ export const MobileHome: React.FC = () => {
           <span style={{ fontSize: '0.85rem', color: c.textSecondary, fontStyle: 'italic' }}>/ˈal.pas/ · verb · Filipino</span>
         </div>
         <div style={{ fontSize: '1.05rem', fontWeight: 700, color: c.text }}>to break free; to break away.</div>
-        <div style={{ position: 'relative', width: '100%', height: '280px', borderRadius: '14px', overflow: 'hidden' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={`View full photo: ${ABOUT_PHOTOS[aboutPhoto].alt}`}
+          onClick={() => setAboutLightboxOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setAboutLightboxOpen(true);
+            }
+          }}
+          style={{ position: 'relative', width: '100%', height: '280px', borderRadius: '14px', overflow: 'hidden', cursor: 'zoom-in' }}
+        >
           {ABOUT_PHOTOS.map((p, i) => (
             <img
               key={p.src}
@@ -594,6 +637,26 @@ export const MobileHome: React.FC = () => {
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: p.pos, opacity: i === aboutPhoto ? 1 : 0, transition: 'opacity 1s ease' }}
             />
           ))}
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: '0.75rem',
+              right: '0.75rem',
+              width: '2.25rem',
+              height: '2.25rem',
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.66)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+            }}
+          >
+            <Maximize2 size={17} />
+          </span>
         </div>
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
           {manifesto}
@@ -615,7 +678,7 @@ export const MobileHome: React.FC = () => {
         ref={refs.gear}
         id="gear"
         style={{
-          ...sectionBase(c.surface),
+          ...sectionBase(c.background),
           minHeight: '560px',
         }}
       >
@@ -665,7 +728,19 @@ export const MobileHome: React.FC = () => {
           {heading('EVENT RECORDS')}
           <RaceRecordEditor />
         </div>
-        <div style={{ position: 'relative', width: '100%', height: '190px', borderRadius: '14px', overflow: 'hidden' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={`View full race photo: ${RACE_PHOTOS[racePhoto].alt}`}
+          onClick={() => setRaceLightboxOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setRaceLightboxOpen(true);
+            }
+          }}
+          style={{ position: 'relative', width: '100%', height: '190px', borderRadius: '14px', overflow: 'hidden', cursor: 'zoom-in' }}
+        >
           {RACE_PHOTOS.map((p, i) => (
             <img
               key={p.src}
@@ -676,6 +751,26 @@ export const MobileHome: React.FC = () => {
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: p.pos, opacity: i === racePhoto ? 1 : 0, transition: 'opacity 1s ease' }}
             />
           ))}
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: '0.75rem',
+              right: '0.75rem',
+              width: '2.25rem',
+              height: '2.25rem',
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.66)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+            }}
+          >
+            <Maximize2 size={17} />
+          </span>
         </div>
         <div style={{ fontSize: '0.92rem', lineHeight: 1.6, color: c.textSecondary }}>
           {raceIntro}
@@ -719,7 +814,121 @@ export const MobileHome: React.FC = () => {
       </section>
 
       {/* ===== CLAIM YOUR SEAT ===== */}
-      <ClaimYourSeat sectionRef={refs.contact} sectionStyle={sectionBase(c.surface)} eyebrow={eyebrow} heading={heading} c={c} accent={accent} grad={grad} />
+      <ClaimYourSeat sectionRef={refs.contact} sectionStyle={sectionBase(c.background)} eyebrow={eyebrow} heading={heading} c={c} accent={accent} grad={grad} />
+
+      {aboutLightboxOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Full photo: ${ABOUT_PHOTOS[aboutPhoto].alt}`}
+          onClick={() => setAboutLightboxOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            background: 'rgba(8,13,20,0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          <img
+            src={ABOUT_PHOTOS[aboutPhoto].src}
+            alt={ABOUT_PHOTOS[aboutPhoto].alt}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '0.8rem',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setAboutLightboxOpen(false)}
+            aria-label="Close full photo"
+            style={{
+              position: 'fixed',
+              top: '1rem',
+              right: '1rem',
+              width: '2.5rem',
+              height: '2.5rem',
+              border: `1px solid ${c.border}`,
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.78)',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
+
+      {raceLightboxOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Full race photo: ${RACE_PHOTOS[racePhoto].alt}`}
+          onClick={() => setRaceLightboxOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            background: 'rgba(8,13,20,0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          <img
+            src={RACE_PHOTOS[racePhoto].src}
+            alt={RACE_PHOTOS[racePhoto].alt}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '0.8rem',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setRaceLightboxOpen(false)}
+            aria-label="Close full race photo"
+            style={{
+              position: 'fixed',
+              top: '1rem',
+              right: '1rem',
+              width: '2.5rem',
+              height: '2.5rem',
+              border: `1px solid ${c.border}`,
+              borderRadius: '999px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              background: 'rgba(8,13,20,0.78)',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
