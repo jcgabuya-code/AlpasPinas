@@ -26,6 +26,7 @@ type EditState = { id: string; data: ProfileEdit };
 const toEditable = (u: User): ProfileEdit => ({
   mobile: u.mobile,
   name: u.name,
+  nickname: u.nickname ?? '',
   email: u.email ?? '',
   birthday: u.birthday ?? '',
   gender: u.gender ?? null,
@@ -57,7 +58,7 @@ export const AdminMembers: React.FC<Props> = ({ c, showToast, theme, embedded = 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return members;
-    return members.filter((m) => [m.name, m.mobile, m.email].some((v) => v?.toLowerCase().includes(q)));
+    return members.filter((m) => [m.name, m.nickname, m.mobile, m.email].some((v) => v?.toLowerCase().includes(q)));
   }, [members, query]);
 
   const handleSave = async () => {
@@ -230,7 +231,9 @@ export const AdminMembers: React.FC<Props> = ({ c, showToast, theme, embedded = 
                   <div style={{ padding: '1rem 1.1rem', backgroundColor: isEditing ? c.surfaceAlt : undefined, borderBottom: (isLast && !isEditing) ? 'none' : `1px solid ${c.border}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: c.text }}>{m.name}</div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: c.text }}>
+                          {m.name}{m.nickname && <span style={{ color: c.textSecondary, fontWeight: 500 }}> "{m.nickname}"</span>}
+                        </div>
                         <div style={{ fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.15rem' }}>{m.mobile}{m.email ? ` · ${m.email}` : ''}</div>
                         <div style={{ fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.15rem' }}>{[m.gender, m.side].filter(Boolean).join(' · ') || '—'}</div>
                       </div>
@@ -246,7 +249,9 @@ export const AdminMembers: React.FC<Props> = ({ c, showToast, theme, embedded = 
             return (
               <React.Fragment key={m.id}>
                 <div style={{ display: 'grid', gridTemplateColumns: COLUMNS, gap: '1rem', alignItems: 'center', padding: '0.85rem 1.25rem', backgroundColor: isEditing ? c.surfaceAlt : undefined, borderBottom: (isLast && !isEditing) ? 'none' : `1px solid ${c.border}` }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: c.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: c.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {m.name}{m.nickname && <span style={{ color: c.textSecondary, fontWeight: 500 }}> "{m.nickname}"</span>}
+                  </div>
                   <div style={{ fontSize: '0.85rem', color: c.textSecondary }}>{m.mobile}</div>
                   <div style={{ fontSize: '0.85rem', color: c.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email || '—'}</div>
                   <div style={{ fontSize: '0.85rem', color: c.textSecondary }}>{[m.gender, m.side].filter(Boolean).join(' · ') || '—'}</div>
@@ -280,6 +285,7 @@ const MemberEditForm: React.FC<{
       <div style={{ fontWeight: 700, fontSize: '0.9rem', color: c.text, marginBottom: '1rem' }}>Edit Member</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.65rem' }}>
         <FieldInput label="Name" value={data.name ?? ''} onChange={(v) => set({ name: v })} c={c} />
+        <FieldInput label="Nickname" value={data.nickname ?? ''} onChange={(v) => set({ nickname: v })} c={c} hint="Shown on training rosters instead of their name." />
         <FieldInput label="Mobile" value={data.mobile ?? ''} onChange={(v) => set({ mobile: v })} c={c} />
         <FieldInput label="Email" value={data.email ?? ''} onChange={(v) => set({ email: v })} c={c} type="email" hint="Contact copy only — doesn't change their sign-in email." />
         <FieldInput label="Birthday" value={data.birthday ?? ''} onChange={(v) => set({ birthday: v })} c={c} type="date" />

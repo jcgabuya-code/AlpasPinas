@@ -23,6 +23,7 @@ import {
   type Booking,
   type EventCounts,
 } from '../utils/bookings';
+import { displayName } from '../utils/users';
 
 const STATUS_SEEN_KEY = 'alpas-booking-status-seen';
 
@@ -60,7 +61,7 @@ export const Training: React.FC = () => {
 
   // Latest signed-in name, read inside the mount effect without re-subscribing.
   const myNameRef = useRef<string | undefined>(undefined);
-  myNameRef.current = user?.name.trim().toLowerCase();
+  myNameRef.current = user ? displayName(user).trim().toLowerCase() : undefined;
 
   useEffect(() => {
     const refresh = () => { setBookings(getAllBookings()); setCounts(getEventCounts()); };
@@ -107,7 +108,7 @@ export const Training: React.FC = () => {
   // The signed-in user's own bookings, for events that still have at least one
   // upcoming day. Matched by name (bookings carry no user id). Without this the
   // panel would list — and offer to cancel — everyone's sign-ups.
-  const myName = user?.name.trim().toLowerCase();
+  const myName = user ? displayName(user).trim().toLowerCase() : undefined;
 
   // The signed-in user's own booking per event — surfaced directly on the card
   // (badge + border + disabled button) so "you're already in" is visible while

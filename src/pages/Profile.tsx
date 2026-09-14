@@ -19,6 +19,7 @@ export const Profile: React.FC = () => {
   const [data, setData] = useState<ProfileEdit>({
     mobile: user?.mobile ?? '',
     name: user?.name ?? '',
+    nickname: user?.nickname ?? '',
     email: user?.email ?? '',
     birthday: user?.birthday ?? '',
     gender: user?.gender ?? null,
@@ -107,6 +108,11 @@ export const Profile: React.FC = () => {
             <div>
               <label style={labelStyle}>Name</label>
               <input value={data.name ?? ''} onChange={(e) => set({ name: e.target.value })} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Nickname</label>
+              <input value={data.nickname ?? ''} onChange={(e) => set({ nickname: e.target.value })} placeholder="What should we call you?" style={inputStyle} />
+              <span style={{ display: 'block', fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>Shown on training sign-up rosters instead of your full name.</span>
             </div>
             <div>
               <label style={labelStyle}>Mobile</label>

@@ -41,6 +41,7 @@ export const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [nickname, setNickname] = useState('');
   const [gender, setGender] = useState<UserGender | ''>('');
   const [birthday, setBirthday] = useState('');
   const [side, setSide] = useState<UserSide | ''>('');
@@ -125,6 +126,7 @@ export const Register: React.FC = () => {
       await registerWithEmail(token, password, {
         mobile,
         name,
+        nickname: nickname.trim() || undefined,
         birthday,
         gender: gender as UserGender,
         side: side || null,
@@ -279,6 +281,11 @@ export const Register: React.FC = () => {
 
       {step === 2 && (
         <>
+          <div style={{ marginBottom: '1.1rem', animation: 'onbRiseIn .5s .17s both' }}>
+            <label style={onbLabelStyle(onb)}>Nickname <span style={{ textTransform: 'none', fontWeight: 500, letterSpacing: 0 }}>(optional)</span></label>
+            <input className="onb-field" placeholder="What should we call you?" value={nickname} onChange={(e) => setNickname(e.target.value)} style={onbFieldStyle(onb)} />
+            <div style={{ fontSize: '0.72rem', color: onb.sub, marginTop: '0.4rem' }}>Shown on training sign-up rosters instead of your full name.</div>
+          </div>
           <div style={{ marginBottom: '1.1rem', animation: 'onbRiseIn .5s .2s both' }}>
             <label style={onbLabelStyle(onb)}>Gender</label>
             <select className="onb-field" value={gender} onChange={(e) => setGender(e.target.value as UserGender)} style={onbFieldStyle(onb)}>

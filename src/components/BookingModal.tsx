@@ -21,6 +21,7 @@ import {
   type SideRole,
   type YesNo,
 } from '../utils/bookings';
+import { displayName } from '../utils/users';
 
 type BookingModalProps = {
   open: boolean;
@@ -50,7 +51,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   // user's profile (captured at registration) but stay editable per sign-up.
   // Birthday is captured mandatorily at registration and read straight off
   // the profile — no editable field here.
-  const [name, setName] = useState(user?.name ?? '');
+  const [name, setName] = useState(user ? displayName(user) : '');
   const [gender, setGender] = useState<Gender>(user?.gender ?? 'Male');
   const [side, setSide] = useState<SideRole>(user?.side ?? 'Left');
   const [weight, setWeight] = useState<string>(user?.weight ? String(user.weight) : '');
@@ -66,7 +67,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
   // Reset whenever the modal opens for a new event, and pull live counts.
   useEffect(() => {
     if (open && event) {
-      setName(user?.name ?? '');
+      setName(user ? displayName(user) : '');
       setGender(user?.gender ?? 'Male');
       setSide(user?.side ?? 'Left');
       setWeight(user?.weight ? String(user.weight) : '');
@@ -308,7 +309,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
               )}
               {user && (
                 <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                  Signing up as your account name.
+                  {user.nickname?.trim() ? 'Signing up with your nickname — change it from your profile.' : 'Signing up as your account name.'}
                 </div>
               )}
             </Field>

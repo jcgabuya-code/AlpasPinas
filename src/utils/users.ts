@@ -27,6 +27,7 @@ export type User = {
   id: string;
   mobile: string;
   name: string;
+  nickname?: string | null;
   email?: string | null;
   birthday?: string | null;
   gender?: UserGender | null;
@@ -37,6 +38,11 @@ export type User = {
   isAdmin: boolean;
   createdAt: string;
 };
+
+/** The name to show for a user — their nickname if they've set one, else their
+ * full name. Single source of truth so training sign-ups (and anywhere else)
+ * stay consistent with what a paddler actually goes by. */
+export const displayName = (u: Pick<User, 'name' | 'nickname'>): string => u.nickname?.trim() || u.name;
 
 export type Application = {
   mobile: string;
@@ -59,6 +65,7 @@ type ProfileRow = {
   id: string;
   mobile: string;
   name: string;
+  nickname: string | null;
   email: string | null;
   birthday: string | null;
   gender: UserGender | null;
@@ -74,6 +81,7 @@ const mapProfile = (row: ProfileRow): User => ({
   id: row.id,
   mobile: row.mobile,
   name: row.name,
+  nickname: row.nickname,
   email: row.email,
   birthday: row.birthday,
   gender: row.gender,
@@ -152,6 +160,7 @@ export const registerWithEmail = async (
   profile: {
     mobile: string;
     name: string;
+    nickname?: string;
     birthday?: string;
     gender: UserGender;
     side: UserSide | null;
@@ -202,6 +211,7 @@ export const registerWithEmail = async (
       id: userId,
       mobile: cleanMobile,
       name: profile.name.trim(),
+      nickname: profile.nickname?.trim() || null,
       email: cleanEmail,
       birthday: profile.birthday?.trim() || null,
       gender: profile.gender,
@@ -618,6 +628,7 @@ export const fetchAllProfiles = async (): Promise<User[]> => {
 export type ProfileEdit = Partial<{
   mobile: string;
   name: string;
+  nickname: string | null;
   email: string | null;
   birthday: string | null;
   gender: UserGender | null;
@@ -633,6 +644,7 @@ export const updateProfile = async (id: string, patch: ProfileEdit): Promise<Use
   const row: Record<string, unknown> = {};
   if (patch.mobile !== undefined) row.mobile = patch.mobile.trim();
   if (patch.name !== undefined) row.name = patch.name.trim();
+  if (patch.nickname !== undefined) row.nickname = patch.nickname?.trim() || null;
   if (patch.email !== undefined) row.email = patch.email?.trim() || null;
   if (patch.birthday !== undefined) row.birthday = patch.birthday || null;
   if (patch.gender !== undefined) row.gender = patch.gender;

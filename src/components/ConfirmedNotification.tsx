@@ -18,6 +18,14 @@ export const ConfirmedNotification: React.FC<{
   const c = colors[brand][theme];
   const accent = theme === 'dark' ? c.accent : c.primary;
 
+  // Land conditioning is exercises, not paddling — only say "ready to paddle
+  // / see you on the water" when every confirmed booking is actually a lake
+  // (boat) session.
+  const isLandOnly = bookings.every((b) => eventById.get(b.eventId)?.venue === 'land');
+  const closingMessage = isLandOnly
+    ? "Your spot is secured — please make sure to be there on time and ready to train. See you at practice! 💪"
+    : 'Your spot is secured — please make sure to be there on time and ready to paddle. See you on the water! 🚣';
+
   return (
     <>
       <style>{`
@@ -171,8 +179,7 @@ export const ConfirmedNotification: React.FC<{
               lineHeight: 1.6,
             }}
           >
-            Your spot is secured — please make sure to be there on time and ready to paddle.
-            See you on the water! 🚣
+            {closingMessage}
           </p>
 
           <button
