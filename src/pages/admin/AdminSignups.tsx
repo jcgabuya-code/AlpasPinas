@@ -10,6 +10,7 @@ import {
   coversDay,
   fetchBookings,
   formatShortDate,
+  formatTime,
   isUpcomingDate,
   type Booking,
 } from '../../utils/bookings';
@@ -231,7 +232,7 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast, theme, embedded = 
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: '0.9rem', color: c.text }}>{s.event.title}</div>
                         <div style={{ fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.2rem' }}>
-                          {formatShortDate(s.day.date)} · {s.day.time}
+                          {formatShortDate(s.day.date)} · {formatTime(s.day.time)}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.15rem' }}>
                           <MapPin size={12} strokeWidth={1.8} aria-hidden /> {s.day.location}
@@ -254,7 +255,7 @@ export const AdminSignups: React.FC<Props> = ({ c, showToast, theme, embedded = 
                   >
                     {isOpen ? <ChevronDown size={18} color={c.textSecondary} aria-hidden /> : <ChevronRight size={18} color={c.textSecondary} aria-hidden />}
                     <div style={{ fontWeight: 600, fontSize: '0.9rem', color: c.text, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.event.title}</div>
-                    <div style={{ fontSize: '0.85rem', color: c.textSecondary }}>{formatShortDate(s.day.date)} · {s.day.time}</div>
+                    <div style={{ fontSize: '0.85rem', color: c.textSecondary }}>{formatShortDate(s.day.date)} · {formatTime(s.day.time)}</div>
                     <div style={{ fontSize: '0.85rem', color: c.textSecondary, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.day.location}>{s.day.location}</div>
                     <div>{bar}</div>
                     {statusCell}
@@ -545,7 +546,7 @@ const rosterToPngBlob = async (
 
   ctx.font = `13px ${SHEET_FONT}`;
   ctx.fillStyle = '#555';
-  ctx.fillText(fit(`${formatShortDate(day.date)} · ${day.time} · ${day.location}`, innerW), PAD, y + 12);
+  ctx.fillText(fit(`${formatShortDate(day.date)} · ${formatTime(day.time)} · ${day.location}`, innerW), PAD, y + 12);
   y += 18 + 14;
 
   for (const g of groups) {
@@ -612,7 +613,7 @@ const printRosterSheet = (event: TrainingEvent, day: TrainingDay, confirmed: Boo
   @page { margin: 16mm; }
 </style></head><body>
   <h1>ALPAS PINAS — Sign-ups</h1>
-  <p class="meta">${esc(event.title)} — ${esc(formatShortDate(day.date))} · ${esc(day.time)} · ${esc(day.location)}</p>
+  <p class="meta">${esc(event.title)} — ${esc(formatShortDate(day.date))} · ${esc(formatTime(day.time))} · ${esc(day.location)}</p>
   <h2>Confirmed — ${confirmed.length}/${day.capacity}</h2>
   ${table(confirmed)}
   ${waiting.length ? `<h2>Waitlist — ${waiting.length}</h2>${table(waiting)}` : ''}
@@ -645,7 +646,7 @@ const RosterSheet = React.forwardRef<HTMLDivElement, { event: TrainingEvent; day
       <div ref={ref} style={{ width: SHEET_W, boxSizing: 'border-box', padding: 28, background: '#fff', color: '#111', fontFamily: SHEET_FONT }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.02em', margin: '0 0 2px' }}>ALPAS PINAS — Sign-ups</div>
         <div style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>{event.title}</div>
-        <div style={{ fontSize: 13, color: '#555', margin: '0 0 14px' }}>{formatShortDate(day.date)} · {day.time} · {day.location}</div>
+        <div style={{ fontSize: 13, color: '#555', margin: '0 0 14px' }}>{formatShortDate(day.date)} · {formatTime(day.time)} · {day.location}</div>
         {group(`Confirmed — ${confirmed.length}/${day.capacity}`, confirmed, '#ecfdf5')}
         {waiting.length > 0 && group(`Waitlist — ${waiting.length}`, waiting, '#fffbeb')}
       </div>

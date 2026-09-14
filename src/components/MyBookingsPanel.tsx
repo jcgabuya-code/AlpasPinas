@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { CalendarDays, Clock, MapPin } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { colors } from '../styles/colors';
-import { attendingLabel, formatShortDate, type Booking } from '../utils/bookings';
+import { attendingLabel, formatShortDate, formatTime, type Booking } from '../utils/bookings';
 import type { TrainingEvent } from './TrainingCard';
 
 /**
@@ -50,23 +51,24 @@ export const MyBookingsPanel: React.FC<{
               const ev = eventById.get(b.eventId);
               const cancelKey = `${b.eventId}::${b.name}`;
               const confirming = pendingCancel === cancelKey;
-              const dayDates =
-                b.attending === 'both'
-                  ? ev?.days.map((d) => formatShortDate(d.date)).join(' + ')
-                  : formatShortDate(
-                      ev?.days.find((d) => d.key === b.attending)?.date ?? '',
-                    );
+              const selectedDays = ev?.days.filter((d) => b.attending === 'both' || d.key === b.attending) ?? [];
+              const detailTags = [
+                b.side,
+                b.weight !== undefined ? `${b.weight} kg` : null,
+                ...(b.needPFD === 'Yes' ? ['PFD'] : []),
+                ...(b.needPaddle === 'Yes' ? ['Paddle'] : []),
+              ].filter((value): value is string => Boolean(value));
               return (
                 <div
                   key={`${b.eventId}-${b.name}-${b.createdAt}`}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '0.75rem',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
                     flexWrap: 'wrap',
-                    padding: '0.7rem 0.85rem',
-                    borderRadius: '0.55rem',
+                    padding: isMobile ? '0.9rem' : '1rem',
+                    borderRadius: '0.65rem',
                     backgroundColor: c.surface,
                     border: `1px solid ${confirming ? '#ef444466' : c.border}`,
                     transition: 'border-color 0.15s ease',
@@ -133,18 +135,48 @@ export const MyBookingsPanel: React.FC<{
                         </span>
                       )}
                     </div>
-                    {/* Event title + dates */}
-                    <div style={{ fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.2rem' }}>
-                      {ev ? ev.title : b.eventId} · {dayDates}
+                    <div style={{ fontSize: '0.88rem', color: c.text, fontWeight: 600, marginTop: '0.45rem' }}>
+                      {ev ? ev.title : b.eventTitle ?? b.eventId}
                     </div>
-                    {/* Detail chips */}
-                    <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.45rem' }}>
-                      {[
-                        b.side,
-                        b.weight !== undefined ? `${b.weight} kg` : null,
-                        ...(b.needPFD === 'Yes' ? ['PFD'] : []),
-                        ...(b.needPaddle === 'Yes' ? ['Paddle'] : []),
-                      ].filter((v): v is string => Boolean(v)).map((tag) => (
+                    {selectedDays.length > 0 ? (
+                      <div style={{ display: 'grid', gap: '0.45rem', marginTop: '0.7rem' }}>
+                        {selectedDays.map((day) => (
+                          <div
+                            key={day.key}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.65rem',
+                              flexWrap: 'wrap',
+                              color: c.textSecondary,
+                              fontSize: '0.78rem',
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: c.text }}>
+                              <CalendarDays size={14} strokeWidth={1.8} aria-hidden />
+                              <strong>{day.label}</strong>&nbsp;{formatShortDate(day.date)}
+                            </span>
+                            <span aria-hidden style={{ color: c.border }}>•</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <Clock size={14} strokeWidth={1.8} aria-hidden />
+                              {formatTime(day.time)}
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', minWidth: 0 }}>
+                              <MapPin size={14} strokeWidth={1.8} aria-hidden style={{ flexShrink: 0 }} />
+                              {day.location}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.78rem', color: c.textSecondary, marginTop: '0.3rem' }}>
+                        Session details are being updated.
+                      </div>
+                    )}
+                    {detailTags.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.7rem' }}>
+                      {detailTags.map((tag) => (
                         <span
                           key={tag}
                           style={{
@@ -160,7 +192,8 @@ export const MyBookingsPanel: React.FC<{
                           {tag}
                         </span>
                       ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   {confirming ? (
                     <div

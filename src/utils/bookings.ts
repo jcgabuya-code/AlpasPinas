@@ -21,7 +21,8 @@
  */
 import { supabase, isSupabaseConfigured } from './supabase';
 
-const isRemote = isSupabaseConfigured;
+const useLocalTraining = import.meta.env.DEV && (import.meta.env.VITE_LOCAL_TRAINING ?? '').trim() === '1';
+const isRemote = isSupabaseConfigured && !useLocalTraining;
 
 const CACHE_KEY = 'alpas-bookings-v2';
 const COUNTS_KEY = 'alpas-booking-counts-v1';
@@ -382,6 +383,13 @@ export const formatShortDate = (iso: string) => {
     month: 'short',
     day: 'numeric',
   });
+};
+
+/** Format an HH:mm session time as e.g. "7:45 PM". */
+export const formatTime = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return time;
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${hours >= 12 ? 'PM' : 'AM'}`;
 };
 
 /** Format YYYY-MM-DD as e.g. "May 30, 2026". */

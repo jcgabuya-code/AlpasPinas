@@ -17,10 +17,28 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import defaultEvents from '../data/training.json';
 import { type TrainingEvent } from '../components/TrainingCard';
 
-const isRemote = isSupabaseConfigured;
+const useLocalTraining = import.meta.env.DEV && (import.meta.env.VITE_LOCAL_TRAINING ?? '').trim() === '1';
+const isRemote = isSupabaseConfigured && !useLocalTraining;
 
 const STORAGE_KEY = 'alpas-training-events-v1';
 const CHANGE_EVENT = 'alpas-training-events-changed';
+
+const localLakeTestEvent: TrainingEvent = {
+  id: 'local-lake-training-test',
+  title: 'Local Lake Training',
+  description: 'Development-only lake session for testing sign-ups without changing the live schedule.',
+  thumbnail: '/marina-putrajaya.jpg',
+  thumbnailCredit: 'Photo by Elliot Andrews on Unsplash',
+  venue: 'lake',
+  days: [
+    { key: 'sat', label: 'Saturday', date: '2026-09-19', time: '07:30', location: 'Marina Putrajaya', capacity: 22 },
+    { key: 'sun', label: 'Sunday', date: '2026-09-20', time: '07:30', location: 'Marina Putrajaya', capacity: 22 },
+  ],
+};
+
+const localDefaultEvents: TrainingEvent[] = useLocalTraining
+  ? [...(defaultEvents as TrainingEvent[]), localLakeTestEvent]
+  : defaultEvents as TrainingEvent[];
 
 let channelSeq = 0;
 
@@ -62,17 +80,20 @@ const fromEvent = (ev: TrainingEvent) => ({
 const seedLocal = () => {
   if (typeof window === 'undefined') return;
   if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultEvents));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(localDefaultEvents));
   }
 };
 
 const readLocal = (): TrainingEvent[] => {
-  if (typeof window === 'undefined') return defaultEvents as TrainingEvent[];
+  if (typeof window === 'undefined') return localDefaultEvents;
   try {
     seedLocal();
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)!) as TrainingEvent[];
+    const events = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as TrainingEvent[];
+    return useLocalTraining && !events.some((event) => event.id === localLakeTestEvent.id)
+      ? [...events, localLakeTestEvent]
+      : events;
   } catch {
-    return defaultEvents as TrainingEvent[];
+    return localDefaultEvents;
   }
 };
 

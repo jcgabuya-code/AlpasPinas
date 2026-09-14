@@ -6,6 +6,7 @@ import {
   attendingLabel,
   takenForDay,
   formatShortDate,
+  formatTime,
   isUpcomingDate,
   type Booking,
   type EventCounts,
@@ -229,7 +230,7 @@ export const TrainingCard: React.FC<Props> = ({ event, counts, onBook, myBooking
                   </span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', fontSize: '0.78rem', color: c.textSecondary }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Clock size={12} /> {day.time}
+                      <Clock size={12} /> {formatTime(day.time)}
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                       <MapPin size={12} /> {day.location}

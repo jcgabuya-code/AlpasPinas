@@ -12,6 +12,7 @@ import {
   isUpcomingDate,
   formatShortDate,
   formatLongDate,
+  formatTime,
   type Booking,
   type EventCounts,
 } from '../../utils/bookings';
@@ -321,7 +322,7 @@ export const AdminDashboard: React.FC<Props> = ({ c, theme, onNavigate }) => {
                     <div>
                       <div style={{ fontSize: '0.85rem', fontWeight: 600, color: c.text }}>{ev.title}</div>
                       <div style={{ fontSize: '0.75rem', color: c.textSecondary, marginTop: '0.1rem' }}>
-                        {formatShortDate(day.date)} · {day.time}
+                        {formatShortDate(day.date)} · {formatTime(day.time)}
                       </div>
                     </div>
                     <div

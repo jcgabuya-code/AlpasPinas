@@ -11,6 +11,7 @@ import {
   fetchBookings,
   fetchEventCounts,
   formatShortDate,
+  formatTime,
   getEventCounts,
   hasNameBooked,
   takenForDay,
@@ -287,7 +288,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                       {formatShortDate(d.date)}
                     </span>
                     <span style={{ opacity: 0.4 }}>·</span>
-                    <span>{d.time}</span>
+                    <span>{formatTime(d.time)}</span>
                     <span style={{ opacity: 0.4 }}>·</span>
                     <span>{d.location}</span>
                   </div>
