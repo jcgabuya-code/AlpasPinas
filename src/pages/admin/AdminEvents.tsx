@@ -17,7 +17,7 @@ import {
 } from '../../utils/raceEvents';
 import { type RaceEvent } from '../../components/EventCard';
 import { type TrainingEvent, type TrainingDay } from '../../components/TrainingCard';
-import { getAllBookings, cancelBooking, attendingLabel, formatShortDate, isUpcomingDate, type Booking } from '../../utils/bookings';
+import { getAllBookings, fetchBookings, cancelBooking, attendingLabel, formatShortDate, isUpcomingDate, type Booking } from '../../utils/bookings';
 import { AdminSignups } from './AdminSignups';
 
 type Props = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
@@ -252,6 +252,7 @@ const latestDay = (ev: TrainingEvent) => ev.days.reduce((max, d) => (d.date > ma
 
 export const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMobile: boolean }> = ({ c, showToast, isMobile }) => {
   const [events, setEvents] = useState<TrainingEvent[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>(() => getAllBookings());
   const [editing, setEditing] = useState<TrainingEvent | null>(null);
   const [isNew, setIsNew] = useState(false);
   // Days already persisted (present when editing opened) keep their original
@@ -263,7 +264,10 @@ export const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMo
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [showPast, setShowPast] = useState(false);
 
-  const reload = () => fetchTrainingEvents().then(setEvents);
+  const reload = () => {
+    fetchTrainingEvents().then(setEvents);
+    fetchBookings().then(setBookings);
+  };
 
   useEffect(() => { reload(); }, []);
 
@@ -315,13 +319,12 @@ export const TrainingTab: React.FC<{ c: ColorPalette; showToast: ShowToast; isMo
     }
   };
 
-  const allBookings = getAllBookings();
   const upcoming = events.filter((ev) => !isPastEvent(ev)).sort((a, b) => earliestDay(a).localeCompare(earliestDay(b)));
   const past = events.filter(isPastEvent).sort((a, b) => latestDay(b).localeCompare(latestDay(a)));
 
   const rowProps = (ev: TrainingEvent) => ({
     ev,
-    regs: allBookings.filter((b) => b.eventId === ev.id),
+    regs: bookings.filter((b) => b.eventId === ev.id),
     c,
     showToast,
     isMobile,
@@ -504,7 +507,17 @@ const TrainingForm: React.FC<{
               <Field label="Date" value={d.date} onChange={(v) => setDay(i, { date: v })} c={c} type="date" />
               <Field label="Time" value={d.time} onChange={(v) => setDay(i, { time: v })} c={c} type="time" />
               <Field label="Location" value={d.location} onChange={(v) => setDay(i, { location: v })} c={c} placeholder="Subang PARC" hint="Where paddlers show up — shown on their booking." />
-              <Field label="Capacity" value={String(d.capacity)} onChange={(v) => setDay(i, { capacity: Number(v) || 22 })} c={c} type="number" hint="Sign-ups beyond this go to the waitlist." />
+              <Field
+                label="Capacity"
+                value={String(d.capacity)}
+                onChange={(v) => { const n = Number(v); setDay(i, { capacity: Number.isNaN(n) ? 22 : Math.min(100, Math.max(1, n)) }); }}
+                c={c}
+                type="number"
+                min={1}
+                max={100}
+                step={1}
+                hint="Sign-ups beyond this go to the waitlist. Scroll while focused to adjust, max 100."
+              />
             </div>
           </div>
         ))}
@@ -896,17 +909,41 @@ const Field: React.FC<{
   type?: string;
   placeholder?: string;
   hint?: string;
-}> = ({ label, value, onChange, c, multiline, type = 'text', placeholder, hint }) => (
-  <div>
-    <label style={labelStyle(c)}>{label}</label>
-    {multiline ? (
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} style={{ ...inputStyle(c), minHeight: '72px', resize: 'vertical' }} />
-    ) : (
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle(c)} />
-    )}
-    {hint && <span style={{ display: 'block', fontSize: '0.7rem', color: c.textSecondary, marginTop: '0.25rem' }}>{hint}</span>}
-  </div>
-);
+  min?: number;
+  max?: number;
+  step?: number;
+}> = ({ label, value, onChange, c, multiline, type = 'text', placeholder, hint, min, max, step }) => {
+  // Scroll-to-adjust for number fields — only while focused, so scrolling the
+  // page with the cursor over an untouched field behaves normally.
+  const handleWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+    if (type !== 'number' || document.activeElement !== e.currentTarget) return;
+    e.preventDefault();
+    const next = (Number(value) || 0) + (e.deltaY < 0 ? 1 : -1) * (step ?? 1);
+    const clamped = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, next));
+    onChange(String(clamped));
+  };
+  return (
+    <div>
+      <label style={labelStyle(c)}>{label}</label>
+      {multiline ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} style={{ ...inputStyle(c), minHeight: '72px', resize: 'vertical' }} />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onWheel={handleWheel}
+          min={min}
+          max={max}
+          step={step}
+          placeholder={placeholder}
+          style={inputStyle(c)}
+        />
+      )}
+      {hint && <span style={{ display: 'block', fontSize: '0.7rem', color: c.textSecondary, marginTop: '0.25rem' }}>{hint}</span>}
+    </div>
+  );
+};
 
 const labelStyle = (c: ColorPalette): React.CSSProperties => ({
   display: 'block',
@@ -918,12 +955,26 @@ const labelStyle = (c: ColorPalette): React.CSSProperties => ({
   marginBottom: '0.3rem',
 });
 
+// Crude luminance check on the palette's own background — lets inputStyle pick
+// a strongly contrasting fill without threading the theme string through every
+// Field call site (there are 14+ across this file).
+const isDarkPalette = (c: ColorPalette): boolean => {
+  const hex = c.background.replace('#', '');
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b < 128;
+};
+
 const inputStyle = (c: ColorPalette): React.CSSProperties => ({
   width: '100%',
   padding: '0.5rem 0.7rem',
   borderRadius: '0.45rem',
   border: `1px solid ${c.border}`,
-  backgroundColor: c.background,
+  // Pure white (light) / lifted surfaceAlt (dark) — c.surfaceAlt alone wasn't
+  // enough contrast against c.surface cards in the light palette to read as
+  // an editable field rather than static text.
+  backgroundColor: isDarkPalette(c) ? c.surfaceAlt : '#ffffff',
   color: c.text,
   fontSize: '0.88rem',
   fontFamily: 'inherit',
