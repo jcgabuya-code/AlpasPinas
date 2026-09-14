@@ -19,6 +19,7 @@ const emerald = {
     sand: '#0e161b',             // alternating "cream" band — a touch lifted/warm vs background
     sun: '#f2b544',              // warm counter-accent (Filipino sun on water) — cadence/beat motif only
     danger: '#fca5a5',           // error/alert text — legible coral on dark surfaces
+    warning: '#fbbf24',          // warning/waitlist text — legible amber on dark surfaces
   },
   light: {
     background: '#f8f4e8',       // light cream, faint warm-green undertone
@@ -36,6 +37,7 @@ const emerald = {
     sand: '#efe6cf',             // deeper cream band — alternating-section contrast
     sun: '#d98e0b',              // warm counter-accent, darkened for contrast on light bg — cadence/beat motif only
     danger: '#b91c1c',           // error/alert text — darkened for contrast on light bg
+    warning: '#92400e',          // warning/waitlist text — darkened amber for contrast on light bg
   },
 };
 
@@ -56,6 +58,7 @@ const ocean = {
     sand: '#0d141d',             // alternating band — a touch lifted/cool vs background
     sun: '#f2b544',              // warm counter-accent — cadence/beat motif only
     danger: '#fca5a5',           // error/alert text — legible coral on dark surfaces
+    warning: '#fbbf24',          // warning/waitlist text — legible amber on dark surfaces
   },
   light: {
     background: '#f7f2e4',       // light cream, cool blue accent carries the "ocean" read
@@ -73,6 +76,7 @@ const ocean = {
     sand: '#eee2c7',             // deeper cream band — alternating-section contrast
     sun: '#d98e0b',              // warm counter-accent, darkened for light bg — cadence/beat motif only
     danger: '#b91c1c',           // error/alert text — darkened for contrast on light bg
+    warning: '#92400e',          // warning/waitlist text — darkened amber for contrast on light bg
   },
 };
 
@@ -93,6 +97,7 @@ const bandila = {
     sand: '#1a1013',             // alternating band — a touch lifted/warm vs background (nods to the red)
     sun: '#ffd60a',               // vibrant golden-yellow — PH flag sun/stars, cadence/beat motif only
     danger: '#fca5a5',           // error/alert text — legible coral on dark surfaces
+    warning: '#fbbf24',          // warning/waitlist text — legible amber on dark surfaces
   },
   light: {
     background: '#f8f3e3',       // light cream, gold-leaning — echoes the sun accent
@@ -110,6 +115,7 @@ const bandila = {
     sand: '#f0e4c4',             // deeper gold-cream band — nods to the sun/stars motif
     sun: '#dc9600',              // vibrant golden-yellow, darkened for contrast on light bg — cadence/beat motif only
     danger: '#b91c1c',           // error/alert text — darkened for contrast on light bg
+    warning: '#92400e',          // warning/waitlist text — darkened amber for contrast on light bg
   },
 };
 

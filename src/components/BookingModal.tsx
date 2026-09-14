@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { CalendarDays, Clock3, Lock, MapPin } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -31,8 +31,24 @@ type BookingModalProps = {
 };
 
 const GENDERS: Gender[] = ['Male', 'Female'];
-const SIDES: SideRole[] = ['Left', 'Right', 'Coxswain', 'Coach'];
 const YES_NO: YesNo[] = ['Yes', 'No'];
+
+// "Sat 19 – Sun 20 Sep" for a shared-time/location weekend; null (falls back
+// to per-day lines) if the days differ in time or venue.
+function formatDateRange(days: TrainingEvent['days']): string | null {
+  if (days.length < 2) return null;
+  const [first, ...rest] = days;
+  if (rest.some((d) => d.time !== first.time || d.location !== first.location)) return null;
+
+  const dayPart = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, (m ?? 1) - 1, d ?? 1).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
+  };
+  const [, lastMonth] = days[days.length - 1].date.split('-').map(Number);
+  const monthPart = new Date(2000, (lastMonth ?? 1) - 1, 1).toLocaleDateString(undefined, { month: 'short' });
+
+  return `${days.map((d) => dayPart(d.date)).join(' – ')} ${monthPart}`;
+}
 
 export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose }) => {
   const { theme, brand } = useTheme();
@@ -116,6 +132,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
     (d) => (dayStats.find((s) => s.day.key === d.key)?.remaining ?? 0) <= 0,
   );
 
+  // Weight only matters for paddlers, not for coxswain/coach.
+  const showWeight = !isLand && side !== 'Coxswain' && side !== 'Coach';
+
+  // Section numbers reflect what's actually rendered, so hiding a section
+  // (e.g. weight for a coxswain) doesn't leave a gap in the numbering.
+  let sectionCount = 0;
+  const daysSectionNum = !singleDay ? ++sectionCount : undefined;
+  const roleSectionNum = !isLand ? ++sectionCount : undefined;
+  const weightSectionNum = showWeight ? ++sectionCount : undefined;
+  const equipmentSectionNum = !isLand ? ++sectionCount : undefined;
+
+  // Condense a shared-time/location weekend into one line ("Sat 19 – Sun 20
+  // Sep"); falls back to per-day lines when days differ in time or venue.
+  const dateRange = formatDateRange(event.days);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -190,10 +221,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
         @keyframes alpas-fade-in { from { opacity: 0 } to { opacity: 1 } }
         @keyframes alpas-pop-in { from { opacity: 0; transform: scale(0.96) } to { opacity: 1; transform: scale(1) } }
         @keyframes alpas-slide-up { from { opacity: 0; transform: translateY(100%) } to { opacity: 1; transform: translateY(0) } }
+        .alpas-booking-modal button:focus-visible,
+        .alpas-booking-modal input:focus-visible {
+          outline: 3px solid ${c.primary};
+          outline-offset: 3px;
+        }
       `}</style>
 
       <div
         onClick={(ev) => ev.stopPropagation()}
+        className="alpas-booking-modal"
         style={{
           position: 'relative',
           width: '100%',
@@ -267,134 +304,210 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                 {event.title.toUpperCase()}
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.65rem' }}>
-                {event.days.map((d) => (
-                  <div
-                    key={d.key}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.82rem',
-                      color: c.textSecondary,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        color: c.text,
-                        minWidth: '7.5rem',
-                      }}
-                    >
-                      {formatShortDate(d.date)}
+                {dateRange ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: c.textSecondary, flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}>
+                      <CalendarDays size={12} aria-hidden="true" />
+                      <span style={{ fontWeight: 700, color: c.text }}>{dateRange}</span>
                     </span>
                     <span style={{ opacity: 0.4 }}>·</span>
-                    <span>{formatTime(d.time)}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}>
+                      <Clock3 size={12} aria-hidden="true" />
+                      <span>{formatTime(event.days[0].time)}</span>
+                    </span>
                     <span style={{ opacity: 0.4 }}>·</span>
-                    <span>{d.location}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}>
+                      <MapPin size={12} aria-hidden="true" />
+                      <span>{event.days[0].location}</span>
+                    </span>
                   </div>
-                ))}
+                ) : (
+                  event.days.map((d) => (
+                    <div
+                      key={d.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.82rem',
+                        color: c.textSecondary,
+                      }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.28rem', minWidth: '7.5rem' }}>
+                        <CalendarDays size={12} aria-hidden="true" />
+                        <span style={{ fontWeight: 700, color: c.text }}>{formatShortDate(d.date)}</span>
+                      </span>
+                      <span style={{ opacity: 0.4 }}>·</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}>
+                        <Clock3 size={12} aria-hidden="true" />
+                        <span>{formatTime(d.time)}</span>
+                      </span>
+                      <span style={{ opacity: 0.4 }}>·</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}>
+                        <MapPin size={12} aria-hidden="true" />
+                        <span>{d.location}</span>
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
-            <Field label="Name" locked={!!user} c={c}>
-              {user ? (
-                <ReadOnlyValue value={name} c={c} isMobile={isMobile} />
-              ) : (
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Brendz Reyes"
-                  style={inputStyle(c, isMobile)}
-                />
-              )}
-              {user && (
-                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                  {user.nickname?.trim() ? 'Signing up with your nickname — change it from your profile.' : 'Signing up as your account name.'}
-                </div>
-              )}
-            </Field>
+            {isLand && (
+              <div
+                style={{
+                  marginBottom: '1.1rem',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '0.55rem',
+                  border: `1px solid ${c.border}`,
+                  backgroundColor: c.surfaceAlt,
+                  fontSize: '0.8rem',
+                  color: c.textSecondary,
+                  lineHeight: 1.5,
+                }}
+              >
+                <div style={{ fontWeight: 700, color: c.text, marginBottom: '0.3rem' }}>What to bring</div>
+                <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                  <li>Yoga mat and resistance band, if you have them — a few extras on hand, but limited</li>
+                  <li>Water</li>
+                  <li>Extra clothes or a towel</li>
+                </ul>
+              </div>
+            )}
 
-            <Field label="Gender" locked={!!user?.gender} c={c}>
-              {user?.gender ? (
-                <>
-                  <ReadOnlyValue value={gender} c={c} isMobile={isMobile} />
-                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                    From your profile — update it in your account settings.
-                  </div>
-                </>
-              ) : (
-                <Chips options={GENDERS} value={gender} onChange={setGender} c={c} />
-              )}
-            </Field>
-
-            {!isLand && (
+            {user.gender ? (
+              // Name + gender are both locked from the profile — one compact
+              // summary line instead of two full field blocks.
+              <div
+                style={{
+                  marginBottom: '1.1rem',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '0.55rem',
+                  border: `1px dashed ${c.border}`,
+                  backgroundColor: c.surfaceAlt,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.85rem',
+                  color: c.textSecondary,
+                }}
+              >
+                <LockedBadge c={c} />
+                <span>
+                  Signing up as <strong style={{ color: c.text }}>{name}</strong> · {gender}
+                </span>
+              </div>
+            ) : (
               <>
-                <Field label="Paddling side / role" c={c}>
-                  <Chips options={SIDES} value={side} onChange={setSide} c={c} />
+                <Field label="Name" locked c={c}>
+                  <ReadOnlyValue value={name} c={c} isMobile={isMobile} />
                 </Field>
-
-                <Field label="Weight (kg)" c={c}>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    placeholder="72"
-                    min={30}
-                    max={200}
-                    style={inputStyle(c, isMobile)}
-                  />
-                  <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem' }}>
-                    Used to balance the boat — kept private.
-                  </div>
+                <Field label="Gender" c={c}>
+                  <Chips options={GENDERS} value={gender} onChange={setGender} c={c} isMobile={isMobile} />
                 </Field>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <Field label="Need PFD?" c={c}>
-                    <Chips options={YES_NO} value={needPFD} onChange={setNeedPFD} c={c} />
-                  </Field>
-                  <Field label="Need paddle?" c={c}>
-                    <Chips options={YES_NO} value={needPaddle} onChange={setNeedPaddle} c={c} />
-                  </Field>
-                </div>
               </>
             )}
 
             {!singleDay && (
-              <Field label="Joining" c={c}>
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  {event.days.map((d) => {
-                    const stat = dayStats.find((s) => s.day.key === d.key);
-                    return (
-                      <AttendingChip
-                        key={d.key}
-                        label={`${d.label} only`}
-                        active={attending === d.key}
-                        full={stat?.full ?? false}
-                        onClick={() => setAttending(d.key)}
-                        c={c}
-                      />
-                    );
-                  })}
+              <div style={{ marginBottom: '1.1rem' }}>
+                <SectionHeader n={daysSectionNum} title="Which days" meta="Required" c={c} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: event.days.length > 1 ? '1fr 1fr' : '1fr', gap: '0.6rem' }}>
+                    {event.days.map((d) => {
+                      const stat = dayStats.find((s) => s.day.key === d.key);
+                      return (
+                        <AttendingChip
+                          key={d.key}
+                          label={`${d.label} only`}
+                          status={stat?.full ? 'Waitlist' : `${stat?.remaining ?? 0} seats left`}
+                          active={attending === d.key}
+                          full={stat?.full ?? false}
+                          onClick={() => setAttending(d.key)}
+                          c={c}
+                        />
+                      );
+                    })}
+                  </div>
                   <AttendingChip
                     label="Both days"
+                    status={dayStats
+                      .map((s) => `${s.day.label}: ${s.full ? 'Waitlist' : `${s.remaining} seats`}`)
+                      .join(' · ')}
                     active={attending === 'both'}
                     full={dayStats.some((s) => s.full)}
                     onClick={() => setAttending('both')}
                     c={c}
+                    fullWidth
                   />
                 </div>
-                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.4rem' }}>
-                  {dayStats.map((s, i) => (
-                    <React.Fragment key={s.day.key}>
-                      {i > 0 && ' · '}
-                      {s.day.label}:{' '}
-                      <strong style={{ color: c.text }}>{s.full ? 'Waitlist' : `${s.remaining} seats`}</strong>
-                    </React.Fragment>
-                  ))}
+              </div>
+            )}
+
+            {!isLand && (
+              <div style={{ marginBottom: '1.1rem' }}>
+                <SectionHeader n={roleSectionNum} title="Your role in the boat" meta="Pick one" c={c} />
+                <div
+                  style={{
+                    border: `1px solid ${c.border}`,
+                    borderRadius: '0.65rem',
+                    padding: '0.9rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.7rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                    <span style={{ minWidth: '5.5rem', fontSize: '0.78rem', color: c.textSecondary }}>Paddling</span>
+                    <Chips options={['Left', 'Right']} value={side} onChange={setSide} c={c} isMobile={isMobile} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                    <span style={{ minWidth: '5.5rem', fontSize: '0.78rem', color: c.textSecondary }}>Not paddling</span>
+                    <Chips options={['Coxswain', 'Coach']} value={side} onChange={setSide} c={c} isMobile={isMobile} />
+                  </div>
                 </div>
-              </Field>
+              </div>
+            )}
+
+            {showWeight && (
+              <div style={{ marginBottom: '1.1rem' }}>
+                <SectionHeader n={weightSectionNum} title="Weight (kg)" meta="Kept private" c={c} />
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  placeholder="72"
+                  min={30}
+                  max={200}
+                  style={inputStyle(c, isMobile)}
+                />
+                <div style={{ fontSize: '0.72rem', color: c.textSecondary, marginTop: '0.3rem', lineHeight: 1.45 }}>
+                  30–200 kg · used to balance the boat.
+                </div>
+              </div>
+            )}
+
+            {!isLand && (
+              <div style={{ marginBottom: '1.1rem' }}>
+                <SectionHeader n={equipmentSectionNum} title="Equipment" c={c} />
+                <div>
+                  <EquipmentRow
+                    label="Need to borrow PFD?"
+                    value={needPFD}
+                    onChange={setNeedPFD}
+                    c={c}
+                    isMobile={isMobile}
+                    showDivider
+                  />
+                  <EquipmentRow
+                    label="Need to borrow paddle?"
+                    value={needPaddle}
+                    onChange={setNeedPaddle}
+                    c={c}
+                    isMobile={isMobile}
+                  />
+                </div>
+              </div>
             )}
 
             {error && (
@@ -404,8 +517,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                   marginBottom: '0.85rem',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '0.5rem',
-                  backgroundColor: '#ef444418',
-                  border: '1px solid #ef444466',
+                  backgroundColor: `${c.danger}18`,
+                  border: `1px solid ${c.danger}66`,
                   color: c.danger,
                   fontSize: '0.85rem',
                 }}
@@ -420,9 +533,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, event, onClose
                   marginBottom: '0.85rem',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '0.5rem',
-                  backgroundColor: '#d9770618',
-                  border: '1px solid #d9770644',
-                  color: '#d97706',
+                  backgroundColor: `${c.warning}18`,
+                  border: `1px solid ${c.warning}44`,
+                  color: c.warning,
                   fontSize: '0.8rem',
                   lineHeight: 1.5,
                 }}
@@ -631,14 +744,14 @@ const WaitingView: React.FC<{
           width: '64px',
           height: '64px',
           borderRadius: '999px',
-          background: 'linear-gradient(135deg, #d97706, #f59e0b)',
+          background: `linear-gradient(135deg, ${c.warning}, ${c.warning}cc)`,
           color: '#fff',
           margin: '0 auto 1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '1.7rem',
-          boxShadow: '0 8px 24px #d9770640',
+          boxShadow: `0 8px 24px ${c.warning}40`,
         }}
       >
         ⏳
@@ -673,9 +786,9 @@ const WaitingView: React.FC<{
             fontWeight: 700,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            backgroundColor: '#d9770618',
-            color: '#d97706',
-            border: '1px solid #d9770644',
+            backgroundColor: `${c.warning}18`,
+            color: c.warning,
+            border: `1px solid ${c.warning}44`,
           }}
         >
           <span style={{ fontSize: '0.55rem' }}>●</span> On the waitlist
@@ -713,22 +826,24 @@ const Field: React.FC<{ label: string; locked?: boolean; c: ColorPalette; childr
   children,
 }) => (
   <div style={{ marginBottom: '1rem' }}>
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.35rem',
-        fontSize: '0.72rem',
-        fontWeight: 700,
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color: c.textSecondary,
-        marginBottom: '0.4rem',
-      }}
-    >
-      {label}
-      {locked && <Lock size={11} aria-label="Locked — from your profile" />}
-    </label>
+    {label && (
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: c.textSecondary,
+          marginBottom: '0.4rem',
+        }}
+      >
+        {label}
+        {locked && <Lock size={11} aria-label="Locked — from your profile" />}
+      </label>
+    )}
     {children}
   </div>
 );
@@ -759,11 +874,13 @@ function Chips<T extends string>({
   value,
   onChange,
   c,
+  isMobile,
 }: {
   options: readonly T[];
   value: T;
   onChange: (v: T) => void;
   c: ColorPalette;
+  isMobile?: boolean;
 }) {
   return (
     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -774,8 +891,13 @@ function Chips<T extends string>({
             key={opt}
             type="button"
             onClick={() => onChange(opt)}
+            aria-pressed={active}
             style={{
-              padding: '0.45rem 0.85rem',
+              // 44px min touch target on mobile (WCAG 2.5.5 / iOS HIG).
+              minHeight: isMobile ? '44px' : undefined,
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: isMobile ? '0.6rem 1rem' : '0.45rem 0.85rem',
               borderRadius: '999px',
               cursor: 'pointer',
               border: `1px solid ${active ? c.primary : c.border}`,
@@ -795,33 +917,128 @@ function Chips<T extends string>({
   );
 }
 
+// A day-picker option: label + seat status stacked in a full card, not a
+// small pill — the day you're joining is a bigger decision than a gear toggle.
 const AttendingChip: React.FC<{
   label: string;
+  status: string;
   active: boolean;
   /** Seats are gone for this option — still selectable, just joins the waitlist. */
   full: boolean;
   onClick: () => void;
   c: ColorPalette;
-}> = ({ label, active, full, onClick, c }) => (
+  fullWidth?: boolean;
+}> = ({ label, status, active, full, onClick, c, fullWidth }) => (
   <button
     type="button"
     onClick={onClick}
+    aria-pressed={active}
+    aria-label={`${label}, ${status}`}
     style={{
-      padding: '0.5rem 0.9rem',
-      borderRadius: '999px',
+      width: fullWidth ? '100%' : undefined,
+      minHeight: '44px',
+      textAlign: 'left',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.15rem',
+      padding: '0.8rem 1rem',
+      borderRadius: '0.65rem',
       cursor: 'pointer',
-      border: `1px solid ${active ? c.primary : full ? '#d9770655' : c.border}`,
+      border: `1px solid ${active ? c.primary : c.border}`,
       backgroundColor: active ? c.primary : c.background,
-      color: active ? '#fff' : full ? '#d97706' : c.text,
-      fontSize: '0.85rem',
-      fontWeight: 600,
       fontFamily: 'inherit',
       transition: 'all 0.15s ease',
     }}
   >
-    {label}
-    {full && <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem' }}>(waitlist)</span>}
+    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: active ? '#fff' : c.text }}>{label}</span>
+    <span style={{ fontSize: '0.76rem', color: active ? 'rgba(255,255,255,0.85)' : full ? c.warning : c.textSecondary }}>
+      {status}
+    </span>
   </button>
+);
+
+// Section number + title on the left, a short meta hint ("Required", "Pick
+// one") on the right — mirrors the numbered-steps layout in the sign-up redesign.
+const SectionHeader: React.FC<{ n?: number; title: string; meta?: string; c: ColorPalette }> = ({
+  n,
+  title,
+  meta,
+  c,
+}) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.6rem' }}>
+    <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary }}>
+      {n != null ? `${n} · ` : ''}
+      {title}
+    </div>
+    {meta && <div style={{ fontSize: '0.68rem', color: c.textSecondary, whiteSpace: 'nowrap' }}>{meta}</div>}
+  </div>
+);
+
+const LockedBadge: React.FC<{ c: ColorPalette }> = ({ c }) => (
+  <span
+    style={{
+      flexShrink: 0,
+      fontSize: '0.62rem',
+      fontWeight: 700,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      color: c.textSecondary,
+      backgroundColor: c.background,
+      border: `1px solid ${c.border}`,
+      padding: '0.2rem 0.45rem',
+      borderRadius: '0.3rem',
+    }}
+  >
+    Locked
+  </span>
+);
+
+// A gear toggle row: label + short caption on the left, a "Default" tag
+// (shown only while the value is still at its default 'No') + Yes/No on the right.
+const EquipmentRow: React.FC<{
+  label: string;
+  caption?: string;
+  value: YesNo;
+  onChange: (v: YesNo) => void;
+  c: ColorPalette;
+  isMobile: boolean;
+  showDivider?: boolean;
+}> = ({ label, caption, value, onChange, c, isMobile, showDivider }) => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      justifyContent: 'space-between',
+      alignItems: isMobile ? 'flex-start' : 'center',
+      gap: '0.6rem',
+      padding: '0.75rem 0',
+      borderBottom: showDivider ? `1px solid ${c.border}` : 'none',
+    }}
+  >
+    <div>
+      <div style={{ fontWeight: 600, fontSize: '0.88rem', color: c.text }}>{label}</div>
+      {caption && <div style={{ fontSize: '0.74rem', color: c.textSecondary, marginTop: '0.1rem' }}>{caption}</div>}
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      {value === 'No' && (
+        <span
+          style={{
+            fontSize: '0.62rem',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: c.textSecondary,
+            backgroundColor: c.surfaceAlt,
+            padding: '0.25rem 0.5rem',
+            borderRadius: '999px',
+          }}
+        >
+          Default
+        </span>
+      )}
+      <Chips options={YES_NO} value={value} onChange={onChange} c={c} isMobile={isMobile} />
+    </div>
+  </div>
 );
 
 // 16px font on mobile keeps iOS from zooming in when an input gains focus.
