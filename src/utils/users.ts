@@ -688,6 +688,16 @@ export const sendPasswordReset = async (email: string): Promise<void> => {
   if (error) throw new Error(error.message);
 };
 
+/** Set a new password for the CURRENTLY signed-in user directly — no email
+ * round-trip needed since their live session already proves who they are.
+ * (Different from sendPasswordReset, which is for someone who can't sign in
+ * at all — forgot-password on the login page, or an admin resetting for
+ * someone else.) */
+export const changePassword = async (newPassword: string): Promise<void> => {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
+};
+
 /* --------------------------- subscriptions -------------------------- */
 
 export const subscribeAuth = (handler: () => void) => {

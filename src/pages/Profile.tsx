@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors, type ColorPalette } from '../styles/colors';
 import { useAuth } from '../context/AuthContext';
-import { updateProfile, sendPasswordReset, type ProfileEdit, type UserGender, type UserSide } from '../utils/users';
+import { updateProfile, changePassword, type ProfileEdit, type UserGender, type UserSide } from '../utils/users';
 
 const GENDERS: UserGender[] = ['Male', 'Female'];
 const SIDES: UserSide[] = ['Left', 'Right', 'Coxswain', 'Coach'];
@@ -31,8 +31,13 @@ export const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
   const [saveError, setSaveError] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const [resetMsg, setResetMsg] = useState('');
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   if (!user) return null;
 
@@ -65,17 +70,22 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!user.email) { setResetMsg('No email on file — ask an admin to add one first.'); return; }
-    setResetting(true);
-    setResetMsg('');
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordMsg('');
+    if (newPassword.length < 8) { setPasswordError('Password must be at least 8 characters.'); return; }
+    if (newPassword !== confirmPassword) { setPasswordError('Passwords don’t match.'); return; }
+    setChangingPassword(true);
     try {
-      await sendPasswordReset(user.email);
-      setResetMsg(`Password reset link sent to ${user.email}.`);
+      await changePassword(newPassword);
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMsg('Password updated.');
     } catch (err) {
-      setResetMsg(err instanceof Error ? err.message : 'Could not send the reset email.');
+      setPasswordError(err instanceof Error ? err.message : 'Could not update your password.');
     } finally {
-      setResetting(false);
+      setChangingPassword(false);
     }
   };
 
@@ -165,21 +175,58 @@ export const Profile: React.FC = () => {
         </form>
 
         {/* Password */}
-        <div style={card}>
+        <form onSubmit={handleChangePassword} style={card}>
           <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: c.text, margin: '0 0 0.5rem' }}>Password</h2>
           <p style={{ color: c.textSecondary, fontSize: '0.88rem', margin: '0 0 1rem', lineHeight: 1.6 }}>
-            We'll email you a link to set a new password.
+            You're signed in, so this takes effect right away — no email needed.
           </p>
-          {resetMsg && <p style={{ fontSize: '0.85rem', color: c.text, margin: '0 0 1rem' }}>{resetMsg}</p>}
+
+          {passwordError && (
+            <div style={{ backgroundColor: '#ef444418', border: '1px solid #fca5a5', borderRadius: '0.55rem', padding: '0.7rem 0.85rem', color: c.danger, fontSize: '0.85rem', marginBottom: '1rem' }}>
+              {passwordError}
+            </div>
+          )}
+          {passwordMsg && (
+            <div style={{ backgroundColor: `${c.primary}18`, border: `1px solid ${c.primary}55`, borderRadius: '0.55rem', padding: '0.7rem 0.85rem', color: c.text, fontSize: '0.85rem', marginBottom: '1rem' }}>
+              {passwordMsg}
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div>
+              <label style={labelStyle}>New Password</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={{ ...inputStyle, paddingRight: '3.6rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{ position: 'absolute', top: '50%', right: '0.6rem', transform: 'translateY(-50%)', background: 'none', border: 'none', color: accent, cursor: 'pointer', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.25rem' }}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Confirm Password</label>
+              <input type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+
           <button
-            type="button"
-            onClick={handleResetPassword}
-            disabled={resetting}
-            style={{ background: 'transparent', color: c.text, border: `1px solid ${c.border}`, borderRadius: '0.6rem', padding: '0.65rem 1.25rem', fontSize: '0.88rem', fontWeight: 700, cursor: resetting ? 'not-allowed' : 'pointer', opacity: resetting ? 0.7 : 1 }}
+            type="submit"
+            disabled={changingPassword}
+            style={{ background: 'transparent', color: c.text, border: `1px solid ${c.border}`, borderRadius: '0.6rem', padding: '0.65rem 1.25rem', fontSize: '0.88rem', fontWeight: 700, cursor: changingPassword ? 'not-allowed' : 'pointer', opacity: changingPassword ? 0.7 : 1 }}
           >
-            {resetting ? 'Sending…' : 'Reset Password'}
+            {changingPassword ? 'Saving…' : 'Change Password'}
           </button>
-        </div>
+        </form>
 
         {/* Quick links */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>

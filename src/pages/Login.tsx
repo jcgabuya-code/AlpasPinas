@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { colors, brandGradient } from '../styles/colors';
 import { useAuth } from '../context/AuthContext';
+import { sendPasswordReset } from '../utils/users';
 
 export const Login: React.FC = () => {
   const { theme, brand } = useTheme();
@@ -17,6 +18,10 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const c = colors[brand][theme];
   const accent = theme === 'dark' ? c.accent : c.primary;
@@ -64,6 +69,21 @@ export const Login: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!email.trim()) { setError('Enter your email first.'); return; }
+    setForgotLoading(true);
+    try {
+      await sendPasswordReset(email.trim());
+      setForgotSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send the reset email.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const gradientStyle: React.CSSProperties = {
     background: brandGradient(brand, theme),
   };
@@ -95,7 +115,7 @@ export const Login: React.FC = () => {
 
         {/* Form content */}
         <form
-          onSubmit={handleSubmit}
+          onSubmit={mode === 'login' ? handleSubmit : handleForgotPassword}
           style={{
             padding: '2rem',
             display: 'flex',
@@ -113,10 +133,14 @@ export const Login: React.FC = () => {
                 marginBottom: '0.5rem',
               }}
             >
-              Sign In
+              {mode === 'login' ? 'Sign In' : 'Reset Password'}
             </h1>
             <p style={{ color: c.textSecondary, margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
-              Welcome back to AlpasPinas
+              {mode === 'login'
+                ? 'Welcome back to AlpasPinas'
+                : forgotSent
+                  ? `Check ${email.trim()} for a link to set a new password.`
+                  : "Enter your email and we'll send you a link to set a new password."}
             </p>
           </div>
 
@@ -136,94 +160,138 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          {/* Email */}
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label style={labelStyle}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ ...inputStyle, paddingRight: '4rem' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  right: '0.6rem',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: accent,
-                  cursor: 'pointer',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  padding: '0.25rem',
-                }}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </div>
-
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              ...gradientStyle,
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.6rem',
-              padding: '0.85rem',
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-              boxShadow: `0 8px 24px ${c.primary}33`,
-              transition: 'opacity 0.2s',
-            }}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-
-          {/* Register link */}
-          <p style={{ textAlign: 'center', color: c.textSecondary, margin: 0, fontSize: '0.9rem' }}>
-            Don't have an account?{' '}
+          {mode === 'forgot' && forgotSent ? (
             <button
               type="button"
-              onClick={() => navigate('/register')}
+              onClick={() => { setMode('login'); setForgotSent(false); setError(''); }}
               style={{
-                background: 'none',
+                ...gradientStyle,
+                color: 'white',
                 border: 'none',
-                color: accent,
+                borderRadius: '0.6rem',
+                padding: '0.85rem',
+                fontSize: '0.95rem',
+                fontWeight: 700,
                 cursor: 'pointer',
-                textDecoration: 'underline',
-                fontSize: 'inherit',
+                boxShadow: `0 8px 24px ${c.primary}33`,
               }}
             >
-              Register
+              Back to Sign In
             </button>
-          </p>
+          ) : (
+            <>
+              {/* Email */}
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Password (login mode only) */}
+              {mode === 'login' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <label style={labelStyle}>Password</label>
+                    <button
+                      type="button"
+                      onClick={() => { setMode('forgot'); setError(''); }}
+                      style={{ background: 'none', border: 'none', color: accent, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, padding: 0, marginBottom: '0.4rem' }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={{ ...inputStyle, paddingRight: '4rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        right: '0.6rem',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: accent,
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        padding: '0.25rem',
+                      }}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={mode === 'login' ? loading : forgotLoading}
+                style={{
+                  ...gradientStyle,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.6rem',
+                  padding: '0.85rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  cursor: (mode === 'login' ? loading : forgotLoading) ? 'not-allowed' : 'pointer',
+                  opacity: (mode === 'login' ? loading : forgotLoading) ? 0.7 : 1,
+                  boxShadow: `0 8px 24px ${c.primary}33`,
+                  transition: 'opacity 0.2s',
+                }}
+              >
+                {mode === 'login' ? (loading ? 'Signing in...' : 'Sign In') : (forgotLoading ? 'Sending…' : 'Send Reset Link')}
+              </button>
+
+              {mode === 'forgot' ? (
+                <p style={{ textAlign: 'center', color: c.textSecondary, margin: 0, fontSize: '0.9rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setError(''); }}
+                    style={{ background: 'none', border: 'none', color: accent, cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}
+                  >
+                    Back to sign in
+                  </button>
+                </p>
+              ) : (
+                <p style={{ textAlign: 'center', color: c.textSecondary, margin: 0, fontSize: '0.9rem' }}>
+                  Don't have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/register')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: accent,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontSize: 'inherit',
+                    }}
+                  >
+                    Register
+                  </button>
+                </p>
+              )}
+            </>
+          )}
         </form>
       </div>
     </div>

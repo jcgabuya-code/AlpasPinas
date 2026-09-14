@@ -67,22 +67,29 @@ export const Training: React.FC = () => {
     const refresh = () => { setBookings(getAllBookings()); setCounts(getEventCounts()); };
     const unsub = subscribeBookings(refresh);
     const unsubEvents = subscribeTrainingEvents(() => { fetchTrainingEvents().then(setEvents); });
-    fetchTrainingEvents().then(setEvents);
     fetchEventCounts().then(setCounts);
-    fetchBookings().then((fresh) => {
+    // Events + bookings fetched together (not two independent .then()s) so the
+    // upcoming-event check below always has real event data, not whatever
+    // `events` happened to hold at mount.
+    Promise.all([fetchTrainingEvents(), fetchBookings()]).then(([freshEvents, freshBookings]) => {
+      setEvents(freshEvents);
+      const upcomingEventIds = new Set(freshEvents.filter(isEventUpcoming).map((ev) => ev.id));
+
       // Detect the signed-in user's OWN newly confirmed bookings (status flipped
-      // since last seen). Scoped by name so one person's approval doesn't pop a
-      // confirmation modal for everyone viewing the page.
+      // since last seen) for sessions that haven't already passed — scoped by
+      // name so one person's approval doesn't pop a confirmation modal for
+      // everyone viewing the page.
       const seen = getSeenStatuses();
       const me = myNameRef.current;
-      const newlyConfirmed = fresh.filter((b) => {
+      const newlyConfirmed = freshBookings.filter((b) => {
         if (!me || b.name.trim().toLowerCase() !== me) return false;
+        if (!upcomingEventIds.has(b.eventId)) return false;
         const key = `${b.eventId}::${b.name}`;
         return b.status === 'confirmed' && seen[key] !== 'confirmed';
       });
       if (newlyConfirmed.length > 0) setConfirmedNotices(newlyConfirmed);
-      saveSeenStatuses(fresh);
-      setBookings(fresh);
+      saveSeenStatuses(freshBookings);
+      setBookings(freshBookings);
     });
     return () => { unsub(); unsubEvents(); };
   }, []);
