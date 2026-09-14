@@ -234,27 +234,19 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
   }, [menuOpen]);
 
   const canSeeAdmin = Boolean(user?.isAdmin);
-  // Admins land straight in the dashboard — the member-facing nav clutter
-  // (About/Training/Merch/Races/My Orders) isn't relevant to them.
-  const isAdminOnly = canSeeAdmin;
 
-  const visibleItems = NAV_ITEMS.filter((item) => {
-    if (isAdminOnly && (item.label === 'About' || item.label === 'Training' || item.label === 'Merch')) return false;
-    return true;
-  });
+  const visibleItems = NAV_ITEMS;
 
   // Drawer nav — the mobile reference's link set. Home-page sections resolve via
   // ScrollToHash (matching ids live in MobileHome). Training points members at the
   // sign-up route, and visitors at the schedule section on the home page.
-  const drawerLinks: { label: string; to: string; hash?: string }[] = isAdminOnly
-    ? [{ label: 'Home', to: '/' }]
-    : [
-        { label: 'Home', to: '/' },
-        { label: 'About', to: '/', hash: '#about' },
-        { label: 'Training', to: user ? '/training' : '/', hash: user ? undefined : '#training' },
-        { label: 'Merch', to: '/shop' },
-        { label: 'Races', to: '/', hash: '#races' },
-      ];
+  const drawerLinks: { label: string; to: string; hash?: string }[] = [
+    { label: 'Home', to: '/' },
+    { label: 'About', to: '/', hash: '#about' },
+    { label: 'Training', to: user ? '/training' : '/', hash: user ? undefined : '#training' },
+    { label: 'Merch', to: '/shop' },
+    { label: 'Races', to: '/', hash: '#races' },
+  ];
 
   return (
     <nav
@@ -522,26 +514,42 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
                               {user.mobile}
                             </div>
                           )}
-                          {!isAdminOnly && (
-                            <Link
-                              to="/orders"
-                              onClick={() => setUserMenuOpen(false)}
-                              style={{
-                                display: 'block',
-                                textAlign: 'center',
-                                color: c.text,
-                                border: `1px solid ${c.border}`,
-                                borderRadius: '0.4rem',
-                                padding: '0.5rem',
-                                marginBottom: '0.5rem',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                textDecoration: 'none',
-                              }}
-                            >
-                              My Orders
-                            </Link>
-                          )}
+                          <Link
+                            to="/profile"
+                            onClick={() => setUserMenuOpen(false)}
+                            style={{
+                              display: 'block',
+                              textAlign: 'center',
+                              color: c.text,
+                              border: `1px solid ${c.border}`,
+                              borderRadius: '0.4rem',
+                              padding: '0.5rem',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                            }}
+                          >
+                            My Profile
+                          </Link>
+                          <Link
+                            to="/orders"
+                            onClick={() => setUserMenuOpen(false)}
+                            style={{
+                              display: 'block',
+                              textAlign: 'center',
+                              color: c.text,
+                              border: `1px solid ${c.border}`,
+                              borderRadius: '0.4rem',
+                              padding: '0.5rem',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                            }}
+                          >
+                            My Orders
+                          </Link>
                           <button
                             onClick={() => {
                               logout();
@@ -801,16 +809,22 @@ export const Navigation: React.FC<{ integratedHome?: boolean }> = ({ integratedH
             {/* Auth-aware actions */}
             {user ? (
               <>
-                {!isAdminOnly && (
-                  <Link
-                    to="/orders"
-                    onClick={closeMenu}
-                    className={menuOpen ? 'drawer-item-in' : undefined}
-                    style={{ animationDelay: '0.56s', padding: '16px 4px', textDecoration: 'none', color: c.text, fontWeight: 600, fontSize: '1rem', borderBottom: `1px solid ${c.border}` }}
-                  >
-                    My Orders
-                  </Link>
-                )}
+                <Link
+                  to="/profile"
+                  onClick={closeMenu}
+                  className={menuOpen ? 'drawer-item-in' : undefined}
+                  style={{ animationDelay: '0.53s', padding: '16px 4px', textDecoration: 'none', color: c.text, fontWeight: 600, fontSize: '1rem', borderBottom: `1px solid ${c.border}` }}
+                >
+                  My Profile
+                </Link>
+                <Link
+                  to="/orders"
+                  onClick={closeMenu}
+                  className={menuOpen ? 'drawer-item-in' : undefined}
+                  style={{ animationDelay: '0.56s', padding: '16px 4px', textDecoration: 'none', color: c.text, fontWeight: 600, fontSize: '1rem', borderBottom: `1px solid ${c.border}` }}
+                >
+                  My Orders
+                </Link>
                 <button
                   onClick={() => { logout(); closeMenu(); }}
                   className={menuOpen ? 'drawer-item-in' : undefined}

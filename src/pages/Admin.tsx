@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Anchor,
   CalendarDays,
-  Users,
   Menu,
   X,
   ShieldCheck,
@@ -28,7 +27,7 @@ import { AdminDashboard } from './admin/AdminDashboard';
 import { AdminBoats } from './admin/AdminBoats';
 import { AdminTraining, AdminEvents } from './admin/AdminEvents';
 import { AdminRoster } from './admin/AdminRoster';
-import { AdminApplications } from './admin/AdminApplications';
+import { AdminUserManagement } from './admin/AdminApplications';
 import { AdminProducts } from './admin/AdminProducts';
 import { AdminOrders } from './admin/AdminOrders';
 import { AdminContent } from './admin/AdminContent';
@@ -41,11 +40,10 @@ export type ShowToast = (msg: string, type?: ToastType) => void;
 
 const SECTIONS: { id: AdminSection; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard',        icon: LayoutDashboard },
-  { id: 'applications', label: 'User Registrations',  icon: ClipboardList  },
+  { id: 'applications', label: 'User Management',  icon: ClipboardList  },
   { id: 'boats',     label: 'Boat Assignments',  icon: Anchor         },
   { id: 'training',  label: 'Training',          icon: CalendarDays   },
   { id: 'events',    label: 'Event Records',     icon: Trophy         },
-  { id: 'roster',    label: 'Roster',            icon: Users          },
   { id: 'content',   label: 'Site Content',      icon: FileText       },
   { id: 'products',  label: 'Shop Products',     icon: Package        },
   { id: 'orders',    label: 'Shop Orders',       icon: ShoppingBag    },
@@ -527,7 +525,7 @@ const SectionContent: React.FC<{
 }> = ({ active, showToast, c, theme, onNavigate }) => {
   switch (active) {
     case 'dashboard': return <AdminDashboard showToast={showToast} c={c} theme={theme} onNavigate={onNavigate} />;
-    case 'applications': return <AdminApplications showToast={showToast} c={c} theme={theme} />;
+    case 'applications': return <AdminUserManagement showToast={showToast} c={c} theme={theme} />;
     case 'boats':     return <AdminBoats     showToast={showToast} c={c} theme={theme} />;
     case 'training':  return <AdminTraining  showToast={showToast} c={c} theme={theme} />;
     case 'events':    return <AdminEvents    showToast={showToast} c={c} theme={theme} />;

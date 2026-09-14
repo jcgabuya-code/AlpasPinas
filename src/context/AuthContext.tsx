@@ -10,6 +10,9 @@ type AuthContextType = {
   register: (mobile: string, name: string, email: string | undefined, birthday: string | undefined, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Re-fetch the signed-in user's profile — call after they edit it themselves,
+   * so nav/greeting text elsewhere doesn't show stale name/data. */
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,8 +78,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    setUser(await getCurrentProfile());
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, error, register, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, register, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -11,9 +11,11 @@ import { Home } from './pages/Home';
 import { Roster } from './pages/Roster';
 import { Events } from './pages/Events';
 import { Training } from './pages/Training';
+import { Profile } from './pages/Profile';
 import { Gallery } from './pages/Gallery';
 import { Register } from './pages/Register';
 import { Login } from './pages/Login';
+import { ResetPassword } from './pages/ResetPassword';
 import { JoinTeam } from './pages/JoinTeam';
 
 const Admin = lazy(() => import('./pages/Admin'));
@@ -42,9 +44,11 @@ function App() {
               <Route path="/join-team" element={<JoinTeam />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               {/* Login-only pages */}
               <Route element={<RequireAuth />}>
                 <Route path="/training" element={<Training />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/orders" element={<Suspense fallback={null}><MyOrders /></Suspense>} />
               </Route>
             </Route>

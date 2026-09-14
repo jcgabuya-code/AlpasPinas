@@ -11,6 +11,57 @@ import {
   setAutoApprove,
   type Application,
 } from '../../utils/users';
+import { AdminMembers } from './AdminMembers';
+
+type HubProps = { showToast: ShowToast; c: ColorPalette; theme: 'dark' | 'light' };
+
+/** User Management hub — join-request queue (Applications) and registered
+ * accounts (Members) as tabs, same shape as the Training hub in AdminEvents. */
+export const AdminUserManagement: React.FC<HubProps> = ({ c, showToast, theme }) => {
+  const isMobile = useIsMobile();
+  const [tab, setTab] = useState<'applications' | 'members'>('applications');
+  const activeBg = theme === 'dark' ? c.accent : c.primary;
+
+  return (
+    <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', color: c.text, margin: '0 0 0.4rem', letterSpacing: '0.02em', lineHeight: 1 }}>
+        USER MANAGEMENT
+      </h1>
+      <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: '0 0 1.25rem' }}>
+        Approve new sign-ups here — once someone's registered, manage their info and password from Members.
+      </p>
+
+      <div style={{ display: 'flex', gap: '0.5rem', margin: `0 0 ${isMobile ? '1.25rem' : '1.5rem'}` }}>
+        {([['applications', 'Applications'], ['members', 'Members']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            aria-pressed={tab === id}
+            className="admin-focus"
+            style={{
+              padding: '0.5rem 1.1rem',
+              borderRadius: '999px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: `1px solid ${tab === id ? activeBg : c.border}`,
+              background: tab === id ? activeBg : 'transparent',
+              color: tab === id ? '#fff' : c.text,
+              fontFamily: 'inherit',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'applications'
+        ? <AdminApplications c={c} showToast={showToast} theme={theme} embedded />
+        : <AdminMembers c={c} showToast={showToast} theme={theme} embedded />}
+    </div>
+  );
+};
 
 const registrationLink = (token: string) =>
   `${window.location.origin}/register?token=${encodeURIComponent(token)}`;
@@ -93,9 +144,11 @@ const IconBtn: React.FC<{ onClick: () => void; disabled?: boolean; color: string
   </button>
 );
 
-type Props = { showToast: ShowToast; c: ColorPalette; theme: Theme };
+// `embedded` = rendered inside the User Management hub's tab strip, so it drops
+// its own page padding + <h1> (the hub supplies those) and keeps just the content.
+type Props = { showToast: ShowToast; c: ColorPalette; theme: Theme; embedded?: boolean };
 
-export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
+export const AdminApplications: React.FC<Props> = ({ showToast, c, theme, embedded = false }) => {
   const isMobile = useIsMobile();
   const iconSize = isMobile ? 44 : 34;
   const [applications, setApplications] = useState<Application[]>([]);
@@ -200,25 +253,27 @@ export const AdminApplications: React.FC<Props> = ({ showToast, c, theme }) => {
   const columns = '2fr 2fr 1.1fr 0.9fr 1.2fr';
 
   return (
-    <div style={{ padding: isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: isMobile ? '0.5rem' : '0.75rem', flexWrap: 'wrap' }}>
-        <div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
-              color: c.text,
-              margin: '0 0 0.4rem',
-              letterSpacing: '0.02em',
-              lineHeight: 1,
-            }}
-          >
-            REGISTRATIONS
-          </h1>
-          <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
-            Approve to email them a registration link, or reject with a reason. Pending requests need action first.
-          </p>
-        </div>
+    <div style={{ padding: embedded ? 0 : (isMobile ? '1.25rem 1rem 3rem' : '2rem 1.5rem 4rem') }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: embedded ? 'flex-end' : 'space-between', gap: '1rem', marginBottom: isMobile ? '0.5rem' : '0.75rem', flexWrap: 'wrap' }}>
+        {!embedded && (
+          <div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+                color: c.text,
+                margin: '0 0 0.4rem',
+                letterSpacing: '0.02em',
+                lineHeight: 1,
+              }}
+            >
+              REGISTRATIONS
+            </h1>
+            <p style={{ color: c.textSecondary, fontSize: '0.9rem', margin: 0 }}>
+              Approve to email them a registration link, or reject with a reason. Pending requests need action first.
+            </p>
+          </div>
+        )}
         <button
           type="button"
           onClick={loadApplications}

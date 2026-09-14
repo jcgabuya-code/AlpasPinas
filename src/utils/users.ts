@@ -24,6 +24,7 @@ export type UserGender = 'Male' | 'Female';
 export type UserSide = 'Left' | 'Right' | 'Coxswain' | 'Coach';
 
 export type User = {
+  id: string;
   mobile: string;
   name: string;
   email?: string | null;
@@ -70,6 +71,7 @@ type ProfileRow = {
 };
 
 const mapProfile = (row: ProfileRow): User => ({
+  id: row.id,
   mobile: row.mobile,
   name: row.name,
   email: row.email,
@@ -280,6 +282,7 @@ export const registerUser = async (
 ): Promise<User> => {
   if (!isRemote) {
     const user: User = {
+      id: crypto.randomUUID(),
       mobile: mobile.trim(),
       name: name.trim(),
       email: email?.trim() || undefined,
@@ -592,6 +595,85 @@ export const submitApplication = async (
   }
 
   return { autoApproved: false };
+};
+
+/* -------------------- admin: member management ------------------- */
+
+/** Admin-only: every registered member (RLS returns only your own row for non-admins). */
+export const fetchAllProfiles = async (): Promise<User[]> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data as ProfileRow[]).map(mapProfile);
+};
+
+/** Editable contact/profile fields — deliberately excludes `email`'s effect on
+ * login (this only updates the profiles copy; Auth's email is separate and
+ * can't be changed for another user without the service-role Admin API) and
+ * `isAdmin` (see setUserAdmin — kept separate so it always goes through its
+ * own confirm step in the UI). */
+export type ProfileEdit = Partial<{
+  mobile: string;
+  name: string;
+  email: string | null;
+  birthday: string | null;
+  gender: UserGender | null;
+  side: UserSide | null;
+  weight: number | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+}>;
+
+/** Admin-only: update another member's profile. Self-update goes through the
+ * same RLS path (owner or admin) but this app only calls it from the admin UI. */
+export const updateProfile = async (id: string, patch: ProfileEdit): Promise<User> => {
+  const row: Record<string, unknown> = {};
+  if (patch.mobile !== undefined) row.mobile = patch.mobile.trim();
+  if (patch.name !== undefined) row.name = patch.name.trim();
+  if (patch.email !== undefined) row.email = patch.email?.trim() || null;
+  if (patch.birthday !== undefined) row.birthday = patch.birthday || null;
+  if (patch.gender !== undefined) row.gender = patch.gender;
+  if (patch.side !== undefined) row.side = patch.side;
+  if (patch.weight !== undefined) row.weight = patch.weight;
+  if (patch.emergencyContactName !== undefined) row.emergency_contact_name = patch.emergencyContactName?.trim() || null;
+  if (patch.emergencyContactPhone !== undefined) row.emergency_contact_phone = patch.emergencyContactPhone?.trim() || null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(row)
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(/duplicate|unique/i.test(error.message) ? 'That mobile number or email is already in use.' : error.message);
+  }
+  if (!data) throw new Error('Member not found.');
+  return mapProfile(data as ProfileRow);
+};
+
+/** Admin-only: promote/demote another member. The last-remaining-admin guard
+ * lives in the UI (it already has the full member list loaded to count from) —
+ * this just performs the write. */
+export const setUserAdmin = async (id: string, isAdmin: boolean): Promise<void> => {
+  const { error } = await supabase.from('profiles').update({ is_admin: isAdmin }).eq('id', id);
+  if (error) throw new Error(error.message);
+};
+
+/**
+ * Send a password-reset email via Supabase Auth's own flow — public API, no
+ * service-role key needed. Supabase intentionally reports success even if the
+ * email doesn't exist (avoids leaking which emails have accounts), so this
+ * only throws on a genuine request failure (network, rate limit).
+ */
+export const sendPasswordReset = async (email: string): Promise<void> => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw new Error(error.message);
 };
 
 /* --------------------------- subscriptions -------------------------- */
