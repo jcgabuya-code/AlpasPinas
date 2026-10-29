@@ -208,8 +208,11 @@ export const fetchBookings = async (): Promise<Booking[]> => {
 export const fetchBoatPlannerBench = async (): Promise<Booking[]> => {
   const useSeed = (import.meta.env.VITE_SEED_BOOKINGS ?? '').trim() === '1';
   if (useSeed) {
-    const { getSeedBookings } = await import('./seedBookings');
-    return getSeedBookings();
+    const [{ getSeedBookings }, { fetchTrainingEvents }] = await Promise.all([
+      import('./seedBookings'),
+      import('./trainingEvents'),
+    ]);
+    return getSeedBookings(await fetchTrainingEvents());
   }
   return fetchBookings();
 };

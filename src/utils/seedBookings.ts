@@ -12,6 +12,7 @@
  * side-matching warnings and the trim/balance panel are easy to exercise.
  */
 import type { Booking, Gender, SideRole } from './bookings';
+import type { TrainingEvent } from '../components/TrainingCard';
 
 type Person = { name: string; gender: Gender; side: SideRole; weight: number; birthday: string };
 
@@ -50,16 +51,11 @@ const ROSTER: Person[] = [
 const attendingFor = (i: number): string =>
   i % 5 === 0 ? 'sat' : i % 5 === 1 ? 'sun' : 'both';
 
-// Seed the same roster onto both training events so whichever one is selected
-// in the planner has a populated bench (the planner defaults to the first event).
-const EVENTS: { id: string; title: string }[] = [
-  { id: 'may-2026-weekend', title: 'May 30-31 Training Weekend' },
-  { id: 'jun-2026-weekend', title: 'June 27-28 Training Weekend' },
-];
-
-export const getSeedBookings = (): Booking[] => {
+// Seed the same roster onto every real lake event, so whichever one is selected
+// in the planner (including this week's, once it's created) has a populated bench.
+export const getSeedBookings = (events: TrainingEvent[]): Booking[] => {
   const base = Date.parse('2026-06-01T00:00:00Z');
-  return EVENTS.flatMap((ev) =>
+  return events.filter((ev) => (ev.venue ?? 'lake') === 'lake').flatMap((ev) =>
     ROSTER.map((p, i) => ({
       id: `seed-${ev.id}-${i}`,
       eventId: ev.id,
