@@ -11,7 +11,7 @@ import heroNewImage from '../../images/Banner/alpas-hero-new.jpeg';
 // custom event, so the pill can live in the nav while the heroes just read the pick.
 export const HERO_PICKER = false;
 export const HERO_OPTIONS = [
-  { src: heroNewImage, label: 'Race crew', short: 'Race', objectPosition: '50% 50%', fullWidth: true },
+  { src: heroNewImage, label: 'Race crew', short: 'Race', objectPosition: '50% 50%', fullWidth: true, mobilePosition: '32% 50%', mobileLift: '24%' },
   { src: heroAlpasImage, label: 'Alpas hero 5', short: 'Hero 5', objectPosition: '0% 0%' },
   { src: hero5Image, label: 'Mountain lake', short: 'Lake', objectPosition: '50% 36%' },
 ];
