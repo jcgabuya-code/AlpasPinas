@@ -657,8 +657,24 @@ export const Hero: React.FC = () => {
       >
         <img
           src={heroPhoto.src}
-          alt="AlpasPinas crew paddling across a mountain lake"
-          style={{
+          alt="AlpasPinas crew racing in their dragon boat"
+          style={heroPhoto.fullWidth ? {
+            // Full width, bottom-anchored, never side-cropped → the whole boat stays in
+            // frame; top edge feathers into the panel on screens taller than the photo.
+            position: 'absolute',
+            left: 0,
+            bottom: 0,
+            width: '100%',
+            height: 'auto',
+            // Nudge the drummer + front paddler out from behind the headline; a thin left
+            // feather hides the seam the shift leaves.
+            transform: 'translateX(6%)',
+            WebkitMaskImage: 'linear-gradient(transparent, #000 20%), linear-gradient(to right, transparent, #000 6%)',
+            WebkitMaskComposite: 'source-in',
+            maskImage: 'linear-gradient(transparent, #000 20%), linear-gradient(to right, transparent, #000 6%)',
+            maskComposite: 'intersect',
+            display: 'block',
+          } : {
             position: 'absolute',
             inset: 0,
             width: '100%',

@@ -413,7 +413,10 @@ export const MobileHome: React.FC = () => {
           scrollMarginTop: `${scrollMargin}px`,
         }}
       >
-        <img src={heroPhoto.src} alt="AlpasPinas crew paddling hard across the water" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 40%' }} />
+        <img src={heroPhoto.src} alt="AlpasPinas crew paddling hard across the water" style={heroPhoto.fullWidth
+          // Full width so the whole boat fits; sits in the empty upper band, edges feathered
+          ? { position: 'absolute', left: 0, top: '30%', transform: 'translateY(-50%)', width: '100%', height: 'auto', WebkitMaskImage: 'linear-gradient(transparent, #000 18%, #000 82%, transparent)', maskImage: 'linear-gradient(transparent, #000 18%, #000 82%, transparent)' }
+          : { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 40%' }} />
         {/* Scrim — theme-aware, built from the section's own c.surface so it blends
             into the About section below with no hard seam. Dark mode ramps up early
             for legibility over a bright photo; light mode stays much lighter (the photo
