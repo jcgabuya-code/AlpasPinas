@@ -1,12 +1,7 @@
 /**
- * Dev-only sample athletes for testing the admin Boat Assignments planner.
- *
- * Activated by VITE_SEED_BOOKINGS=1 in .env.local — when set,
- * `fetchBoatPlannerBench()` (utils/bookings.ts) returns this roster instead
- * of real Supabase data, so the bench fills up locally WITHOUT touching
- * production training data. Scoped to the boat planner only — the public
- * /training page and everything else always reads real Supabase data
- * regardless of this flag. Remove the env line (or this file) to turn it off.
+ * Sample athletes for the admin Boat Assignments "Sample roster" toggle.
+ * Client-side only — never written to Supabase, and the planner doesn't save
+ * plans while the toggle is on, so real sign-ups and seat plans are untouched.
  *
  * The roster is intentionally lopsided side-wise and varied in weight so the
  * side-matching warnings and the trim/balance panel are easy to exercise.

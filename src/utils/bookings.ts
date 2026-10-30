@@ -12,12 +12,6 @@
  *
  * If Supabase isn't configured the module runs LOCAL-ONLY (pure localStorage)
  * so dev still works.
- *
- * VITE_SEED_BOOKINGS=1 does NOT touch this module or its cache — it only
- * feeds a sample roster to the admin Boat Assignments planner (see
- * `fetchBoatPlannerBench` below), so the real public /training page and every
- * other consumer of fetchBookings/fetchEventCounts always reflect actual
- * Supabase data.
  */
 import { supabase, isSupabaseConfigured } from './supabase';
 
@@ -195,26 +189,6 @@ export const fetchBookings = async (): Promise<Booking[]> => {
   const bookings = (data as DbRow[]).map(toBooking);
   writeCache(bookings);
   return bookings;
-};
-
-/**
- * Bench data for the admin Boat Assignments planner ONLY. With
- * VITE_SEED_BOOKINGS=1 it returns a canned sample roster so the planner has
- * athletes to test seating with; otherwise it's just `fetchBookings()`.
- * Deliberately a separate function — and the seed branch never calls
- * `writeCache`, so this can't leak fake data into the shared cache that the
- * real public /training page reads from.
- */
-export const fetchBoatPlannerBench = async (): Promise<Booking[]> => {
-  const useSeed = (import.meta.env.VITE_SEED_BOOKINGS ?? '').trim() === '1';
-  if (useSeed) {
-    const [{ getSeedBookings }, { fetchTrainingEvents }] = await Promise.all([
-      import('./seedBookings'),
-      import('./trainingEvents'),
-    ]);
-    return getSeedBookings(await fetchTrainingEvents());
-  }
-  return fetchBookings();
 };
 
 /**

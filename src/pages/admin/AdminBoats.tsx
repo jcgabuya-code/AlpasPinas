@@ -3,7 +3,8 @@ import { Plus, Trash2, AlertTriangle, Wand2, ChevronDown, ChevronRight, Eraser, 
 import { brandGradient, type ColorPalette } from '../../styles/colors';
 import { useTheme } from '../../context/ThemeContext';
 import { type ShowToast } from '../Admin';
-import { fetchBoatPlannerBench, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
+import { getSeedBookings } from '../../utils/seedBookings';
+import { fetchBookings, ageFromBirthday, MASTERS_AGE, type Booking, type Gender, type SideRole } from '../../utils/bookings';
 import { fetchTrainingEvents } from '../../utils/trainingEvents';
 import { type TrainingEvent } from '../../components/TrainingCard';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -220,19 +221,30 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [exportOpen, setExportOpen] = useState(false); // share / export lineup sheet
 
+  // Sample roster sandbox: swaps the bench for canned athletes and starts from an
+  // empty boat. Nothing is loaded or saved while it's on, so real plans are safe.
+  const [sample, setSample] = useState(false);
+  const sampleBookings = useMemo(() => getSeedBookings(events), [events]);
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load bookings once. Uses the boat-planner-only bench fetch, which is real
-  // Supabase data unless VITE_SEED_BOOKINGS=1 fills it with a sample roster
-  // for testing — either way, isolated from the shared bookings cache.
   useEffect(() => {
-    fetchBoatPlannerBench().then(setAllBookings);
+    fetchBookings().then(setAllBookings);
   }, []);
 
   // Load plan when event/day changes: paint the cache instantly, then refresh
   // from Supabase and reconcile.
   useEffect(() => {
     if (!eventId || !dayKey) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (sample) {
+      const fresh = [emptyBoat()];
+      setBoats(fresh);
+      setActiveBoatId(fresh[0].id);
+      setSelected(null);
+      setSaveStatus('idle');
+      return;
+    }
     let cancelled = false;
     const cached = loadPlanCached(eventId, dayKey);
     setBoats(cached);
@@ -247,7 +259,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
     return () => {
       cancelled = true;
     };
-  }, [eventId, dayKey]);
+  }, [eventId, dayKey, sample]);
 
   // Flush any pending save on unmount.
   useEffect(() => () => {
@@ -257,6 +269,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   // Update state immediately, debounce the remote save (drag spam-safe).
   const persist = (updated: Boat[]) => {
     setBoats(updated);
+    if (sample) return;
     setSaveStatus('saving');
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -273,10 +286,10 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
   // Athletes for this event+day (any status).
   const athletes = useMemo(
     () =>
-      allBookings.filter(
+      (sample ? sampleBookings : allBookings).filter(
         (b) => b.eventId === eventId && (b.attending === 'both' || b.attending === dayKey),
       ),
-    [allBookings, eventId, dayKey],
+    [sample, sampleBookings, allBookings, eventId, dayKey],
   );
 
   // name → { side, weight, gender, age } for side-matching, weight balance + presets.
@@ -562,7 +575,7 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
             {currentEvent ? `${currentEvent.title}${dayLabel ? ` · ${dayLabel}` : ''}` : 'Select an event and day'}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: isMobile ? 'nowrap' : 'wrap', alignItems: 'center', width: isMobile ? '100%' : undefined }}>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', width: isMobile ? '100%' : undefined }}>
           <select
             value={eventId}
             onChange={(e) => {
@@ -587,11 +600,34 @@ export const AdminBoats: React.FC<Props> = ({ c, showToast, theme }) => {
               ))}
             </select>
           )}
-          <SaveIndicator status={saveStatus} c={c} />
+          <button
+            type="button"
+            aria-pressed={sample}
+            onClick={() => setSample((s) => !s)}
+            className="admin-focus"
+            title="Practice with sample paddlers. Nothing is saved while this is on."
+            style={{
+              ...selectStyle(c),
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              fontWeight: 600,
+              ...(sample ? { background: accent, borderColor: accent, color: '#fff' } : {}),
+              ...(isMobile ? { padding: '0.5rem 0.6rem', flexBasis: '100%' } : {}),
+            }}
+          >
+            {sample ? 'Remove sample roster' : 'Add sample roster'}
+          </button>
+          {!sample && <SaveIndicator status={saveStatus} c={c} />}
         </div>
       </div>
+      {sample && (
+        <div role="status" style={{ background: '#f59e0b1f', border: '1px solid #f59e0b66', color: c.text, borderRadius: 10, padding: '0.6rem 0.85rem', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+          <strong>Sample roster on</strong> · practice seating with sample paddlers. Nothing here is saved, and your real plan is untouched.
+        </div>
+      )}
       <p style={{ color: c.textSecondary, fontSize: '0.85rem', margin: '0 0 1.25rem', maxWidth: 640 }}>
-        Pick an event and day above, then drag paddlers from the bench into seats — or click Auto-seat to fill the boat by weight. Changes save automatically.
+        Pick an event and day above, then drag paddlers from the bench into seats — or click Auto-seat to fill the boat by weight.{sample ? '' : ' Changes save automatically.'}
       </p>
 
       {!eventId || !dayKey ? (

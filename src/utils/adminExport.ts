@@ -5,10 +5,6 @@
  * baked in as plain HTML/CSS, so it can be opened, printed, or archived
  * offline (e.g. to hand off a lineup sheet without giving someone admin
  * access).
- *
- * Deliberately reads from the same real data the admin pages use
- * (fetchBookings, not fetchBoatPlannerBench) so a VITE_SEED_BOOKINGS=1 dev
- * environment never leaks sample athletes into an exported snapshot.
  */
 import { getApplications, type Application } from './users';
 import { fetchBookings, attendingLabel, type Booking } from './bookings';
