@@ -8,6 +8,16 @@ import { SectionHeader } from './SectionHeader';
 import { sectionShell, contentMaxWidth } from '../styles/tokens';
 import { useContent } from '../context/SiteContentContext';
 import { TrainingEditor } from './TrainingEditor';
+import { type TrainingEvent } from './TrainingCard';
+import {
+  fetchEventCounts,
+  getEventCounts,
+  isUpcomingDate,
+  subscribeBookings,
+  takenForDay,
+  type EventCounts,
+} from '../utils/bookings';
+import { fetchTrainingEvents, subscribeTrainingEvents } from '../utils/trainingEvents';
 import landPhoto from '../../images/training/land-training.jpg';
 import waterPhoto from '../../images/training/water-training.jpg';
 import { BarsGlyph, LinesGlyph } from './icons/trainingGlyphs';
@@ -95,7 +105,7 @@ const WATER: ReelSession = {
   lightboxBody:
     'Weekend mornings are full-boat pieces, race starts, and crew building at Marina Putrajaya. The best place to try paddling for the first time.',
   place: 'Marina Putrajaya / Subang PARC',
-  time: 'Sat & Sun · 7:00 – 10:00 AM · 8 spots left',
+  time: 'Sat & Sun · 7:00 – 10:00 AM',
 };
 
 const SESSIONS = [LAND, WATER];
@@ -110,6 +120,9 @@ export const TrainingSchedule: React.FC = () => {
   const [lightbox, setLightbox] = useState<ReelSession | null>(null);
   const [reserveHover, setReserveHover] = useState(false);
   const [bookHover, setBookHover] = useState(false);
+  const [events, setEvents] = useState<TrainingEvent[]>([]);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
+  const [counts, setCounts] = useState<EventCounts>(() => getEventCounts());
 
   const intro = useContent(
     'training.intro',
@@ -121,6 +134,57 @@ export const TrainingSchedule: React.FC = () => {
   );
 
   const accent = isDark ? c.accent : c.primary;
+
+  useEffect(() => {
+    let active = true;
+    const refreshEvents = async () => {
+      const nextEvents = await fetchTrainingEvents();
+      if (!active) return;
+      setEvents(nextEvents);
+      setEventsLoaded(true);
+    };
+    const refreshCounts = () => {
+      if (active) setCounts(getEventCounts());
+    };
+    const unsubscribeBookings = subscribeBookings(refreshCounts);
+    const unsubscribeEvents = subscribeTrainingEvents(() => { void refreshEvents(); });
+    void refreshEvents();
+    void fetchEventCounts().then((nextCounts) => {
+      if (active) setCounts(nextCounts);
+    });
+    return () => {
+      active = false;
+      unsubscribeBookings();
+      unsubscribeEvents();
+    };
+  }, []);
+
+  const weekendAvailability = React.useMemo(() => {
+    const nextEvent = events
+      .filter((event) => (event.venue ?? 'lake') === 'lake')
+      .map((event) => ({
+        event,
+        upcomingDays: event.days
+          .filter((day) => isUpcomingDate(day.date))
+          .sort((a, b) => a.date.localeCompare(b.date)),
+      }))
+      .filter(({ upcomingDays }) => upcomingDays.length > 0)
+      .sort((a, b) => a.upcomingDays[0].date.localeCompare(b.upcomingDays[0].date))[0];
+
+    if (!nextEvent) return eventsLoaded ? 'View upcoming slots' : 'Checking availability...';
+
+    const availability = nextEvent.upcomingDays.map((day) => ({
+      label: day.label.slice(0, 3),
+      remaining: Math.max(0, day.capacity - takenForDay(counts, nextEvent.event.id, day.key)),
+    }));
+    if (availability.every(({ remaining }) => remaining === 0)) return 'Fully booked';
+
+    return availability
+      .map(({ label, remaining }) =>
+        `${label}: ${remaining === 0 ? 'Full' : `${remaining} spot${remaining === 1 ? '' : 's'} left`}`,
+      )
+      .join(' · ');
+  }, [counts, events, eventsLoaded]);
 
   // Esc to close the lightbox + lock body scroll while it's open.
   useEffect(() => {
@@ -501,7 +565,7 @@ export const TrainingSchedule: React.FC = () => {
                   <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: c.textSecondary }}>When</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: c.text, marginTop: '0.3rem' }}>
                     <ClockMark color={accent} />
-                    {lightbox.time}
+                    {lightbox.time}{lightbox.venue === 'water' ? ` · ${weekendAvailability}` : ''}
                   </div>
                 </div>
               </div>
