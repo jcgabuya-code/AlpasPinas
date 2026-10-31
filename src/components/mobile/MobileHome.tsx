@@ -42,6 +42,7 @@ import { useContent } from '../../context/SiteContentContext';
 import { RaceRecordEditor } from '../RaceRecordEditor';
 import { AboutEditor } from '../AboutEditor';
 import { GearEditor } from '../GearEditor';
+import { COUNTRY_CODES } from '../../data/countryCodes';
 
 /**
  * MobileHome — the phone-width Home page, rebuilt to the AlpasPinas mobile
@@ -87,18 +88,6 @@ const CONTACT_INFO: { label: string; value: string; icon: React.ReactNode }[] = 
   { label: 'Training base', value: 'Marina Putrajaya / Subang PARC', icon: <LocationIcon /> },
   { label: 'Email', value: 'admin@alpaspinas.com', icon: <MailIcon /> },
   { label: 'Instagram', value: '@alpaspinasdbt', icon: <InstagramIcon /> },
-];
-
-// Mirrors Contact.tsx's list — the "claim a seat" application carries the
-// same mobile format the account is keyed on.
-const COUNTRY_CODES = [
-  { code: '+60', flag: '🇲🇾' },
-  { code: '+63', flag: '🇵🇭' },
-  { code: '+65', flag: '🇸🇬' },
-  { code: '+1', flag: '🇺🇸' },
-  { code: '+44', flag: '🇬🇧' },
-  { code: '+61', flag: '🇦🇺' },
-  { code: '+81', flag: '🇯🇵' },
 ];
 
 const prefersReducedMotion = () =>
@@ -1078,7 +1067,7 @@ const ClaimYourSeat: React.FC<{
           <label style={labelStyle}>
             Mobile number
             <div style={{ display: 'flex', gap: '8px' }}>
-              <select aria-label="Country code" value={values.countryCode} onChange={set('countryCode')} style={{ ...field, flex: '0 0 92px', padding: '0 8px' }}>
+              <select aria-label="Country code" value={values.countryCode} onChange={set('countryCode')} style={{ ...field, flex: '0 0 108px', padding: '0 8px' }}>
                 {COUNTRY_CODES.map((cc) => (
                   <option key={cc.code} value={cc.code}>
                     {cc.flag} {cc.code}

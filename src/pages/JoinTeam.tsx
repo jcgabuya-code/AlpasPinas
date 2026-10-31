@@ -11,16 +11,7 @@ import {
   onbPrimaryBtnStyle,
   onbGhostBtnStyle,
 } from '../components/OnboardingShell';
-
-const COUNTRY_CODES = [
-  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
-  { code: '+63', country: 'Philippines', flag: '🇵🇭' },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-  { code: '+1', country: 'USA', flag: '🇺🇸' },
-  { code: '+44', country: 'UK', flag: '🇬🇧' },
-  { code: '+61', country: 'Australia', flag: '🇦🇺' },
-  { code: '+81', country: 'Japan', flag: '🇯🇵' },
-];
+import { COUNTRY_CODES } from '../data/countryCodes';
 
 export const JoinTeam: React.FC = () => {
   const navigate = useNavigate();
@@ -159,7 +150,7 @@ export const JoinTeam: React.FC = () => {
         <div style={{ marginBottom: '1.7rem', animation: 'onbRiseIn .5s .27s both' }}>
           <label style={onbLabelStyle(onb)}>Mobile Number</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <select className="onb-field" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ ...onbFieldStyle(onb), flex: '0 0 96px', padding: '0.75rem 0.6rem' }}>
+            <select className="onb-field" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ ...onbFieldStyle(onb), flex: '0 0 108px', padding: '0.75rem 0.6rem' }}>
               {COUNTRY_CODES.map((cc) => (
                 <option key={cc.code} value={cc.code}>{cc.flag} {cc.code}</option>
               ))}

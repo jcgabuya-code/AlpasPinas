@@ -6,18 +6,7 @@ import { SectionHeader } from './SectionHeader';
 import { sectionShell, cadenceAccentUri } from '../styles/tokens';
 import { submitApplication, type ApplicationResult } from '../utils/users';
 import { useContent } from '../context/SiteContentContext';
-
-// Country dialing codes for the mobile field — mirrors JoinTeam's list so the
-// "claim a seat" application carries the same mobile format the account is keyed on.
-const COUNTRY_CODES = [
-  { code: '+60', flag: '🇲🇾' },
-  { code: '+63', flag: '🇵🇭' },
-  { code: '+65', flag: '🇸🇬' },
-  { code: '+1', flag: '🇺🇸' },
-  { code: '+44', flag: '🇬🇧' },
-  { code: '+61', flag: '🇦🇺' },
-  { code: '+81', flag: '🇯🇵' },
-];
+import { COUNTRY_CODES } from '../data/countryCodes';
 
 // Line-art glyphs (handmade) to match the site's icon system.
 const IconBase: React.FC<{ children: React.ReactNode; size?: number }> = ({ children, size = 20 }) => (
